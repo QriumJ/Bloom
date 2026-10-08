@@ -14,6 +14,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the tags, for the notes
 
       - uses: actions/setup-dotnet@v6
         with:
@@ -26,6 +28,20 @@ jobs:
           $v = [regex]::Match((Get-Content src/Bloom/Bloom.csproj -Raw), '<Version>([^<]+)</Version>').Groups[1].Value
           if (-not $v) { throw 'no <Version> in Bloom.csproj' }
           "version=$v" >> $env:GITHUB_OUTPUT
+
+      # the release's text: the commits since the last release
+      - name: Notes
+        shell: pwsh
+        run: |
+          $tags = @(git tag --list 'v*' --sort=-v:refname)
+          if ($tags.Count -gt 0) {
+              $head = "Changes since $($tags[0])"
+              $log = @(git log "$($tags[0])..HEAD" --no-merges --format='- %s')
+          } else {
+              $head = 'The first release'
+              $log = @(git log --no-merges --format='- %s')
+          }
+          (@("## $head", '') + $log) -join "`n" | Set-Content notes.md -Encoding utf8
 
       - name: Tests
         run: dotnet run --project tests/Bloom.Tests -c Release
@@ -45,8 +61,8 @@ jobs:
       - name: Pack
         run: >-
           vpk pack --packId BloomLauncher --packVersion ${{ steps.version.outputs.version }} --packDir publish
-          --mainExe Bloom.exe --packTitle Bloom --packAuthors Hyeon --icon src/Bloom/Assets/icon.ico
-          --framework net10.0-x64-desktop --shortcuts StartMenuRoot
+          --runtime win-x64 --mainExe Bloom.exe --packTitle Bloom --packAuthors Hyeon --icon src/Bloom/Assets/icon.ico
+          --framework net10.0-x64-desktop --shortcuts StartMenuRoot --releaseNotes notes.md
 
       - name: Upload
         run: >-

@@ -31,14 +31,6 @@ internal static class Updates
     private static bool looked;
     private static VelopackAsset? ready;
 
-    /// Velopack's own runs (install, update, uninstall) start Bloom with their arguments and end in here. A downloaded
-    /// update never goes in at a start of Velopack's choosing (a second Bloom started only to signal the first would
-    /// close it): ApplyAtStart and ApplyOnQuit do that.
-    public static void Hooks() => VelopackApp.Build()
-        .SetAutoApplyOnStartup(false)
-        .OnBeforeUninstallFastCallback(_ => Autostart.Set(false)) // the Run entry would point at a removed exe
-        .Run();
-
     /// Installed with the setup file (Velopack), so able to update itself.
     public static bool Installed => Manager() is not null;
 

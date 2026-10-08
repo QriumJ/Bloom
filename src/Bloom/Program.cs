@@ -7,6 +7,7 @@ using System.Threading;
 using System.Windows;
 using Bloom.App;
 using Bloom.Core;
+using Velopack;
 
 [assembly: System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
 
@@ -29,7 +30,13 @@ internal static class Program
         // Claude Code or Codex starting Bloom's MCP server: a relay to the running Bloom, before anything else
         if (args.Length is 2 or 3 && args[0] == "--mcp") return App.Mcp.McpBridge.Run(args[1], args.Length == 3 ? args[2] : null);
         if (args.Length == 5 && args[0] == "--mcp-proxy") return App.Mcp.McpProxy.Run(args[1], args[2], args[3], args[4]);
-        Updates.Hooks(); // the setup's install / update / uninstall steps start Bloom with their own arguments and end here
+        // the setup's install / update / uninstall steps start Bloom with their own arguments and end in Run. A downloaded
+        // update never goes in at a start of Velopack's choosing (a second Bloom started only to signal the first would
+        // close it): Updates.ApplyAtStart and Updates.ApplyOnQuit do that.
+        VelopackApp.Build()
+            .SetAutoApplyOnStartup(false)
+            .OnBeforeUninstallFastCallback(_ => Autostart.Set(false)) // the Run entry would point at a removed exe
+            .Run();
         var opt = new Options();
         bool quit = false;
         string? export = null;
