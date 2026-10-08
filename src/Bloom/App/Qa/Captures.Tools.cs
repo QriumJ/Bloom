@@ -22,6 +22,8 @@ internal static partial class Captures
         Notes.New(Tr("여행 아이디어\n제주 3박 · 렌터카", "Trip ideas\nJeju 3 nights · rent a car"));
         Timers.Add("timer", Tr("집중", "Focus"), DateTime.Now.AddMinutes(25));
         Timers.Add("reminder", Tr("회의", "Meeting"), DateTime.Today.AddHours(15).AddMinutes(DateTime.Now.Hour >= 15 ? 24 * 60 : 0));
+        // a capture run can't hold the foreground, so the group would let go as its windows take turns: pinned throughout
+        w.SetPinned(true);
         foreach (string theme in new[] { "dark", "light" })
         {
             Theme.Apply(theme);
@@ -50,7 +52,6 @@ internal static partial class Captures
         await Group(host, w, dir, "dark-t4-scale-125");
         log.AppendLine($"scale 125: launcher {w.Width:0}x{w.Height:0} (dip)");
         Theme.SetScale(1);
-        w.SetPinned(true);
         w.OpenTools();
         await Group(host, w, dir, "dark-t5-tools-menu-pinned");
         w.CloseActionsForQa();

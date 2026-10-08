@@ -107,7 +107,7 @@ No API key. Answers come from the Claude Code or Codex CLI you have installed an
 - **Notes**: several notes, kept as you type. Pin them; deleted ones go to a trash.
   - Type `note buy milk` in the search line to keep a note at once.
   - Notes are searched too.
-- **Timers**: write `10 min`, `25 min focus` or `3pm meeting` and press Enter (or ↵). The time left shows, with 5 more minutes and cancel.
+- **Timers**: set days, hours, minutes and seconds (▲ ▼, the mouse wheel, the arrow keys or digits), write what it is for underneath and press Start or Enter. Left at zero, the line is read as words instead: `10 min`, `3pm meeting`. The time left shows, with 5 more minutes and cancel.
 - **Calculator**: the same sums as the search line. Enter copies the answer and keeps it in the list; the bin in its head clears the list.
 - **Clipboard history** (Ctrl+Alt+V): the text, images and files you copied. Click one to copy it again; pin the ones you keep.
 - **Pin · move · size the launcher**
