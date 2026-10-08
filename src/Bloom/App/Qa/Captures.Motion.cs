@@ -15,12 +15,13 @@ namespace Bloom.App;
 
 internal static partial class Captures
 {
-    /// `--qa-set motion` (fresh data, dark, 2×): the frames the promo animation is cut from, in the language of the
-    /// run — the home as a first start shows it, a sum typed key by key, a quick chat typed and answered, the 도구 menu,
-    /// 메모 floating and attached with a note being written, 계산기 under the launcher, a colour pasted and its 컬러 피커
-    /// view, a Bloom Lens pick (the picked message drawn here too) with its menu, and a translation card;
-    /// motion.json gives the sizes (dip) to lay them out as Bloom does. Files, open windows and recent apps stay out of
-    /// the pictures; the usage numbers are made up.
+    /// `--qa-set motion` (fresh data, dark, 2×; run it with --demo): the frames the promo animation is cut from, in the
+    /// language of the run — the home as a first start shows it; an app search, a sum, a unit, a reminder, an emoji and
+    /// Space Cleaner typed key by key; 클립보드 기록; a quick chat typed and answered, and one where a file move waits
+    /// on its approval card and is done; the 도구 menu, 메모 floating and attached with a note being written, 계산기
+    /// under the launcher, a colour pasted and its 컬러 피커 view, a Bloom Lens pick (the picked message drawn here too)
+    /// with its menu, a translation card and a task-done card; motion.json gives the sizes (dip) to lay them out as Bloom
+    /// does. Files, open windows and recent apps stay out of the pictures; the usage numbers are made up.
     private static async Task MotionScreens(Host host, Launcher w, string dir)
     {
         Shots.Scale = 2;
@@ -40,10 +41,19 @@ internal static partial class Captures
         }
         AiUsage.SetForQa(Plan("Claude", "Max 20x", 32, 47), Plan("ChatGPT", "Pro 20x", null, 21));
 
-        // the launcher: home, then a sum key by key
+        // the launcher: home, then an app found from a name typed with the keyboard left in Korean (in English runs, from
+        // its initials), then a sum key by key
         await Shot(w, dir, "L-home", Mode.Root, "", 900);
+        string[] app = En ? new[] { "g", "gc" } : new[] { "ㅊ", "초", "초ㄱ", "초개", "초개ㅡ", "초개ㅡㄷ" };
+        for (int i = 0; i < app.Length; i++) await Shot(w, dir, $"L-app-{i + 1:00}", Mode.Root, app[i], 150);
         string sum = "45000*1.1"; // a price with 10 % tax: short, no brackets
         for (int i = 1; i <= sum.Length; i++) await Shot(w, dir, $"L-calc-{i:00}", Mode.Root, sum[..i], 150);
+
+        // a unit, a reminder, an emoji and Space Cleaner, each typed key by key (no frame for a space), and 클립보드 기록
+        foreach (var (key, line) in new[] { ("units", Tr("84m2 to 평", "5.9 ft to cm")), ("remind", Tr("30분 뒤 빨래", "laundry in 30 min")), ("emoji", Tr(":하트", ":heart")), ("space", "space") })
+            for (int i = 1; i <= line.Length; i++)
+                if (line[i - 1] != ' ') await Shot(w, dir, $"L-{key}-{i:00}", Mode.Root, line[..i], 150);
+        await Shot(w, dir, "L-clip", Mode.Clipboard, "", 800);
 
         // the quick chat (Tab): the question typed, then the answer coming in
         var t = new ChatThread { Id = "motion", Title = "", Model = "sonnet" };
@@ -82,6 +92,32 @@ internal static partial class Captures
         reply.Text = answer;
         w.ShowChat(t);
         await Snap(w, dir, $"L-chat-a{++step:00}");
+
+        // PC 작업: a new quick chat asks for a file to be moved; the AI's step waits on its card, then it is done
+        var job = new ChatThread { Id = "motion-pc", Title = "", Model = "sonnet" };
+        string jobAsk = Tr("어제 받은 견적서 PDF 문서 폴더로 옮겨 줘", "Move yesterday's quote PDF to Documents");
+        for (int i = 1; i <= jobAsk.Length; i++)
+        {
+            if (jobAsk[i - 1] == ' ') continue;
+            w.ShowChat(job, jobAsk[..i]);
+            await Snap(w, dir, $"L-pc-t{i:00}");
+        }
+        string move = Tr(@"옮기기: 견적서_1007.pdf → C:\Users\me\Documents", @"Move: quote_1007.pdf → C:\Users\me\Documents");
+        job.Messages.Add(new ChatMessage { Role = "user", Text = jobAsk });
+        var did = new ChatMessage { Role = "assistant", Text = Tr("`견적서_1007.pdf`를 찾았어요. 문서 폴더로 옮길게요.", "Found `quote_1007.pdf`. Moving it to Documents."), Streaming = true, Status = Tr("허락을 기다려요", "Waiting for you") };
+        did.Asks.Add(new ToolAsk("motion", "mcp__bloom__pc", "{}", move));
+        job.Messages.Add(did);
+        host.Chats.SetLiveForQa(job, true);
+        w.ShowChat(job);
+        await Snap(w, dir, "L-pc-ask");
+        did.Asks.Clear();
+        did.Done = new() { "✓ " + move };
+        did.Text += Tr("\n\n옮겼어요. 문서 폴더에 있어요.", "\n\nDone. It's in Documents now.");
+        did.Streaming = false;
+        did.Status = null;
+        host.Chats.SetLiveForQa(job, false);
+        w.ShowChat(job);
+        await Snap(w, dir, "L-pc-done");
 
         // the 도구 menu (Ctrl+J), and the launcher pinned as it is while attached tools are in use
         w.Go(Mode.Root);
@@ -148,6 +184,15 @@ internal static partial class Captures
         tw.Capture(Path.Combine(dir, "TW-translate.png"));
         double tww = tw.ActualWidth, twh = tw.ActualHeight;
         tw.Close();
+
+        // 작업 알림: a Claude Code task done, its card as it shows in the corner
+        var nw = new NoticeWindow { Offscreen = true };
+        Settings.Current.NoticeSpot = "bottom-right";
+        Settings.Current.NoticeSize = "m";
+        nw.Add(new Notice("done", Tr("Claude Code · 작업 완료", "Claude Code · Done"), Tr("결제 모듈 테스트 추가", "Add payment module tests"), Tr("12분 걸렸어요", "Took 12 min")));
+        await Task.Delay(400);
+        await nw.Dispatcher.InvokeAsync(() => nw.Capture(Path.Combine(dir, "N-done.png")), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        nw.Close();
 
         Shots.Scale = 1;
         File.WriteAllText(Path.Combine(dir, "motion.json"), JsonSerializer.Serialize(new
