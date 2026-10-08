@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bloom — GitHub preview</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+<style>
+  /* 1280 × 640: GitHub's social preview size. Bloom's own colours: a plum-tinted dark, its rose only on the caret. */
+  :root {
+    --base: #1a1416;
+    --app: #0e0b0c;
+    --ink: #f1ecee;
+    --dim: #c1b8bb;
+    --faint: #8c8186;
+    --rose: #ff7a9e;
+    --hair: rgba(253, 237, 244, 0.14);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1280px; height: 640px; overflow: hidden; background: var(--base); }
+  body {
+    position: relative;
+    font-family: "Wanted Sans Variable", "Wanted Sans", sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+  }
+  .copy { position: absolute; left: 72px; top: 60px; width: 500px; }
+  /* letter and word spacing of the type below: optical.js (the rules at the end of the page) */
+  .brand { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 700; }
+  .brand img { width: 38px; height: 38px; }
+  h1 { margin-top: 34px; font-size: 60px; font-weight: 800; line-height: 1.04; }
+  .caret { display: inline-block; width: 6px; height: 0.78em; margin-left: 8px; border-radius: 3px; background: var(--rose); vertical-align: -0.03em; }
+  /* what it does: a name and one line each, two columns, no boxes */
+  .features { margin-top: 32px; list-style: none; display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; row-gap: 14px; }
+  .features li > b { display: block; font-size: 15.5px; font-weight: 650; }
+  .features li > span { display: block; margin-top: 3px; font-size: 13px; font-weight: 450; line-height: 1.35; color: var(--dim); text-wrap: balance; }
+  .foot { position: absolute; left: 72px; bottom: 30px; width: 500px; font-size: 12.5px; line-height: 1.5; color: var(--faint); }
+  /* the real launcher, whole, as it opens: rounded, a hairline, a soft shadow */
+  .app { position: absolute; left: 596px; top: 104px; width: 644px; border: 1px solid var(--hair); border-radius: 18px; overflow: hidden; background: var(--app);
+         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 34px 90px rgba(0, 0, 0, 0.5); }
+  .app img { display: block; width: 100%; }
+  /* one notice card (the capture holds two: only the top one shows) */
+  .notice { position: absolute; left: 896px; top: 464px; width: 350px; height: 90px; overflow: hidden; }
+  .notice img { display: block; width: 350px; }
+</style>
+</head>
+<body>
+  <section class="copy">
+    <div class="brand"><img src="assets/mark-tile.png" alt="">Bloom</div>
+    <h1>Press Win.<br>Type one line<span class="caret"></span></h1>
+    <ul class="features">
+      <li><b>One search line</b><span>Apps, files, settings, web search and maths</span></li>
+      <li><b>AI chat</b><span>Your own Claude Code and Codex login, no API key</span></li>
+      <li><b>Hand off PC work</b><span>Ask it to move files or set timers; it checks first</span></li>
+      <li><b>Work notices</b><span>When an AI task finishes or waits for approval</span></li>
+      <li><b>Bloom Lens</b><span>Ask about, translate or copy any part of the screen</span></li>
+      <li><b>Bloom Space Cleaner</b><span>See where your disk space went, and clear big files</span></li>
+      <li><b>Docked tools</b><span>Notes, timers, calculator and clipboard beside it</span></li>
+      <li><b>Yours to trim</b><span>Switch off what you don't use, scale it to fit</span></li>
+    </ul>
+  </section>
+  <p class="foot">A native Windows app (WPF), free and open source under MIT. For Windows 10 and 11.<br>Unofficial, not affiliated with Anthropic or OpenAI.</p>
+  <div class="app"><img src="assets/en-dark-p1-home.png" alt=""></div>
+  <div class="notice"><img src="assets/en-dark-p5-notices.png" alt=""></div>
+  <script>
+    window.OPTICAL = [
+      { sel: '.brand', track: -0.01 },
+      { sel: 'h1', track: -0.02, space: 0.15 },
+      { sel: '.features li > b', track: 0, space: 0.15 },
+      { sel: '.features li > span', track: 0.005, space: 0.135, strength: 0.5 },
+      { sel: '.foot', track: 0.01, space: 0.135, strength: 0.5 },
+    ];
+  </script>
+  <script src="optical.js"></script>
+</body>
+</html>

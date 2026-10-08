@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Bloom: a native (WPF) launcher — apps, files (Everything), calculator, AI chat (Claude Code / Codex CLIs),
+       clipboard history, quick searches, screen OCR + translation, timers and reminders, a colour picker, a disk map. No WebView, no NuGet
+       packages: Everything is spoken over its WM_COPYDATA IPC; searches and links are handed to the browser. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Bloom</AssemblyName>
+    <RootNamespace>Bloom</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    <Version>0.7.1</Version>
+    <Product>Bloom</Product>
+    <AssemblyTitle>Bloom</AssemblyTitle>
+    <Company>Hyeon</Company>
+    <Copyright>Hyeon</Copyright>
+    <SatelliteResourceLanguages>ko</SatelliteResourceLanguages>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- off: ~4 MB less private memory for a launcher that mostly waits (measured) -->
+    <TieredPGO>false</TieredPGO>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CA1416;SYSLIB1054</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Fonts\*.ttf" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Fonts\*.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- the emoji / symbol search (tools\make_symbols.py) -->
+    <EmbeddedResource Include="Assets\symbols.tsv" LogicalName="Bloom.Assets.symbols.tsv" />
+    <!-- tests\Bloom.Tests checks the internal parsers and rankers directly -->
+    <InternalsVisibleTo Include="Bloom.Tests" />
+  </ItemGroup>
+
+</Project>

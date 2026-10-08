@@ -1,0 +1,215 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Threading;
+using Bloom.Ai;
+using Bloom.Core;
+using Bloom.Ui;
+
+namespace Bloom.App;
+
+/// One card: its kind (start | done | waiting | limit | recover), the small line over it ("Claude Code · 작업 완료"),
+/// what it is about, a line under that, and a key for a card that stays until its state ends (승인 대기).
+internal sealed record Notice(string Kind, string Head, string Title, string? Detail, string? Key = null);
+
+/// 알림: Claude Code and Codex turns (ClaudeWatch, CodexWatch — 진행 중, 작업 완료, 승인 대기) and the plan limits
+/// (AiUsage — 한도 임박 · 소진, 한도 복구) as cards (NoticeWindow) with a sound each (Chimes). Every kind has its switch
+/// in 설정 > 알림, and all of it stops with the main one. What is already true when watching starts (a turn already
+/// running, a limit already low) is taken in silently, so a restart never repeats old news.
+internal static class Notices
+{
+    // 진행 중 waits a moment (quick turns stay quiet; a program's run — a tool checking something — longer), and
+    // 작업 완료 needs a turn that took a while
+    private static readonly TimeSpan StartDelay = TimeSpan.FromSeconds(4), HeadlessStartDelay = TimeSpan.FromSeconds(15), ShortestDone = TimeSpan.FromSeconds(10);
+
+    private static readonly ClaudeWatch claude = new();
+    private static readonly CodexWatch codex = new();
+    private static readonly Dictionary<string, DispatcherTimer> starting = new(); // 진행 중 waits a moment: quick turns stay quiet
+    private static readonly Dictionary<string, (int level, DateTime? resets)> levels = new(); // account|limit → 0 fine, 1 low, 2 used up
+    private static Dictionary<string, AgentTask> last = new();
+    private static DispatcherTimer? tick;
+    private static NoticeWindow? window;
+    private static bool first = true, polling;
+
+    /// QA measuring runs: cards stay off-screen and make no sound.
+    public static bool Quiet;
+
+    /// Host, once (not in QA runs): a look every 2 seconds while 알림 is on.
+    public static void Start(Dispatcher ui)
+    {
+        claude.Finished += (t, took) => ui.BeginInvoke(() => Done(t, took));
+        codex.Finished += (t, took) => ui.BeginInvoke(() => Done(t, took));
+        tick = new DispatcherTimer(DispatcherPriority.Background, ui) { Interval = TimeSpan.FromSeconds(2) };
+        tick.Tick += async (_, _) => await Look();
+        Apply();
+    }
+
+    /// The main switch changed (설정 > 알림): watching runs only while it is on; turned off, everything is forgotten.
+    public static void Apply()
+    {
+        if (tick is null) return;
+        tick.IsEnabled = Settings.Current.Notices;
+        if (Settings.Current.Notices) return;
+        foreach (var t in starting.Values) t.Stop();
+        starting.Clear();
+        levels.Clear();
+        last = new();
+        first = true;
+        window?.Clear();
+    }
+
+    /// 미리 보기 (설정 > 알림, and after a position or size change): a made-up card of each kind switched on.
+    public static void Preview(bool one = false)
+    {
+        var s = Settings.Current;
+        var all = new (bool on, Notice n)[]
+        {
+            (s.NoticeStart, new Notice("start", Tr("Claude Code · 진행 중", "Claude Code · Working"), Tr("알림 미리 보기", "Notice preview"), Tr("“지금 무엇을 하는지 이렇게 보여요”", "“This is what it is working on”"))),
+            (s.NoticeDone, new Notice("done", Tr("Codex · 작업 완료", "Codex · Done"), Tr("알림 미리 보기", "Notice preview"), Tr("3분 걸렸어요", "Took 3 min"))),
+            (s.NoticeWaiting, new Notice("waiting", Tr("Claude Code · 승인 대기", "Claude Code · Needs approval"), Tr("알림 미리 보기", "Notice preview"), Tr("확인을 기다리고 있어요 · 누르면 닫혀요", "Waiting for you · click to close"))),
+            (s.NoticeLimit, new Notice("limit", Tr("Claude · 한도 임박", "Claude · Limit near"), Tr("주간 한도 18% 남았어요", "18% of the weekly limit left"), Tr("2일 뒤 초기화", "Resets in 2 d"))),
+            (s.NoticeRecover, new Notice("recover", Tr("ChatGPT · 한도 복구", "ChatGPT · Limit back"), Tr("5시간 한도가 다시 찼어요", "The 5-hour limit is full again"), null)),
+        };
+        var shown = all.Where(x => x.on).Select(x => x.n).ToList();
+        if (shown.Count == 0) shown.Add(all[1].n);
+        window?.Clear();
+        foreach (var n in one ? shown.Take(1) : shown) Show(n, sound: false, asked: true);
+        Chimes.Play(shown[0].Kind);
+    }
+
+    /// Windows says now is not the time: the PC is locked, or a full-screen app, game or presentation is in front.
+    private static bool UserBusy() => Native.Win32.SHQueryUserNotificationState(out int state) == 0 && state is >= 1 and <= 4;
+
+    private static async Task Look()
+    {
+        if (polling) return;
+        polling = true;
+        try
+        {
+            var now = await Task.Run(() =>
+            {
+                var list = claude.Poll();
+                list.AddRange(codex.Poll());
+                return list;
+            });
+            Compare(now);
+            Limits();
+        }
+        catch (Exception e)
+        {
+            Log.Error("notices", e);
+        }
+        finally
+        {
+            polling = false;
+        }
+    }
+
+    /// 진행 중 for a turn that is new (after a moment), 승인 대기 for one that started waiting; a wait card goes when it ends.
+    private static void Compare(List<AgentTask> tasks)
+    {
+        var now = tasks.ToDictionary(t => t.Key);
+        foreach (var t in tasks)
+        {
+            last.TryGetValue(t.Key, out var before);
+            if (!first && before is null && !t.Waiting) Starting(t);
+            if (t.Waiting && before?.Waiting != true)
+            {
+                Cancel(t.Key);
+                if (!first && Settings.Current.NoticeWaiting) Show(new Notice("waiting", Head(t.Tool, Tr("승인 대기", "Needs approval")), t.Title, Tr("확인을 기다리고 있어요", "Waiting for you"), t.Key));
+            }
+            else if (!t.Waiting && before?.Waiting == true) window?.Remove(t.Key);
+        }
+        foreach (var key in last.Keys.Where(k => !now.ContainsKey(k)))
+        {
+            Cancel(key);
+            window?.Remove(key);
+        }
+        last = now;
+        first = false;
+    }
+
+    private static void Starting(AgentTask t)
+    {
+        if (!Settings.Current.NoticeStart || tick is null) return;
+        var wait = new DispatcherTimer(DispatcherPriority.Background, tick.Dispatcher) { Interval = t.Headless ? HeadlessStartDelay : StartDelay };
+        wait.Tick += (_, _) =>
+        {
+            Cancel(t.Key);
+            if (!last.TryGetValue(t.Key, out var now) || now.Waiting) return; // done already, or asking
+            Show(new Notice("start", Head(now.Tool, Tr("진행 중", "Working")), now.Title, now.Prompt is { } p ? $"“{p}”" : null));
+        };
+        starting[t.Key] = wait;
+        wait.Start();
+    }
+
+    private static void Cancel(string key)
+    {
+        if (starting.Remove(key, out var t)) t.Stop();
+    }
+
+    private static void Done(AgentTask t, TimeSpan took)
+    {
+        Cancel(t.Key);
+        window?.Remove(t.Key);
+        if (!Settings.Current.Notices || !Settings.Current.NoticeDone || took < ShortestDone) return;
+        Show(new Notice("done", Head(t.Tool, Tr("작업 완료", "Done")), t.Title, Tr($"{Span(took)} 걸렸어요", $"Took {Span(took)}")));
+    }
+
+    /// 한도 임박 at 20 % left, 소진 when used up, 복구 when a low one is back after its reset time (the usage shows a
+    /// passed reset as 0 % at once, so this needs no new look).
+    private static void Limits()
+    {
+        var s = Settings.Current;
+        foreach (var a in AiUsage.Accounts)
+            foreach (var l in a.Limits)
+            {
+                string key = a.Name + "|" + l.Title;
+                double left = Math.Max(0, 100 - l.Percent);
+                int level = l.Percent >= 99.5 ? 2 : left <= 20 ? 1 : 0;
+                bool had = levels.TryGetValue(key, out var before);
+                levels[key] = (level, l.Resets ?? before.resets);
+                if (!had || level == before.level) continue;
+                string who = a.Plan is { Length: > 0 } plan ? $"{a.Name} {plan}" : a.Name;
+                if (level == 0)
+                {
+                    if (s.NoticeRecover && before.resets is { } r && DateTime.Now >= r.AddMinutes(-1))
+                        Show(new Notice("recover", Head(who, Tr("한도 복구", "Limit back")), Tr($"{l.Title} 한도가 다시 찼어요", $"The {l.Title} limit is full again"), null));
+                    continue;
+                }
+                if (level < before.level || !s.NoticeLimit) continue;
+                string? when = l.Resets is { } at && at > DateTime.Now ? Tr($"{Span(at - DateTime.Now)} 뒤 초기화", $"Resets in {Span(at - DateTime.Now)}") : null;
+                Show(level == 2
+                    ? new Notice("limit", Head(who, Tr("한도 소진", "Limit used up")), Tr($"{l.Title} 한도를 다 썼어요", $"The {l.Title} limit is used up"), when)
+                    : new Notice("limit", Head(who, Tr("한도 임박", "Limit near")), Tr($"{l.Title} 한도 {Math.Round(left)}% 남았어요", $"{Math.Round(left)}% of the {l.Title} limit left"), when));
+            }
+    }
+
+    /// The end of something the user started in Bloom (a hidden 내 명령 script, a chain with skipped lines, a file moved
+    /// or copied): shown whether or not 작업 알림 is on, as it answers the user's own action.
+    public static void Result(bool ok, string head, string title, string? detail) => Show(new Notice(ok ? "done" : "limit", head, title, detail));
+
+    /// A Bloom chat's AI waits for a yes or no while no Bloom window is in front.
+    public static void Ask(string what) => Show(new Notice("waiting", Tr("Bloom AI · 승인 대기", "Bloom AI · Needs your OK"), what, Tr("Bloom 채팅에서 허락하거나 거절해 주세요", "Allow or decline it in Bloom's chat")));
+
+    /// A card (and its sound) — not over a full-screen game or presentation, unless asked for (미리 보기).
+    private static void Show(Notice n, bool sound = true, bool asked = false)
+    {
+        if (!asked && !Quiet && UserBusy()) return;
+        window ??= new NoticeWindow { Offscreen = Quiet };
+        window.Add(n);
+        if (sound && !Quiet) Chimes.Play(n.Kind);
+    }
+
+    private static string Head(string who, string what) => $"{who} · {what}";
+
+    /// "40초", "12분", "3시간 5분", "2일 4시간".
+    public static string Span(TimeSpan t)
+    {
+        if (t.TotalMinutes < 1) return Tr($"{Math.Max(1, (int)t.TotalSeconds)}초", $"{Math.Max(1, (int)t.TotalSeconds)} s");
+        if (t.TotalHours < 1) return Tr($"{(int)t.TotalMinutes}분", $"{(int)t.TotalMinutes} min");
+        if (t.TotalDays < 1) return t.Minutes > 0 ? Tr($"{(int)t.TotalHours}시간 {t.Minutes}분", $"{(int)t.TotalHours} h {t.Minutes} min") : Tr($"{(int)t.TotalHours}시간", $"{(int)t.TotalHours} h");
+        return t.Hours > 0 ? Tr($"{(int)t.TotalDays}일 {t.Hours}시간", $"{(int)t.TotalDays} d {t.Hours} h") : Tr($"{(int)t.TotalDays}일", $"{(int)t.TotalDays} d");
+    }
+}

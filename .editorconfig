@@ -1,0 +1,29 @@
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+end_of_line = lf
+
+[*.cs]
+indent_size = 4
+
+# Analyzer rules Bloom keeps off on purpose (lint: AnalysisLevel=latest-recommended). Each line says why.
+
+# Text shown to the user is formatted in the user's own culture; data written to disk uses invariant
+# formats explicitly where it matters (JSON, numbers in settings).
+dotnet_diagnostic.CA1305.severity = none
+# The app list is sorted for people to read, in the user's language order, not by code points.
+dotnet_diagnostic.CA1309.severity = none
+# UI builders return FrameworkElement / Border on purpose so callers don't depend on the concrete control.
+dotnet_diagnostic.CA1859.severity = none
+# Small option arrays built once when a settings page is built; not a hot path.
+dotnet_diagnostic.CA1861.severity = none
+# Chats.New, EverythingClient.Running, ClipboardHistory.Put and Host.OcrLanguage are instance API on purpose
+# (callers reach them through the object they belong to).
+dotnet_diagnostic.CA1822.severity = none
+# Host, Saver, TranslateWindow and SpaceScanner release what they own in their own Quit / Close / Flush paths,
+# tied to window and app lifetime rather than IDisposable.
+dotnet_diagnostic.CA1001.severity = none
+# The StringBuilder P/Invokes (window text, process paths) run on user actions, not in loops.
+dotnet_diagnostic.CA1838.severity = none

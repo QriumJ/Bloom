@@ -1,0 +1,283 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
+using System.Windows.Threading;
+using Bloom.Ai;
+using Bloom.Browser;
+using Bloom.Core;
+using Bloom.Native;
+using Bloom.Search;
+
+namespace Bloom.App.Mcp;
+
+/// One thing the AI can do through the "pc" tool, in one of the groups 설정 > PC 작업 switches (look | open | files |
+/// clip). `Asks`: it changes something, so the chat asks the user first (the look-ups run straight away). `Says` is how
+/// the approval card and the chat's record name a call.
+internal sealed record PcAction(string Do, string Group, Func<string, string, Task<string>> Run, Func<string, string, string> Says)
+{
+    public bool Asks => Group != "look";
+}
+
+/// What Bloom does for the AI, as ONE MCP tool ("pc") whose `do` picks the action: look up apps, files, recent files,
+/// windows, timers and the user's saved commands; open things; run a launcher line ("볼륨 30", "10분 타이머",
+/// "yt lofi"); rename, move, copy or recycle a file; the clipboard. One short definition goes with every request of a
+/// chat instead of one per action (measured on a session's first request: +400 tokens, against +1,520 for 15 tools and
+/// +720 for six). Every call reaches Bloom as a question (--permission-prompt-tool stdio); Bloom lets the look-ups
+/// through itself (Quiet) and asks about the rest.
+internal sealed class BloomTools : IToolPolicy
+{
+    public const string Server = "bloom";
+    public const string Prefix = "mcp__bloom__";
+    public const string Name = "pc";
+    private readonly Host host;
+    private readonly Dispatcher ui;
+    private readonly IReadOnlyList<PcAction> actions;
+
+    public BloomTools(Host host, Dispatcher ui)
+    {
+        this.host = host;
+        this.ui = ui;
+        actions = Build();
+    }
+
+    /// The groups 설정 > PC 작업 switches, in the order the description tells them.
+    public static readonly string[] Groups = { "look", "open", "files", "clip" };
+
+    /// What the description says of each group (with every group on, the wording the tool picking was tested with).
+    private static readonly Dictionary<string, string> About = new()
+    {
+        ["look"] = "Look up: find_apps, find_files (Everything syntax: ext:pdf dm:today), find_recent, find_windows, find_timers, find_commands (q = words).",
+        ["open"] = "run_line (q = what the user would type in Bloom's search box + Enter: sets timers 10분 타이머, reminders 오후 3시 회의 알림, volume 볼륨 30, dark mode, site shortcuts yt lofi), "
+            + "open (q = app, path or URL), run_command (q = saved command, to = its input)",
+        ["files"] = "rename, move, copy, recycle (q = full path, to = new name or folder)",
+        ["clip"] = "clip_read, clip_write (q = text)",
+    };
+
+    public static bool GroupOn(string group) => !Settings.Current.AiToolsOff.Contains(group);
+
+    /// A provider's chats (claude | chatgpt) get the tool: its switch is on and so is one of the groups at least.
+    public static bool OfferedTo(string provider) => (provider == "chatgpt" ? Settings.Current.AiToolsGpt : Settings.Current.AiTools) && Groups.Any(GroupOn);
+
+    /// Asks the user in a conversation's chat before an action and says whether they allowed it (Host: Chats); for
+    /// Codex runs, which don't ask on their own. (conversation id, tool, input JSON) → allowed.
+    public Func<string, string, string, Task<bool>>? Approve;
+
+    /// The tools/list entry: only the groups switched on (fewer of them, a shorter definition with every request).
+    public object Definition
+    {
+        get
+        {
+            var does = Groups.Where(g => g != "look" && GroupOn(g)).Select(g => About[g]).ToList();
+            string description = "Act on the user's PC." + (GroupOn("look") ? " " + About["look"] : "") + (does.Count > 0 ? " Do: " + string.Join(", ", does) + "." : "");
+            return new
+            {
+                name = Name,
+                description,
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new { @do = new { type = "string", @enum = actions.Where(x => GroupOn(x.Group)).Select(x => x.Do).ToArray() }, q = new { type = "string" }, to = new { type = "string" } },
+                    required = new[] { "do" },
+                },
+            };
+        }
+    }
+
+    /// For Codex's instructions: the tool and its actions in one line. Codex lists MCP tools only on demand, so without
+    /// this the model first spends a request looking for one (measured: +55 tokens without, one round trip more).
+    public string Hint => $"Bloom's PC tool is {Prefix}{Name} (server bloom, tool {Name}) taking {{do, q, to}}; do = "
+        + string.Join(", ", actions.Where(x => GroupOn(x.Group)).Select(x => x.Do))
+        + (GroupOn("open") ? ". run_line q = what the user would type in Bloom's search box (10분 타이머, 오후 3시 회의 알림, 볼륨 30)" : "")
+        + (GroupOn("files") ? ". rename/move/copy/recycle q = full path, to = new name or folder" : "") + ". Call it directly; no need to look it up. ";
+
+    private static bool IsPc(string tool) => tool == Prefix + Name || tool == Name;
+
+    private PcAction? ActionOf(JsonElement a) => actions.FirstOrDefault(x => x.Do == S(a, "do"));
+
+    /// A look-up: Bloom answers the CLI's question itself, nothing shows in the chat.
+    public bool Quiet(string tool, string input) => IsPc(tool) && Parse(input, a => ActionOf(a) is { Asks: false });
+
+    /// What 이 대화에서 항상 허용 covers: one action of the pc tool ("pc:move"), or another tool by name.
+    public string Key(string tool, string input) => IsPc(tool) ? "pc:" + Parse(input, a => S(a, "do"), "") : tool;
+
+    /// The chat's status line while a Bloom call runs; null for other tools.
+    public static string? Doing(string tool) => IsPc(tool) ? Tr("PC에서 작업하는 중…", "Working on the PC…") : null;
+
+    /// How a tool call reads in the chat: Bloom's by their own wording, Claude's file and web tools by path or address,
+    /// anything else by name.
+    public string Says(string tool, string input) => Parse(input, a =>
+        IsPc(tool) ? ActionOf(a) is { } x ? x.Says(S(a, "q"), S(a, "to")) : S(a, "do")
+        : tool switch
+        {
+            "Read" => Tr($"파일 읽기: {S(a, "file_path")}", $"Read a file: {S(a, "file_path")}"),
+            "Write" or "Edit" => Tr($"파일 쓰기: {S(a, "file_path")}", $"Write a file: {S(a, "file_path")}"),
+            "WebFetch" => Tr($"페이지 열기: {Clip(S(a, "url"))}", $"Open a page: {Clip(S(a, "url"))}"),
+            // another MCP server's tool: "github · create_issue: {…}"
+            _ when tool.StartsWith("mcp__", StringComparison.Ordinal) && tool.Split("__") is { Length: >= 3 } p =>
+                $"{p[1]} · {string.Join("__", p[2..])}" + (a.ValueKind == JsonValueKind.Object && a.EnumerateObject().Any() ? ": " + Clip(a.GetRawText(), 70) : ""),
+            _ => $"{tool}: {Clip(a.GetRawText(), 80)}",
+        }, tool);
+
+    /// Runs one call. `conversation` (a Codex run): an action that changes something waits for the user's yes in that
+    /// conversation's chat first; Claude Code asked the user before the call came.
+    public async Task<(string text, bool error)> Call(string tool, JsonElement args, string? conversation = null)
+    {
+        if (!IsPc(tool)) return ($"No tool named {tool}.", true);
+        if (ActionOf(args) is not { } action) return ($"Unknown do: {S(args, "do")}.", true);
+        if (!GroupOn(action.Group)) return ("The user switched this off in Bloom's settings.", true);
+        if (conversation is not null && action.Asks && !(Approve is { } approve && await approve(conversation, Name, args.GetRawText())))
+            return ("The user declined this. Don't try it again unless they ask.", true);
+        try
+        {
+            return (await action.Run(S(args, "q"), S(args, "to")), false);
+        }
+        catch (Exception e) // whatever goes wrong is this call's error; the session keeps its tools
+        {
+            if (e is not ArgumentException) Log.Error("bloom tool " + action.Do, e);
+            return (e.Message, true);
+        }
+    }
+
+    private static T Parse<T>(string json, Func<JsonElement, T> read, T fallback = default!)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json.Length > 0 ? json : "{}");
+            return read(doc.RootElement);
+        }
+        catch (JsonException)
+        {
+            return fallback;
+        }
+    }
+
+    private static string S(JsonElement a, string key) => a.ValueKind == JsonValueKind.Object && a.TryGetProperty(key, out var v) ? v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : v.ToString() : "";
+
+    private static string Clip(string s, int max = 60) => s.Length > max ? s[..max] + "…" : s;
+
+    private Task<T> OnUi<T>(Func<T> f) => ui.InvokeAsync(f).Task;
+
+    private static string FileName(string path) => Path.GetFileName(path.TrimEnd('\\')) is { Length: > 0 } n ? n : path;
+
+    /// " (C:\…\Downloads)": the folder a file is in, its end kept when the path is long.
+    private static string InFolder(string path) => Path.GetDirectoryName(path.TrimEnd('\\')) is { Length: > 0 } d ? $" ({(d.Length > 48 ? "…" + d[^47..] : d)})" : "";
+
+    private List<PcAction> Build() => new()
+    {
+        new("find_apps", "look", (q, _) => Look("apps", q), (q, _) => Tr($"앱 찾기: {q}", $"Find apps: {q}")),
+        new("find_files", "look", (q, _) => Look("files", q), (q, _) => Tr($"파일 찾기: {q}", $"Find files: {q}")),
+        new("find_recent", "look", (q, _) => Look("recent", q), (_, _) => Tr("최근 파일 보기", "Recent files")),
+        new("find_windows", "look", (q, _) => Look("windows", q), (_, _) => Tr("열린 창 보기", "Open windows")),
+        new("find_timers", "look", (q, _) => Look("timers", q), (_, _) => Tr("타이머 보기", "Timers")),
+        new("find_commands", "look", (q, _) => Look("commands", q), (_, _) => Tr("내 명령 보기", "My commands")),
+        new("open", "open", (q, _) => OnUi(() => Open(q)), (q, _) => Tr($"열기: {Clip(q)}", $"Open: {Clip(q)}")),
+        new("run_line", "open", (q, _) => OnUi(() => RunLine(q)), (q, _) => Tr($"Bloom에서 실행: {Clip(q)}", $"Run in Bloom: {Clip(q)}")),
+        new("run_command", "open", (q, to) => OnUi(() => RunCommand(q, to)), (q, to) => Tr($"내 명령 실행: {q} {Clip(to, 40)}", $"Run my command: {q} {Clip(to, 40)}").Trim()),
+        new("rename", "files", (q, to) => OnUi(() => FileAct("rename", q, to)), (q, to) => Tr($"이름 바꾸기: {FileName(q)} → {to}", $"Rename: {FileName(q)} → {to}")),
+        new("move", "files", (q, to) => OnUi(() => FileAct("move", q, to)), (q, to) => Tr($"옮기기: {FileName(q)} → {to}", $"Move: {FileName(q)} → {to}")),
+        new("copy", "files", (q, to) => OnUi(() => FileAct("copy", q, to)), (q, to) => Tr($"복사: {FileName(q)} → {to}", $"Copy: {FileName(q)} → {to}")),
+        new("recycle", "files", (q, _) => OnUi(() => FileAct("recycle", q, "")), (q, _) => Tr($"휴지통으로: {FileName(q)}{InFolder(q)}", $"To the Recycle Bin: {FileName(q)}{InFolder(q)}")),
+        new("clip_read", "clip", (_, _) => OnUi(() => host.ClipText() is { Length: > 0 } t ? t : "No text on the clipboard."), (_, _) => Tr("클립보드 읽기", "Read the clipboard")),
+        new("clip_write", "clip", (q, _) => OnUi(() =>
+        {
+            Launch.Copy(q);
+            return "Copied.";
+        }), (q, _) => Tr($"클립보드에 넣기: {Clip(q.Replace('\n', ' '), 50)}", $"Copy to the clipboard: {Clip(q.Replace('\n', ' '), 50)}")),
+    };
+
+    /// A look-up: one item a line, at most 20 (files newest first); "Nothing found." rather than an empty answer.
+    private async Task<string> Look(string kind, string query) => await Found(kind, query) is { Length: > 0 } list ? list : "Nothing found.";
+
+    private async Task<string> Found(string kind, string query)
+    {
+        var q = new Query(query);
+        bool Hit(MatchTarget m) => q.IsEmpty || Matcher.Score(q, m) > 0;
+        switch (kind)
+        {
+            case "files":
+                var list = await host.Everything.Query(query, 20, EverythingClient.SortDateModifiedDesc);
+                if (list is null) return "Everything isn't running; try do=find_recent.";
+                return list.Count == 0 ? "Nothing found." : string.Join("\n", list.Select(f => $"{f.FullPath}{(f.IsFolder ? "\\" : "")} {f.Modified:yyyy-MM-dd}"));
+            case "recent":
+                return string.Join("\n", RecentFiles.List(60).Where(r => Hit(new MatchTarget(Path.GetFileName(r.Path)))).Take(20).Select(r => $"{r.Path} {r.Opened:yyyy-MM-dd}"));
+            case "windows":
+                return await OnUi(() => string.Join("\n", OpenWindows.List(true).Where(w => Hit(w.Match)).Take(20).Select(w => $"{w.Title} ({w.App})")));
+            case "timers":
+                return await OnUi(() => Timers.Waiting.Any() ? string.Join("\n", Timers.Waiting.Select(t => $"{t.Label} {t.DueAt:MM-dd HH:mm}")) : "None.");
+            case "commands":
+                return await OnUi(() => UserCommands.Current.Items.Count == 0 ? "None." : string.Join("\n", UserCommands.Current.Items.Where(c => Hit(c.Match)).Select(c => $"{c.Name} ({c.Kind}{(c.TakesInput ? ", takes input" : "")})")));
+            default:
+                return await OnUi(() =>
+                {
+                    var found = host.Apps.Apps.Select(x => (x, score: Matcher.Score(q, x.Match))).Where(x => x.score > 0).OrderByDescending(x => x.score).Take(10).Select(x => x.x.Name).ToList();
+                    return found.Count == 0 ? "No app matches." : string.Join("\n", found);
+                });
+        }
+    }
+
+    private string RunCommand(string name, string input)
+    {
+        var c = UserCommands.Current.Items.FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) || string.Equals(x.Keyword, name, StringComparison.OrdinalIgnoreCase));
+        if (c is null) return $"No saved command named {name}.";
+        host.RunMine(c, input);
+        return c.Kind == "script" ? $"Started {c.Name}; its result comes to the user as a notice." : $"Ran {c.Name}.";
+    }
+
+    private static string FileAct(string action, string path, string to)
+    {
+        path = Existing(path);
+        switch (action)
+        {
+            case "rename":
+                string name = to.Trim();
+                if (name.Length == 0 || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) throw new ArgumentException("to must be a valid new name.");
+                return ShellFiles.Rename(path, name, IntPtr.Zero) ? $"Renamed to {name}." : "Not renamed (in use, no permission, or cancelled).";
+            case "move":
+                return ShellFiles.MoveTo(path, Folder(to), IntPtr.Zero) ? "Moved." : "Not moved (in use, no permission, or cancelled).";
+            case "copy":
+                return ShellFiles.CopyTo(path, Folder(to), IntPtr.Zero) ? "Copied." : "Not copied (no permission, or cancelled).";
+            default:
+                return ShellFiles.Recycle(path, IntPtr.Zero) ? "Moved to the Recycle Bin." : "Not recycled (in use or no permission).";
+        }
+    }
+
+    private static string Existing(string path)
+    {
+        path = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"'));
+        return File.Exists(path) || Directory.Exists(path) ? path : throw new ArgumentException($"There is no file or folder at {path}.");
+    }
+
+    private static string Folder(string path)
+    {
+        path = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"'));
+        return Directory.Exists(path) ? path : throw new ArgumentException($"There is no folder at {path}.");
+    }
+
+    private string Open(string target)
+    {
+        target = target.Trim().Trim('"');
+        if (Web.AsUrl(target) is { } url)
+        {
+            Web.Open(url);
+            return $"Opened {url} in the browser.";
+        }
+        string path = Environment.ExpandEnvironmentVariables(target);
+        if (File.Exists(path) || Directory.Exists(path)) return Launch.Open(path) ? $"Opened {path}." : $"Couldn't open {path}.";
+        var q = new Query(target);
+        var app = host.Apps.Apps.Select(x => (x, score: Matcher.Score(q, x.Match))).Where(x => x.score > 0).OrderByDescending(x => x.score).Select(x => x.x).FirstOrDefault();
+        if (app is null) return $"No app, file or address matches \"{target}\".";
+        host.Engine.FromApp(app).Run?.Invoke();
+        return $"Opened {app.Name}.";
+    }
+
+    private string RunLine(string line)
+    {
+        if (host.Engine.StepAction(line, 0) is not { } run) return $"Nothing in Bloom answers \"{line}\".";
+        string what = host.Engine.StepTitle(line) ?? line;
+        run();
+        return $"Ran: {what}.";
+    }
+}

@@ -1,0 +1,61 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace Bloom.Ai;
+
+/// The AI's tool calls in a conversation: look-ups go through, actions already allowed for the whole conversation go
+/// through and are recorded, the rest wait on an approval card (ChatMessage.Asks) for the user's yes or no.
+internal sealed partial class Chats
+{
+    /// Which calls run without asking, how they read and what 항상 허용 remembers (Host: BloomTools).
+    public static IToolPolicy? Tools;
+
+    /// UI thread; a tool call waits for the user (Host shows a notice when no Bloom window is in front).
+    public event Action<ChatThread, ToolAsk>? AskWaiting;
+
+    /// UI thread; the session asks about a tool call during the reply `m` (null: no reply is being written, so no).
+    private void Asked(ChatThread t, ChatMessage? m, IChatSession s, ToolAsk raw)
+    {
+        if (m is null)
+        {
+            s.Answer(raw, false);
+            return;
+        }
+        if (Tools?.Quiet(raw.Tool, raw.Input) == true)
+        {
+            s.Answer(raw, true);
+            return;
+        }
+        var ask = raw with { Says = Tools?.Says(raw.Tool, raw.Input) ?? raw.Tool, Key = Tools?.Key(raw.Tool, raw.Input) ?? raw.Tool };
+        if (t.AlwaysAllowed.Contains(ask.Key))
+        {
+            (m.Done ??= new()).Add("✓ " + ask.Says);
+            s.Answer(ask, true);
+            Updated?.Invoke(t);
+            return;
+        }
+        m.Asks.Add(ask);
+        m.Status = Tr("허락을 기다려요", "Waiting for your OK");
+        Updated?.Invoke(t);
+        AskWaiting?.Invoke(t, ask);
+    }
+
+    /// UI thread; an action Bloom's MCP server holds for a ChatGPT conversation (Codex doesn't ask on its own): the same
+    /// card as Claude's asks; false when that conversation has no Codex run going.
+    public Task<bool> AskInConversation(string id, string tool, string input) =>
+        sessions.TryGetValue(id, out var s) && s is CodexSession codex && s.Busy ? codex.Ask(tool, input) : Task.FromResult(false);
+
+    /// The user's yes or no to a tool call; `always`: this conversation doesn't ask about that action again.
+    public void Answer(ChatThread t, ToolAsk ask, bool allow, bool always = false)
+    {
+        var m = t.Messages.LastOrDefault(x => x.Asks.Contains(ask));
+        if (m is null) return;
+        m.Asks.Remove(ask);
+        if (allow && always) t.AlwaysAllowed.Add(ask.Key);
+        (m.Done ??= new()).Add((allow ? "✓ " : "✕ ") + ask.Says);
+        m.Status = m.Asks.Count > 0 ? m.Status : allow ? Tr("작업하는 중…", "Working…") : null;
+        if (sessions.TryGetValue(t.Id, out var s)) s.Answer(ask, allow);
+        Updated?.Invoke(t);
+    }
+}
