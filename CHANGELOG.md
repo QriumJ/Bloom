@@ -2,6 +2,14 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.8.3
+
+- AI chat with ChatGPT (Codex): MCP servers you switched on no longer flash terminal windows while a chat runs.
+
+### 한국어
+
+- ChatGPT(Codex)로 AI 채팅할 때, 켜 둔 MCP 서버 때문에 터미널 창이 잔뜩 떴다 사라지던 문제를 고쳤어요.
+
 ## 0.8.2
 
 - Clipboard history: set how long entries stay in minutes (Settings › Clipboard › Keep for). 0 keeps them. Your old setting carries over, so a day becomes 1440 minutes.
