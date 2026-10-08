@@ -225,7 +225,7 @@ Data lives in `%APPDATA%\Bloom` and `%LOCALAPPDATA%\Bloom`.
 For development, `Bloom.exe --data <folder>` uses another data folder (`--lang ko|en` fixes the language).
 A copy made with `tools\install.ps1` doesn't update itself; only the setup's does.
 
-**A release**: raise `<Version>` in `src/Bloom/Bloom.csproj` and push, then run **Actions › Release › Run workflow** on GitHub. It runs the tests, builds, packs the setup file and the update packages with [Velopack](https://velopack.io) and publishes them as `v<Version>`; installed copies find it at their next start.
+**A release**: raise `<Version>` in `src/Bloom/Bloom.csproj`, write what changed under `## <Version>` in `CHANGELOG.md` (that becomes the release's text; without it the commit list is used), push, then run **Actions › Release › Run workflow** on GitHub. It runs the tests, builds, packs the setup file and the update packages with [Velopack](https://velopack.io) and publishes them as `v<Version>`; installed copies find it at their next start.
 
 ## Code structure
 

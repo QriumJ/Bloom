@@ -29,19 +29,24 @@ jobs:
           if (-not $v) { throw 'no <Version> in Bloom.csproj' }
           "version=$v" >> $env:GITHUB_OUTPUT
 
-      # the release's text: the commits since the last release
+      # the release's text: its "## <version>" section of CHANGELOG.md, or else the commits since the last release
       - name: Notes
         shell: pwsh
         run: |
-          $tags = @(git tag --list 'v*' --sort=-v:refname)
-          if ($tags.Count -gt 0) {
-              $head = "Changes since $($tags[0])"
-              $log = @(git log "$($tags[0])..HEAD" --no-merges --format='- %s')
-          } else {
-              $head = 'The first release'
-              $log = @(git log --no-merges --format='- %s')
+          $v = '${{ steps.version.outputs.version }}'
+          $lines = @(Get-Content CHANGELOG.md -Encoding utf8 -ErrorAction SilentlyContinue)
+          $start = [Array]::IndexOf($lines, "## $v")
+          $body = @()
+          if ($start -ge 0) {
+              for ($i = $start + 1; $i -lt $lines.Count -and $lines[$i] -notmatch '^## '; $i++) { $body += $lines[$i] }
           }
-          (@("## $head", '') + $log) -join "`n" | Set-Content notes.md -Encoding utf8
+          $notes = ($body -join "`n").Trim()
+          if (-not $notes) {
+              $tags = @(git tag --list 'v*' --sort=-v:refname)
+              $range = if ($tags.Count -gt 0) { "$($tags[0])..HEAD" } else { 'HEAD' }
+              $notes = (@(git log $range --no-merges --format='- %s')) -join "`n"
+          }
+          $notes | Set-Content notes.md -Encoding utf8
 
       - name: Tests
         run: dotnet run --project tests/Bloom.Tests -c Release

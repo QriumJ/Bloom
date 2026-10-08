@@ -224,7 +224,7 @@ powershell -File tools\install.ps1   # → %LOCALAPPDATA%\Programs\Bloom, 시작
 개발용 실행은 `Bloom.exe --data <폴더>`로 다른 데이터 폴더를 쓸 수 있어요(`--lang ko|en`으로 언어 고정).
 `tools\install.ps1`로 만든 설치본은 스스로 업데이트하지 않아요. 설치 파일로 설치한 것만 업데이트돼요.
 
-**릴리즈 내기**: `src/Bloom/Bloom.csproj`의 `<Version>`을 올려 푸시한 뒤, GitHub에서 **Actions › Release › Run workflow**를 눌러요. 테스트 → 빌드 → [Velopack](https://velopack.io)으로 설치 파일과 업데이트 패키지 만들기 → `v<Version>` 릴리즈 올리기까지 해 주고, 설치된 Bloom은 다음에 켤 때 찾아요.
+**릴리즈 내기**: `src/Bloom/Bloom.csproj`의 `<Version>`을 올리고, `CHANGELOG.md`에 `## <Version>` 제목으로 바뀐 점을 적어 푸시한 뒤(이게 릴리즈 설명이 돼요. 없으면 커밋 목록이 들어가요), GitHub에서 **Actions › Release › Run workflow**를 눌러요. 테스트 → 빌드 → [Velopack](https://velopack.io)으로 설치 파일과 업데이트 패키지 만들기 → `v<Version>` 릴리즈 올리기까지 해 주고, 설치된 Bloom은 다음에 켤 때 찾아요.
 
 ## 코드 구조
 
