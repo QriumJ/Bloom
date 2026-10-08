@@ -67,7 +67,6 @@ internal sealed partial class Launcher : Window, IChatHost
     private readonly List<Row> rows = new();
     private int sel = -1;
     private int version;
-    private DateTime hiddenAt = DateTime.MinValue;
     private bool suppressText;
     private ChatThread? thread;
     private (string title, string url, string text)? attachment;
@@ -369,9 +368,8 @@ internal sealed partial class Launcher : Window, IChatHost
         bool wasVisible = IsVisible;
         if (!wasVisible)
         {
-            bool stale = DateTime.UtcNow - hiddenAt > TimeSpan.FromSeconds(90);
-            if (stale && Mode is not Mode.Chat) Go(Mode.Root, "");
-            else if (Mode == Mode.Root) Refresh(true);
+            // opened again: a fresh search line and home, except the quick AI, which carries on where it was
+            if (Mode is not Mode.Chat) Go(Mode.Root, "");
             Place();
             new WindowInteropHelper(this).EnsureHandle();
             Cloak(true);
@@ -382,7 +380,6 @@ internal sealed partial class Launcher : Window, IChatHost
         Activate();
         Win32.ForceForeground(Handle);
         FocusBox();
-        if (!wasVisible && Mode != Mode.Chat) box.SelectAll();
         if (!wasVisible) UncloakAfterFrame();
     }
 
@@ -434,7 +431,6 @@ internal sealed partial class Launcher : Window, IChatHost
         Hide();
         host.Tools.LauncherHidden();
         ShowPreview(null); // a playing preview stops with the window
-        hiddenAt = DateTime.UtcNow;
         trim.Stop();
         trim.Start();
     }
