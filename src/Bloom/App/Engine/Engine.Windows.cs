@@ -74,6 +74,6 @@ internal sealed partial class Engine
         {
             OpenWindows.Invalidate();
             host.Window.Refresh(true);
-        }));
+        }), System.Threading.Tasks.TaskScheduler.Default);
     }
 }

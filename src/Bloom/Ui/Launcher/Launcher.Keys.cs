@@ -45,7 +45,9 @@ internal sealed partial class Launcher
         Key key = e.Key == Key.System ? e.SystemKey : e.Key;
         if (actions.IsOpen)
         {
-            if (actions.HandleKey(key)) e.Handled = true;
+            if (ctrl && key == Key.J) OpenTools(); // the 도구 menu again: it closes
+            else if (actions.HandleKey(key)) e.Handled = true;
+            if (ctrl && key == Key.J) e.Handled = true;
             return;
         }
         if (key == Key.Escape && HomeEditing)

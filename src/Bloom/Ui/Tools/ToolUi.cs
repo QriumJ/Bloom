@@ -11,7 +11,8 @@ namespace Bloom.Ui;
 internal static class ToolUi
 {
     /// A one-line field in a soft well, its placeholder showing while it is empty.
-    public static (FrameworkElement view, TextBox box) Field(string placeholder, double size = 13.5)
+    /// `enter`: a ↵ key cap at the field's end that does what Enter does.
+    public static (FrameworkElement view, TextBox box) Field(string placeholder, double size = 13.5, Action? enter = null)
     {
         var box = new TextBox
         {
@@ -31,8 +32,24 @@ internal static class ToolUi
         hint.Margin = new Thickness(2, 0, 0, 0);
         box.TextChanged += (_, _) => hint.Visibility = box.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
         var g = new Grid();
+        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         g.Children.Add(hint);
         g.Children.Add(box);
+        if (enter is not null)
+        {
+            var cap = Keys.Cap("↵");
+            cap.Margin = new Thickness(6, 0, 0, 0);
+            cap.Cursor = Cursors.Hand;
+            cap.ToolTip = "Enter";
+            cap.MouseLeftButtonUp += (_, e) =>
+            {
+                enter();
+                e.Handled = true;
+            };
+            Grid.SetColumn(cap, 1);
+            g.Children.Add(cap);
+        }
         var well = new SmoothBorder { Background = Theme.P.Well, CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 7, 10, 8), Child = g, Cursor = Cursors.IBeam };
         well.MouseLeftButtonDown += (_, _) => box.Focus();
         return (well, box);

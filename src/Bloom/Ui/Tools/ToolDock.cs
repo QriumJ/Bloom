@@ -11,10 +11,12 @@ using Bloom.Search;
 
 namespace Bloom.Ui;
 
-/// The tool windows (메모 · 타이머 · 계산기 · 클립보드): which are open, which sit on an edge of the launcher and in what
-/// order, and the group they make with it. Attached tools share the launcher's edge evenly (a column on the right or
-/// left, a row underneath), show and hide with it, and keep it open while you work in them (the launcher pins itself);
-/// floating ones live on their own. Settings.Tools remembers them across starts.
+/// The tool windows (메모 · 타이머 · 계산기 · 클립보드): which are open, which are attached to the launcher and where,
+/// and the group they make with it. A tool opened while nothing was put by hand joins a column on the launcher's
+/// right (the launcher's height shared); once a tool is dragged or sized, every attached one keeps the place it has
+/// (free: an offset from the launcher, in dip at 100 %). Attached tools show and hide with the launcher and keep it
+/// open while you work in them (the launcher pins itself); floating ones live on their own. Settings.Tools remembers
+/// them across starts.
 internal sealed class ToolDock
 {
     private readonly Host host;
@@ -62,15 +64,15 @@ internal sealed class ToolDock
         _ => new ClipTool(host),
     };
 
-    /// The 도구 menu: open one on the launcher's right, or close it.
+    /// The 도구 menu: open one beside the launcher, or close it.
     public void Toggle(string key)
     {
         if (Find(key) is { } w) Close(w);
         else Open(key);
     }
 
-    /// Opens a tool (attached to the launcher's right when it shows, else floating near the middle) and puts the
-    /// keyboard in it; an open one comes forward. 메모 with a note shows that note.
+    /// Opens a tool (attached beside the launcher when it shows, else floating near the middle) and puts the keyboard
+    /// in it; an open one comes forward. 메모 with a note shows that note.
     public void Open(string key, string? note = null)
     {
         if (Find(key) is { } open)
@@ -79,11 +81,39 @@ internal sealed class ToolDock
             Front(open);
             return;
         }
-        var w = new ToolWindow(this, Make(key, note), L.IsVisible ? "right" : null, true);
+        var w = new ToolWindow(this, Make(key, note), null, true);
         windows.Add(w);
-        if (w.Edge is null) Float(w, null);
-        else Layout();
+        if (L.IsVisible) AttachNew(w);
+        else Float(w, null);
         Front(w);
+        Save();
+    }
+
+    /// For the AI: a tool brought up beside where the user chats — attached to the launcher when it shows, else against
+    /// the AI 채팅 window's right edge (`chat`), else near the middle — without taking the keyboard from the chat.
+    /// 메모 with a note shows that note.
+    public void ShowBeside(string key, string? note, IntPtr chat)
+    {
+        if (Find(key) is { } open)
+        {
+            if (note is not null && open.Tool is NotesTool notes) notes.Show(note);
+            if (!open.IsVisible && (open.Edge is null || L.IsVisible)) open.Show();
+            return;
+        }
+        var w = new ToolWindow(this, Make(key, note), null, true);
+        windows.Add(w);
+        if (L.IsVisible) AttachNew(w);
+        else if (chat != IntPtr.Zero && Win32.GetWindowRect(chat, out var cr))
+        {
+            new WindowInteropHelper(w).EnsureHandle();
+            double dpi = Dpi(chat), k = dpi * Theme.Scale;
+            int gap = (int)Math.Round(8 * dpi), width = (int)(300 * k), height = Math.Min(cr.Bottom - cr.Top, (int)(520 * k));
+            var wa = WorkArea((cr.Left + cr.Right) / 2, (cr.Top + cr.Bottom) / 2);
+            int x = cr.Right + gap + width <= wa.Right ? cr.Right + gap : Math.Max(wa.Left, cr.Left - gap - width);
+            Float(w, new ToolPlace { X = x, Y = cr.Top, W = width, H = height });
+        }
+        else Float(w, null);
+        if (!w.IsVisible) w.Show();
         Save();
     }
 
@@ -103,7 +133,7 @@ internal sealed class ToolDock
         if (L.IsVisible) L.Activate();
     }
 
-    /// The 📌 button on a tool's head: attached → floating beside where it was; floating → onto the launcher's right.
+    /// The attach button on a tool's head: attached → floating beside where it was; floating → beside the launcher.
     public void ToggleAttach(ToolWindow w)
     {
         if (w.Edge is not null)
@@ -113,14 +143,10 @@ internal sealed class ToolDock
             int step = (int)(24 * Dpi(w.Handle));
             Float(w, new ToolPlace { X = r.Left + step, Y = r.Top + step, W = r.Right - r.Left, H = r.Bottom - r.Top });
         }
-        else if (L.IsVisible)
-        {
-            Attach(w, "right");
-        }
         else
         {
-            host.Window.Summon(); // the launcher comes, then the tool joins it
-            Attach(w, "right");
+            if (!L.IsVisible) host.Window.Summon(); // the launcher comes, then the tool joins it
+            AttachNew(w);
         }
         Save();
     }
@@ -137,6 +163,61 @@ internal sealed class ToolDock
         w.SetEdge(null);
         w.Topmost = w.OnTop;
         Layout();
+    }
+
+    /// A tool joining the launcher: in the column on its right while every attached tool is laid out there; once they
+    /// were put by hand, in the first open spot beside the launcher (right, then left, top down) at 300 × 360, or
+    /// floating when there is none.
+    private void AttachNew(ToolWindow w)
+    {
+        if (!windows.Exists(o => o != w && o.Edge == "free"))
+        {
+            Attach(w, "right");
+            return;
+        }
+        new WindowInteropHelper(w).EnsureHandle();
+        Win32.GetWindowRect(L.Handle, out var lr);
+        double dpi = Dpi(L.Handle), k = dpi * Theme.Scale;
+        int gap = (int)Math.Round(8 * dpi), width = (int)(300 * k), height = Math.Min((int)(360 * k), lr.Bottom - lr.Top);
+        var wa = WorkArea((lr.Left + lr.Right) / 2, (lr.Top + lr.Bottom) / 2);
+        var taken = windows.Where(o => o != w && o.Edge is not null && o.IsVisible).Select(o => o.Rect).Append(lr).ToList();
+        bool Open(Win32.RECT c) => c.Left >= wa.Left && c.Right <= wa.Right && c.Top >= wa.Top && c.Bottom <= wa.Bottom
+            && !taken.Exists(o => c.Left < o.Right && c.Right > o.Left && c.Top < o.Bottom && c.Bottom > o.Top);
+        foreach (int x in new[] { lr.Right + gap, lr.Left - gap - width })
+            foreach (int y in taken.Select(o => o.Bottom + gap).Prepend(lr.Top).OrderBy(v => v))
+            {
+                var c = new Win32.RECT { Left = x, Top = y, Right = x + width, Bottom = y + height };
+                if (!Open(c)) continue;
+                w.SetEdge("free");
+                w.Topmost = true;
+                Pin(w, c);
+                Layout();
+                return;
+            }
+        Float(w, null);
+    }
+
+    /// Attached where it is: its place and size kept as an offset from the launcher (dip at 100 %).
+    private void Pin(ToolWindow w, Win32.RECT r)
+    {
+        Win32.GetWindowRect(L.Handle, out var lr);
+        double k = Dpi(L.Handle) * Theme.Scale;
+        w.SetEdge("free");
+        w.Spot = new ToolPlace
+        {
+            X = (int)Math.Round((r.Left - lr.Left) / k),
+            Y = (int)Math.Round((r.Top - lr.Top) / k),
+            W = (int)Math.Round((r.Right - r.Left) / k),
+            H = (int)Math.Round((r.Bottom - r.Top) / k),
+        };
+    }
+
+    /// A drag or a resize begins: the tools laid out along an edge keep the place they have now as their own, so
+    /// nothing else moves while one is put somewhere.
+    public void Freeze()
+    {
+        if (!L.IsVisible) return;
+        foreach (var w in windows.Where(w => w.Edge is "right" or "left" or "bottom" && w.IsVisible).ToList()) Pin(w, w.Rect);
     }
 
     /// A floating tool at its kept place (on a screen that is still there), else near the middle of the screen.
@@ -163,8 +244,9 @@ internal sealed class ToolDock
         if (!w.IsVisible) w.Show();
     }
 
-    /// The attached tools around the launcher: a column on the right or left (the launcher's height shared), a row
-    /// underneath (its width shared); a side with no room on the screen goes to the other one.
+    /// The attached tools around the launcher: the ones put by hand at their offsets; the ones laid out along an edge
+    /// in a column on the right or left (the launcher's height shared) or a row underneath (its width shared), a side
+    /// with no room on the screen going to the other one.
     public void Layout()
     {
         if (!L.IsVisible || L.Handle == IntPtr.Zero)
@@ -176,6 +258,13 @@ internal sealed class ToolDock
         double dpi = Dpi(L.Handle), k = dpi * Theme.Scale;
         int gap = (int)Math.Round(8 * dpi);
         var wa = WorkArea((r.Left + r.Right) / 2, (r.Top + r.Bottom) / 2);
+        foreach (var w in windows.Where(w => w.Edge == "free" && w.Spot is not null))
+        {
+            new WindowInteropHelper(w).EnsureHandle();
+            var s = w.Spot!;
+            w.PlaceAt(r.Left + (int)Math.Round(s.X * k), r.Top + (int)Math.Round(s.Y * k), (int)Math.Round(s.W * k), (int)Math.Round(s.H * k));
+            if (!w.IsVisible) w.Show();
+        }
         foreach (string edge in new[] { "right", "left", "bottom" })
         {
             var on = windows.Where(w => w.Edge == edge).ToList();
@@ -205,32 +294,43 @@ internal sealed class ToolDock
         }
     }
 
-    /// A tool was dropped after a drag: near an edge of the open launcher it snaps on (in its place along that edge),
-    /// anywhere else it floats there.
+    /// A tool was dropped after a drag or a resize: touching the open launcher, or a tool attached to it, it stays
+    /// attached right there; anywhere else it floats there.
     public void Moved(ToolWindow w)
     {
-        string? edge = null;
+        bool attach = false;
         if (L.IsVisible)
         {
             var t = w.Rect;
-            Win32.GetWindowRect(L.Handle, out var r);
-            int near = (int)(48 * Dpi(L.Handle));
-            bool rows = t.Top < r.Bottom && t.Bottom > r.Top, cols = t.Left < r.Right && t.Right > r.Left;
-            if (rows && Math.Abs(t.Left - r.Right) < near) edge = "right";
-            else if (rows && Math.Abs(t.Right - r.Left) < near) edge = "left";
-            else if (cols && Math.Abs(t.Top - r.Bottom) < near) edge = "bottom";
-            if (edge is not null)
-            {
-                // its place along the edge: before the first one whose middle is past its own
-                windows.Remove(w);
-                int mid = edge == "bottom" ? (t.Left + t.Right) / 2 : (t.Top + t.Bottom) / 2;
-                int at = windows.FindIndex(o => o.Edge == edge && Middle(o, edge) > mid);
-                windows.Insert(at < 0 ? windows.Count : at, w);
-            }
+            Win32.GetWindowRect(L.Handle, out var lr);
+            int near = (int)(24 * Dpi(L.Handle));
+            bool Near(Win32.RECT o) => t.Left < o.Right + near && t.Right > o.Left - near && t.Top < o.Bottom + near && t.Bottom > o.Top - near;
+            attach = Near(lr) || windows.Exists(o => o != w && o.Edge is not null && o.IsVisible && Near(o.Rect));
         }
-        if (edge is not null) Attach(w, edge);
-        else if (w.Edge is not null) Detach(w);
+        if (attach)
+        {
+            Freeze();
+            w.Topmost = true;
+            Pin(w, w.Rect);
+            Layout();
+        }
+        else if (w.Edge is not null)
+        {
+            Detach(w);
+        }
         Save();
+    }
+
+    /// The launcher and the other tools showing, the edges a tool pulls to.
+    private List<Win32.RECT> Others(ToolWindow w)
+    {
+        var others = windows.Where(o => o != w && o.IsVisible).Select(o => o.Rect).ToList();
+        if (L.IsVisible)
+        {
+            Win32.GetWindowRect(L.Handle, out var lr);
+            others.Add(lr);
+        }
+        return others;
     }
 
     /// While a tool is dragged: its edges pull (within 14 px) to the edges near it — beside another tool or the
@@ -239,12 +339,7 @@ internal sealed class ToolDock
     {
         double dpi = Dpi(w.Handle);
         int pull = (int)(14 * dpi), gap = (int)Math.Round(8 * dpi), near = pull * 3;
-        var others = windows.Where(o => o != w && o.IsVisible).Select(o => o.Rect).ToList();
-        if (L.IsVisible)
-        {
-            Win32.GetWindowRect(L.Handle, out var lr);
-            others.Add(lr);
-        }
+        var others = Others(w);
         int bestX = pull + 1, bestY = pull + 1;
         void X(int edge, int to)
         {
@@ -292,10 +387,52 @@ internal sealed class ToolDock
         return moved;
     }
 
-    private static int Middle(ToolWindow w, string edge)
+    /// While a tool is sized: the edges being pulled (WM_SIZING's WMSZ_* side) snap the same way, within 14 px, never
+    /// below the window's smallest size. True: `r` changed.
+    public bool MagnetEdges(ToolWindow w, int side, ref Win32.RECT r)
     {
-        var r = w.Rect;
-        return edge == "bottom" ? (r.Left + r.Right) / 2 : (r.Top + r.Bottom) / 2;
+        double dpi = Dpi(w.Handle);
+        int pull = (int)(14 * dpi), gap = (int)Math.Round(8 * dpi), near = pull * 3;
+        int minW = (int)(w.MinWidth * dpi), minH = (int)(w.MinHeight * dpi);
+        var rr = r;
+        var others = Others(w);
+        var wa = WorkArea((r.Left + r.Right) / 2, (r.Top + r.Bottom) / 2);
+        var rows = others.Where(o => rr.Top < o.Bottom + near && rr.Bottom > o.Top - near).ToList();
+        var cols = others.Where(o => rr.Left < o.Right + near && rr.Right > o.Left - near).ToList();
+        int Pull(int edge, IEnumerable<int> targets)
+        {
+            int best = 0, d = pull + 1;
+            foreach (int to in targets)
+                if (Math.Abs(to - edge) < d)
+                {
+                    d = Math.Abs(to - edge);
+                    best = to - edge;
+                }
+            return d <= pull ? best : 0;
+        }
+        bool changed = false;
+        if (side is 1 or 4 or 7 && Pull(rr.Left, rows.SelectMany(o => new[] { o.Right + gap, o.Left }).Append(wa.Left)) is var dl and not 0 && rr.Right - (rr.Left + dl) >= minW)
+        {
+            rr.Left += dl;
+            changed = true;
+        }
+        if (side is 2 or 5 or 8 && Pull(rr.Right, rows.SelectMany(o => new[] { o.Left - gap, o.Right }).Append(wa.Right)) is var dr and not 0 && rr.Right + dr - rr.Left >= minW)
+        {
+            rr.Right += dr;
+            changed = true;
+        }
+        if (side is 3 or 4 or 5 && Pull(rr.Top, cols.SelectMany(o => new[] { o.Bottom + gap, o.Top }).Append(wa.Top)) is var dt and not 0 && rr.Bottom - (rr.Top + dt) >= minH)
+        {
+            rr.Top += dt;
+            changed = true;
+        }
+        if (side is 6 or 7 or 8 && Pull(rr.Bottom, cols.SelectMany(o => new[] { o.Top - gap, o.Bottom }).Append(wa.Bottom)) is var db and not 0 && rr.Bottom + db - rr.Top >= minH)
+        {
+            rr.Bottom += db;
+            changed = true;
+        }
+        r = rr;
+        return changed;
     }
 
     // ── the group with the launcher ─────────────────────────────────────────────────────────────
@@ -352,7 +489,8 @@ internal sealed class ToolDock
         Settings.Current.Tools = windows.Select(w =>
         {
             var r = w.Handle != IntPtr.Zero ? w.Rect : default;
-            return new ToolPlace { Key = w.Tool.Key, Edge = w.Edge, X = r.Left, Y = r.Top, W = r.Right - r.Left, H = r.Bottom - r.Top, OnTop = w.OnTop, Note = w.Tool.State };
+            var s = w.Edge == "free" ? w.Spot : null; // attached where it was put: its offset from the launcher
+            return new ToolPlace { Key = w.Tool.Key, Edge = w.Edge, X = s?.X ?? r.Left, Y = s?.Y ?? r.Top, W = s?.W ?? r.Right - r.Left, H = s?.H ?? r.Bottom - r.Top, OnTop = w.OnTop, Note = w.Tool.State };
         }).ToList();
         Settings.Save();
     }
@@ -362,7 +500,9 @@ internal sealed class ToolDock
     {
         foreach (var p in Settings.Current.Tools.Where(p => Kinds.Any(k => k.key == p.Key)).GroupBy(p => p.Key).Select(g => g.First()).ToList())
         {
-            var w = new ToolWindow(this, Make(p.Key, p.Note), p.Edge, p.OnTop);
+            bool spot = p.Edge == "free" && p.W > 0 && p.H > 0;
+            var w = new ToolWindow(this, Make(p.Key, p.Note), p.Edge == "free" && !spot ? "right" : p.Edge, p.OnTop);
+            if (spot) w.Spot = new ToolPlace { X = p.X, Y = p.Y, W = p.W, H = p.H };
             windows.Add(w);
             if (p.Edge is null) Float(w, p);
         }

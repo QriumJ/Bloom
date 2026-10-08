@@ -17,6 +17,7 @@ internal sealed class TimerTool : ITool
     private readonly TextBox input;
     private readonly TextBlock note;
     private readonly DispatcherTimer tick = new() { Interval = TimeSpan.FromSeconds(1) };
+    private bool unread; // the note says the last line had no time it could read
 
     public string Key => "timers";
     public string Name => Tr("타이머 · 알림", "Timers");
@@ -30,7 +31,7 @@ internal sealed class TimerTool : ITool
         view.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         view.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         view.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        var (field, box) = ToolUi.Field(Tr("10분 · 오후 3시 회의 · 25분 집중", "10 min · 3pm meeting · 25 min focus"));
+        var (field, box) = ToolUi.Field(Tr("10분 · 오후 3시 회의 · 25분 집중", "10 min · 3pm meeting · 25 min focus"), enter: () => Start());
         input = box;
         field.Margin = new Thickness(12, 10, 12, 2);
         view.Children.Add(field);
@@ -46,6 +47,13 @@ internal sealed class TimerTool : ITool
             if (e.Key != System.Windows.Input.Key.Enter) return;
             e.Handled = true;
             Start();
+        };
+        // typing again after a line it couldn't read: back to the plain hint
+        input.TextChanged += (_, _) =>
+        {
+            if (!unread) return;
+            unread = false;
+            note.Text = Tr("Enter로 시작", "Enter starts it");
         };
         tick.Tick += (_, _) => Tick();
         view.IsVisibleChanged += (_, _) =>
@@ -65,9 +73,11 @@ internal sealed class TimerTool : ITool
         if (text.Length == 0) return;
         // "10" alone reads as minutes here: this field only ever starts timers
         if (int.TryParse(text, out int minutes) && minutes is > 0 and <= 1440) text += Tr("분", " min");
-        if (TimeParse.Read(text) is not { } ask)
+        // this field only starts timers and reminders, so a time needs no 타이머 / 알림 word ("10분 회의", "오후 3시 회의")
+        if (TimeParse.Read(text, timerField: true) is not { } ask)
         {
             note.Text = Tr("시간을 못 읽었어요 — 예: 10분, 1시간 30분, 오후 3시 회의", "Couldn't read a time — e.g. 10 min, 1h 30m, 3pm meeting");
+            unread = true;
             return;
         }
         var due = ask.Length is { } l ? DateTime.Now + l : ask.Due;

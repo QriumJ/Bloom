@@ -30,6 +30,9 @@ internal sealed partial class Host
     public ToolDock Tools = null!;
     private SettingsWindow? settingsWindow;
     private ChatWindow? chatWindow;
+
+    /// The AI 채팅 window while it shows (else zero): what a tool the AI brings up floats beside.
+    public IntPtr ChatWindowHandle => chatWindow is { IsVisible: true } c ? new System.Windows.Interop.WindowInteropHelper(c).Handle : IntPtr.Zero;
     private WinKeyHook? winKey;
     private Tray? tray;
     private Dispatcher ui = null!;
@@ -289,7 +292,7 @@ internal sealed partial class Host
                 {
                     GC.Collect(2, GCCollectionMode.Aggressive, true, true);
                     Win32.SetProcessWorkingSetSize(System.Diagnostics.Process.GetCurrentProcess().Handle, new IntPtr(-1), new IntPtr(-1));
-                });
+                }, TaskScheduler.Default);
             };
             spaceWindow.Show();
         }
@@ -315,7 +318,7 @@ internal sealed partial class Host
                     procTick.Stop();
                     return;
                 }
-                Task.Run(Processes.Sample).ContinueWith(_ => Later());
+                Task.Run(Processes.Sample).ContinueWith(_ => Later(), TaskScheduler.Default);
             };
         }
         procTick.Start();
@@ -332,7 +335,7 @@ internal sealed partial class Host
         {
             Processes.Sample();
             Later();
-        });
+        }, TaskScheduler.Default);
     }
 
     /// Windows starts the shell again by itself; if it has not after 2.5 s, it is started here.

@@ -69,7 +69,7 @@ internal sealed class Tray : IDisposable
     {
         IntPtr m = Win32.CreatePopupMenu();
         Win32.AppendMenu(m, Win32.MF_STRING, (UIntPtr)1, Tr("열기\tWin", "Open\tWin"));
-        Win32.AppendMenu(m, Win32.MF_STRING, (UIntPtr)2, "설정");
+        Win32.AppendMenu(m, Win32.MF_STRING, (UIntPtr)2, Tr("설정", "Settings"));
         Win32.AppendMenu(m, Win32.MF_SEPARATOR, UIntPtr.Zero, null);
         Win32.AppendMenu(m, Win32.MF_STRING, (UIntPtr)3, Tr("Bloom 종료", "Quit Bloom"));
         Win32.GetCursorPos(out var p);

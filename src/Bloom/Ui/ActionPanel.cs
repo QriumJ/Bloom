@@ -27,6 +27,9 @@ internal sealed class ActionPanel : SmoothBorder
 
     public bool IsOpen => Visibility == Visibility.Visible;
 
+    /// The open panel's title (what opened it).
+    public string Heading => heading.Text;
+
     public ActionPanel(Launcher owner)
     {
         this.owner = owner;

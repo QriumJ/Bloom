@@ -5,24 +5,29 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Shell;
+using Bloom.Core;
 using Bloom.Native;
 using Bloom.Search;
 
 namespace Bloom.Ui;
 
-/// A Bloom tool in a small window of its own. Dragged by its head to an edge of the launcher it snaps on (ToolDock):
-/// then it moves, shows and hides with the launcher. Dragged away, it floats on its own and stays when something
-/// else takes the focus, on top of other windows or not (its 항상 위 button).
+/// A Bloom tool in a small window of its own, moved by its head and sized by its edges anywhere; near the launcher,
+/// another tool or the screen's edge it pulls in (ToolDock). Dropped beside the launcher (or a tool attached to it)
+/// it stays attached there: it moves, shows and hides with the launcher. Dropped away, it floats on its own and stays
+/// when something else takes the focus, on top of other windows or not (its 항상 위 button).
 internal sealed class ToolWindow : Window
 {
     public readonly ITool Tool;
     private readonly ToolDock dock;
     private readonly SmoothBorder frame;
     private readonly SmoothBorder attachButton, topButton;
-    private readonly WindowChrome chrome;
 
-    /// right | left | bottom while attached to the launcher; null floating.
+    /// right | left | bottom while laid out along that edge of the launcher, free while attached where it was put
+    /// (Spot); null floating.
     public string? Edge { get; private set; }
+
+    /// Attached where it was put: its place and size in dip at 100 % from the launcher's top-left.
+    public ToolPlace? Spot { get; set; }
 
     /// Floating: above other windows.
     public bool OnTop { get; private set; } = true;
@@ -52,8 +57,7 @@ internal sealed class ToolWindow : Window
         Top = -32000;
         UseLayoutRounding = true;
         TextOptions.SetTextFormattingMode(this, TextFormattingMode.Ideal);
-        chrome = new WindowChrome { CaptionHeight = 40, GlassFrameThickness = new Thickness(-1), ResizeBorderThickness = new Thickness(6), CornerRadius = new CornerRadius(0), UseAeroCaptionButtons = false };
-        WindowChrome.SetWindowChrome(this, chrome);
+        WindowChrome.SetWindowChrome(this, new WindowChrome { CaptionHeight = 40, GlassFrameThickness = new Thickness(-1), ResizeBorderThickness = new Thickness(6), CornerRadius = new CornerRadius(0), UseAeroCaptionButtons = false });
 
         var grid = new Grid();
         grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(40) });
@@ -76,7 +80,7 @@ internal sealed class ToolWindow : Window
             WindowChrome.SetIsHitTestVisibleInChrome(own, true);
             buttons.Children.Add(own);
         }
-        attachButton = HeadButton('', Tr("런처에서 떼기", "Detach from the launcher"), () => dock.ToggleAttach(this));
+        attachButton = HeadButton(Undock, Tr("런처에서 떼기", "Detach from the launcher"), () => dock.ToggleAttach(this));
         topButton = HeadButton('', Tr("항상 위", "Always on top"), () => SetOnTop(!OnTop));
         buttons.Children.Add(attachButton);
         buttons.Children.Add(topButton);
@@ -117,30 +121,35 @@ internal sealed class ToolWindow : Window
         };
     }
 
+    // the attach button: attached, 떼기 (a window coming out); floating, 붙이기 (docked on the right) — not a pin, so it
+    // never looks like 항상 위
+    private const char Undock = '\uE8A7', DockOn = '\uE90D';
+
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (msg == Win32.WM_MOVING)
+        // a drag or a resize starts: the attached tools laid out along an edge stay where they are from now on
+        if (msg == Win32.WM_ENTERSIZEMOVE && Edge is not null) dock.Freeze();
+        if (msg is Win32.WM_MOVING or Win32.WM_SIZING)
         {
-            // while dragged: the edges pull to the edges nearby (other tools, the launcher, the screen)
+            // while dragged or sized: the edges that move pull to the edges nearby (other tools, the launcher, the screen)
             var r = System.Runtime.InteropServices.Marshal.PtrToStructure<Win32.RECT>(lParam);
-            if (dock.Magnet(this, ref r))
+            if (msg == Win32.WM_MOVING ? dock.Magnet(this, ref r) : dock.MagnetEdges(this, (int)wParam.ToInt64(), ref r))
             {
                 System.Runtime.InteropServices.Marshal.StructureToPtr(r, lParam, false);
                 handled = true;
                 return new IntPtr(1);
             }
         }
-        if (msg == Win32.WM_EXITSIZEMOVE) Dispatcher.BeginInvoke(() => dock.Moved(this)); // dropped: snap on or float
+        if (msg == Win32.WM_EXITSIZEMOVE) Dispatcher.BeginInvoke(() => dock.Moved(this)); // dropped: attached there or floating
         return IntPtr.Zero;
     }
 
-    /// Attached (an edge) or floating (null): the buttons and the frame follow.
+    /// Attached (an edge, or free) or floating (null): the buttons and the frame follow.
     public void SetEdge(string? edge)
     {
         Edge = edge;
-        // attached, its size comes from the launcher; floating, its edges resize it
-        chrome.ResizeBorderThickness = new Thickness(edge is null ? 6 : 0);
-        ((TextBlock)attachButton.Child).Text = edge is null ? "" : "";
+        if (edge != "free") Spot = null;
+        ((TextBlock)attachButton.Child).Text = (edge is null ? DockOn : Undock).ToString();
         attachButton.ToolTip = edge is null ? Tr("런처에 붙이기", "Attach to the launcher") : Tr("런처에서 떼기", "Detach from the launcher");
         topButton.Visibility = edge is null ? Visibility.Visible : Visibility.Collapsed;
         Paint();

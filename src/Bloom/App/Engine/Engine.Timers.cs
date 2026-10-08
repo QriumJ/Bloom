@@ -62,8 +62,8 @@ internal sealed partial class Engine
         string t = text.Trim();
         if (t.Length > 0)
         {
-            // in this view a bare length or time is enough: "10분", "15:30 회의"
-            var ask = TimeParse.Read(t) ?? TimeParse.Read(t + " 타이머");
+            // in this view a bare length or time is enough: "10분", "15:30 회의" (as in the 타이머 · 알림 tool)
+            var ask = TimeParse.Read(t, timerField: true);
             var s = new Section(Tr("새로 시작", "Start new"));
             if (ask is not null) s.Items.Add(StartTimerItem(ask, true));
             else s.Items.Add(new ResultItem { Id = "timer:help", Kind = ItemKind.Info, Title = Tr("시간을 알아듣지 못했어요", "Couldn't read a time"), Subtitle = Tr("예: 10분 · 1시간 30분 · 15:30 회의 · 내일 9시 업로드", "e.g. 10 min · 1h 30m · 15:30 meeting · tomorrow 9am upload"), Icon = IconSpec.Of(G.Info), PrimaryLabel = "" });

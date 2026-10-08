@@ -199,7 +199,7 @@ internal sealed partial class Engine
                 item.Run = () =>
                 {
                     host.SaveAll();
-                    _ = System.Threading.Tasks.Task.Delay(400).ContinueWith(_ => SystemControl.Sleep());
+                    _ = System.Threading.Tasks.Task.Delay(400).ContinueWith(_ => SystemControl.Sleep(), System.Threading.Tasks.TaskScheduler.Default);
                 };
                 break;
             case "sys:display":

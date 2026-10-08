@@ -8,7 +8,9 @@ namespace Bloom.Core;
 internal sealed record TimerAsk(string Kind, TimeSpan? Length, DateTime Due, string Label);
 
 /// Reads "10분 타이머", "타이머 1시간 30분", "timer 5m", "30분 뒤 빨래 확인", "15:30 회의 알림", "오후 3시 반에 전화 알려줘",
-/// "내일 9시 업로드 리마인더". A bare time with no timer / reminder word ("10분") is not taken (it may be a search).
+/// "내일 9시 업로드 리마인더". A bare time with no timer / reminder word ("10분") is not taken (it may be a search),
+/// except in a field that only starts timers (`timerField`): there "10분 회의" is a 10-minute timer called 회의 and
+/// "오후 3시 회의" a reminder.
 internal static partial class TimeParse
 {
     [GeneratedRegex(@"(에|at)\s")]
@@ -37,7 +39,7 @@ internal static partial class TimeParse
     [GeneratedRegex(@"(?<![가-힣])(뒤에|뒤|후에|후|있다가|in|after)(?![가-힣a-z])", RegexOptions.IgnoreCase)]
     private static partial Regex AfterWord();
 
-    public static TimerAsk? Read(string text)
+    public static TimerAsk? Read(string text, bool timerField = false)
     {
         string t = text.Trim();
         if (t.Length < 2) return null;
@@ -86,7 +88,7 @@ internal static partial class TimeParse
             }
         }
         if (length == TimeSpan.Zero && at is null) return null;
-        if (!timerWord && !reminderWord && !(afterWord && length > TimeSpan.Zero) && !(at is not null && AtWord().IsMatch(t))) return null;
+        if (!timerField && !timerWord && !reminderWord && !(afterWord && length > TimeSpan.Zero) && !(at is not null && AtWord().IsMatch(t))) return null;
 
         // the words left are the label
         rest = TimerWord().Replace(rest, " ");

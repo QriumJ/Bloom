@@ -195,6 +195,7 @@ internal sealed class NotesTool : ITool
         var target = note is null ? search : editor;
         target.Dispatcher.BeginInvoke(() =>
         {
+            if (Window.GetWindow(target) is { IsActive: false }) return; // shown for the AI beside a chat: the keyboard stays in the chat
             target.Focus();
             Keyboard.Focus(target);
         }, System.Windows.Threading.DispatcherPriority.Input);

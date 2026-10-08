@@ -163,7 +163,7 @@ internal sealed partial class Launcher : Window, IChatHost
         var corner = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
         toolsButton = BarButton(G.NewWindow, Tr("도구 붙이기 (Ctrl+J)", "Attach tools (Ctrl+J)"), OpenTools);
         corner.Children.Add(toolsButton);
-        pinButton = BarButton('', Tr("화면에 고정 (Ctrl+P) — 다른 곳을 눌러도 남아요", "Keep on screen (Ctrl+P) — stays when you click elsewhere"), () => SetPinned(!Pinned));
+        pinButton = BarButton('', Tr("화면에 고정 (Ctrl+P) — 다른 곳을 눌러도 남아요 · 아래 바를 끌면 옮겨져요", "Keep on screen (Ctrl+P) — stays when you click elsewhere · drag the bottom bar to move it"), () => SetPinned(!Pinned));
         corner.Children.Add(pinButton);
         Grid.SetColumn(corner, 4);
         bar.Children.Add(corner);
@@ -229,6 +229,29 @@ internal sealed partial class Launcher : Window, IChatHost
         foot.Children.Add(footRight);
         Grid.SetRow(foot, 4);
         layout.Children.Add(foot);
+        // the footer is the handle: dragged, the launcher moves (its attached tools with it) and stays there; a double
+        // click puts it back in the middle
+        foot.Background = Brushes.Transparent;
+        foot.MouseLeftButtonDown += (_, e) =>
+        {
+            if (OnButton(e.OriginalSource as DependencyObject, foot)) return;
+            e.Handled = true;
+            if (e.ClickCount == 2)
+            {
+                movedTo = null;
+                Place();
+                host.Tools.Layout();
+                return;
+            }
+            DragMove();
+            Win32.GetWindowRect(Handle, out var r);
+            movedTo = new Win32.POINT { X = r.Left, Y = r.Top };
+            host.Tools.Layout();
+        };
+        LocationChanged += (_, _) =>
+        {
+            if (IsVisible) host.Tools.Layout(); // the attached tools follow while it is dragged
+        };
 
         WireAttachments();
         box.TextChanged += (_, _) => OnText();
@@ -472,10 +495,16 @@ internal sealed partial class Launcher : Window, IChatHost
         pinButton.Background = on ? Theme.P.AccentSoft : Brushes.Transparent;
     }
 
-    /// The 도구 menu (Ctrl+J): each tool opens beside the launcher, or closes.
+    /// The 도구 menu (Ctrl+J, the bar button): each tool opens beside the launcher, or closes; asked again while it is
+    /// open, the menu closes.
     public void OpenTools()
     {
         if (!Features.On("notes")) return; // switched off in 설정 > 기능
+        if (actions.IsOpen && actions.Heading == Tr("도구", "Tools"))
+        {
+            actions.Close();
+            return;
+        }
         var items = ToolDock.Kinds.Select(k => new ActionItem
         {
             Title = host.Tools.IsOpen(k.key) ? Tr($"{k.name} 닫기", $"Close {k.name}") : Tr($"{k.name} 붙이기", $"Attach {k.name}"),
@@ -511,9 +540,28 @@ internal sealed partial class Launcher : Window, IChatHost
         Keyboard.Focus(box);
     }
 
-    /// Centred on the monitor under the mouse, a little above the middle.
+    /// Where the launcher was dragged to (physical pixels), kept until Bloom restarts or the footer is double-clicked.
+    private Win32.POINT? movedTo;
+
+    /// A click on something in `root` that takes clicks itself (a hand cursor on it or above it).
+    private static bool OnButton(DependencyObject? d, DependencyObject root)
+    {
+        for (; d is not null && d != root; d = d is Visual or System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
+            if (d is FrameworkElement { Cursor: { } c } && c == Cursors.Hand) return true;
+        return false;
+    }
+
+    /// Where it was dragged to, while that is on a screen; else centred on the monitor under the mouse, a little above
+    /// the middle.
     public void Place(int? displayIndex = null)
     {
+        if (displayIndex is null && movedTo is { } at && Handle != IntPtr.Zero
+            && Win32.MonitorFromPoint(new Win32.POINT { X = at.X + 40, Y = at.Y + 20 }, 0 /* MONITOR_DEFAULTTONULL */) != IntPtr.Zero)
+        {
+            uint dpiHere = Win32.GetDpiForWindow(Handle) is > 0 and var dw ? dw : 96;
+            Win32.SetWindowPos(Handle, Win32.HWND_TOPMOST, at.X, at.Y, (int)Math.Round(Width * dpiHere / 96.0), (int)Math.Round(Height * dpiHere / 96.0), Win32.SWP_NOACTIVATE);
+            return;
+        }
         IntPtr mon;
         if (displayIndex is { } d)
         {

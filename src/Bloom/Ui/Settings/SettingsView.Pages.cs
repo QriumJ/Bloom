@@ -242,6 +242,7 @@ internal sealed partial class SettingsView
         }
         Group("look", Tr("찾아보기", "Look up"), Tr("앱 · 파일 · 최근 파일 · 열린 창 · 타이머 · 내 명령 — 묻지 않고 바로 찾아요", "Apps, files, recent files, open windows, timers, your commands — looked up without asking"), G.Search);
         Group("open", Tr("열기 · 실행", "Open · run"), Tr("앱 · 파일 · 사이트 열기, ‘10분 타이머’ ‘볼륨 30’ 같은 Bloom 명령, 내 명령 — 하기 전에 물어봐요", "Open apps, files and sites; Bloom lines like ‘10 min timer’ or ‘volume 30’; your commands — asks first"), G.App);
+        Group("bloom", Tr("메모 · 타이머 · 일정", "Notes · timers · calendar"), Tr("Bloom 메모에 적기 · 타이머 · 캘린더 일정 — 하기 전에 물어봐요 · 적은 메모는 채팅 옆에 떠요", "Write in Bloom's notes, start its timers, put events on its calendar — asks first · the note shows beside the chat"), G.Document);
         Group("files", Tr("파일 정리", "Files"), Tr("이름 바꾸기 · 옮기기 · 복사 · 휴지통 — 하기 전에 물어봐요 · 휴지통에서 되살릴 수 있어요", "Rename, move, copy, recycle — asks first · the Recycle Bin brings things back"), G.Folder);
         Group("clip", Tr("클립보드", "Clipboard"), Tr("클립보드 읽기 · 넣기 — 하기 전에 물어봐요", "Read and write the clipboard — asks first"), G.Paste);
         Header(Tr("이 PC의 다른 MCP 서버", "Other MCP servers on this PC"));

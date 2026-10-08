@@ -156,6 +156,21 @@ internal static class TimeParseTests
         Check.True(TimeParse.Read("엑셀 10분 튜토리얼") is null, "a search with a length in it");
     }
 
+    public static void TimerFieldNeedsNoWord()
+    {
+        // the 타이머 · 알림 tool only ever starts timers and reminders: a time alone is enough there
+        var bare = Check.NotNull(TimeParse.Read("10분", timerField: true), "10분");
+        Check.Eq(bare.Kind, "timer", "10분: a timer");
+        var named = Check.NotNull(TimeParse.Read("10분 회의", timerField: true), "10분 회의");
+        Check.Eq(named.Kind, "timer", "10분 회의: a timer");
+        Check.Eq(named.Label, "회의", "its label");
+        Check.Eq(named.Length, TimeSpan.FromMinutes(10), "its length");
+        var at = Check.NotNull(TimeParse.Read("오후 3시 회의", timerField: true), "오후 3시 회의");
+        Check.Eq(at.Kind, "reminder", "a clock time: a reminder");
+        Check.Eq(at.Due.Hour, 15, "at 15:00");
+        Check.True(TimeParse.Read("회의", timerField: true) is null, "no time: nothing");
+    }
+
     public static void TextInBothLanguages()
     {
         Check.Eq(Core.Timers.DurationText(TimeSpan.FromMinutes(90)), "1시간 30분", "Korean duration");

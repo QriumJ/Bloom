@@ -1,11 +1,11 @@
 namespace Bloom.Core;
 
-/// An open tool window (메모 · 타이머 · 계산기 · 클립보드) as it was left: attached to an edge of the launcher, in its
-/// place along that edge, or floating where it was put (physical pixels), on top or not.
+/// An open tool window (메모 · 타이머 · 계산기 · 클립보드) as it was left: attached to the launcher (laid out along an
+/// edge, or where it was put beside it), or floating where it was put (physical pixels), on top or not.
 internal sealed class ToolPlace
 {
     public string Key { get; set; } = "";
-    public string? Edge { get; set; } // right | left | bottom; null = floating on its own
+    public string? Edge { get; set; } // right | left | bottom: laid out along that edge; free: X, Y, W, H in dip at 100 % from the launcher's top-left; null = floating
     public int X { get; set; }
     public int Y { get; set; }
     public int W { get; set; }

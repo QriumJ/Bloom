@@ -56,7 +56,7 @@ internal static class McpTests
             Check.True(!tools.Hint.Contains("recycle") && tools.Hint.Contains("find_files") && tools.Hint.Contains("run_line"), "Codex's one-line hint names only the actions on");
             var call = tools.Call("mcp__bloom__pc", System.Text.Json.JsonDocument.Parse("""{"do":"recycle","q":"C:\\x"}""").RootElement).Result;
             Check.True(call.error && call.text.Contains("switched this off"), "a call to a group switched off is refused");
-            off.AddRange(new[] { "look", "open" });
+            off.AddRange(new[] { "look", "open", "bloom" });
             Check.True(!Bloom.App.Mcp.BloomTools.OfferedTo("claude") && !Bloom.App.Mcp.BloomTools.OfferedTo("chatgpt"), "every group off: no tool for either chat");
         }
         finally

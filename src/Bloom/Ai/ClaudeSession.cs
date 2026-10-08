@@ -111,7 +111,8 @@ internal sealed class ClaudeSession : IChatSession
             + (outDir is null ? "" : "Files: an <attachments> block lists files the user attached, as paths relative to your working folder; read them with your file tool. "
             + $"When the user asks for a file (a document, code, a table, a list, an SVG picture...), write it into {outDir}/ with a fitting name and say its name in one line; "
             + "it appears in the chat as a file the user can open or save. Never write anywhere else. ")
-            + (pc ? "The bloom tools act on the user's PC (find first, then act); each action waits for the user's OK. If declined, don't retry. Do only what was asked; say in one line what you did. " : "")
+            + (pc ? "The bloom tools act on the user's PC (find first, then act); each action waits for the user's OK. If declined, don't retry. Do only what was asked; say in one line what you did. "
+                + (App.Mcp.BloomTools.GroupOn("bloom") ? "Notes, timers, reminders and events are Bloom's own: use the bloom tool's note, timer and event for them, never a file or another app. " : "") : "")
             + $"Local time: {now:yyyy-MM-dd HH:mm} ({now:dddd}), {TimeZoneInfo.Local.Id}.";
     }
 

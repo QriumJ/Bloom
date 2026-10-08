@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -13,8 +14,8 @@ using Bloom.Search;
 
 namespace Bloom.App.Mcp;
 
-/// One thing the AI can do through the "pc" tool, in one of the groups 설정 > PC 작업 switches (look | open | files |
-/// clip). `Asks`: it changes something, so the chat asks the user first (the look-ups run straight away). `Says` is how
+/// One thing the AI can do through the "pc" tool, in one of the groups 설정 > PC 작업 switches (look | open | bloom |
+/// files | clip). `Asks`: it changes something, so the chat asks the user first (the look-ups run straight away). `Says` is how
 /// the approval card and the chat's record name a call.
 internal sealed record PcAction(string Do, string Group, Func<string, string, Task<string>> Run, Func<string, string, string> Says)
 {
@@ -22,8 +23,9 @@ internal sealed record PcAction(string Do, string Group, Func<string, string, Ta
 }
 
 /// What Bloom does for the AI, as ONE MCP tool ("pc") whose `do` picks the action: look up apps, files, recent files,
-/// windows, timers and the user's saved commands; open things; run a launcher line ("볼륨 30", "10분 타이머",
-/// "yt lofi"); rename, move, copy or recycle a file; the clipboard. One short definition goes with every request of a
+/// windows, timers, notes and the user's saved commands; open things; run a launcher line ("볼륨 30", "yt lofi");
+/// write in Bloom's own notes, start its timers and put events on its calendar (so "메모에 적어 줘" or "내일 3시 회의
+/// 잡아 줘" land in Bloom, not in a file or another app); rename, move, copy or recycle a file; the clipboard. One short definition goes with every request of a
 /// chat instead of one per action (measured on a session's first request: +400 tokens, against +1,520 for 15 tools and
 /// +720 for six). Every call reaches Bloom as a question (--permission-prompt-tool stdio); Bloom lets the look-ups
 /// through itself (Quiet) and asks about the rest.
@@ -44,14 +46,17 @@ internal sealed class BloomTools : IToolPolicy
     }
 
     /// The groups 설정 > PC 작업 switches, in the order the description tells them.
-    public static readonly string[] Groups = { "look", "open", "files", "clip" };
+    public static readonly string[] Groups = { "look", "open", "bloom", "files", "clip" };
 
     /// What the description says of each group (with every group on, the wording the tool picking was tested with).
     private static readonly Dictionary<string, string> About = new()
     {
-        ["look"] = "Look up: find_apps, find_files (Everything syntax: ext:pdf dm:today), find_recent, find_windows, find_timers, find_commands (q = words).",
-        ["open"] = "run_line (q = what the user would type in Bloom's search box + Enter: sets timers 10분 타이머, reminders 오후 3시 회의 알림, volume 볼륨 30, dark mode, site shortcuts yt lofi), "
+        ["look"] = "Look up: find_apps, find_files (Everything syntax: ext:pdf dm:today), find_recent, find_windows, find_timers (Bloom's timers, reminders and calendar events), find_notes (Bloom's notes), find_commands (q = words).",
+        ["open"] = "run_line (q = what the user would type in Bloom's search box + Enter: volume 볼륨 30, dark mode, site shortcuts yt lofi), "
             + "open (q = app, path or URL), run_command (q = saved command, to = its input)",
+        ["bloom"] = "Bloom's own notes, timers and calendar — use these whenever the user means 메모/a note, 타이머/a timer or 일정/알림/an event or reminder, never a file or another app: "
+            + "note (q = the text; to = an existing note's title to add it to, else a new note; it shows beside the chat), timer (q = length like 10m or 1h 30m, to = label), "
+            + "event (q = what, to = when as yyyy-MM-dd HH:mm; it goes on Bloom's calendar and Bloom reminds the user then)",
         ["files"] = "rename, move, copy, recycle (q = full path, to = new name or folder)",
         ["clip"] = "clip_read, clip_write (q = text)",
     };
@@ -90,7 +95,8 @@ internal sealed class BloomTools : IToolPolicy
     /// this the model first spends a request looking for one (measured: +55 tokens without, one round trip more).
     public string Hint => $"Bloom's PC tool is {Prefix}{Name} (server bloom, tool {Name}) taking {{do, q, to}}; do = "
         + string.Join(", ", actions.Where(x => GroupOn(x.Group)).Select(x => x.Do))
-        + (GroupOn("open") ? ". run_line q = what the user would type in Bloom's search box (10분 타이머, 오후 3시 회의 알림, 볼륨 30)" : "")
+        + (GroupOn("open") ? ". run_line q = what the user would type in Bloom's search box (볼륨 30, yt lofi)" : "")
+        + (GroupOn("bloom") ? ". note/timer/event are Bloom's own notes, timers and calendar: use them for 메모, 타이머, 일정, never files or other apps (event to = yyyy-MM-dd HH:mm)" : "")
         + (GroupOn("files") ? ". rename/move/copy/recycle q = full path, to = new name or folder" : "") + ". Call it directly; no need to look it up. ";
 
     private static bool IsPc(string tool) => tool == Prefix + Name || tool == Name;
@@ -173,9 +179,15 @@ internal sealed class BloomTools : IToolPolicy
         new("find_windows", "look", (q, _) => Look("windows", q), (_, _) => Tr("열린 창 보기", "Open windows")),
         new("find_timers", "look", (q, _) => Look("timers", q), (_, _) => Tr("타이머 보기", "Timers")),
         new("find_commands", "look", (q, _) => Look("commands", q), (_, _) => Tr("내 명령 보기", "My commands")),
+        new("find_notes", "look", (q, _) => OnUi(() => FindNotes(q)), (q, _) => Tr($"메모 찾기: {q}", $"Find notes: {q}").TrimEnd(' ', ':')),
         new("open", "open", (q, _) => OnUi(() => Open(q)), (q, _) => Tr($"열기: {Clip(q)}", $"Open: {Clip(q)}")),
         new("run_line", "open", (q, _) => OnUi(() => RunLine(q)), (q, _) => Tr($"Bloom에서 실행: {Clip(q)}", $"Run in Bloom: {Clip(q)}")),
         new("run_command", "open", (q, to) => OnUi(() => RunCommand(q, to)), (q, to) => Tr($"내 명령 실행: {q} {Clip(to, 40)}", $"Run my command: {q} {Clip(to, 40)}").Trim()),
+        new("note", "bloom", (q, to) => OnUi(() => WriteNote(q, to)), (q, to) => to.Trim().Length > 0
+            ? Tr($"메모에 적기: ‘{Clip(to.Trim(), 30)}’에 {Clip(Line(q), 40)}", $"Add to the note ‘{Clip(to.Trim(), 30)}’: {Clip(Line(q), 40)}")
+            : Tr($"새 메모: {Clip(Line(q), 50)}", $"New note: {Clip(Line(q), 50)}")),
+        new("timer", "bloom", (q, to) => OnUi(() => StartTimer(q, to)), (q, to) => Tr($"타이머: {q} {Clip(to, 30)}", $"Timer: {q} {Clip(to, 30)}").Trim()),
+        new("event", "bloom", (q, to) => OnUi(() => AddEvent(q, to)), (q, to) => Tr($"일정: {to} {Clip(q, 40)}", $"Event: {to} {Clip(q, 40)}")),
         new("rename", "files", (q, to) => OnUi(() => FileAct("rename", q, to)), (q, to) => Tr($"이름 바꾸기: {FileName(q)} → {to}", $"Rename: {FileName(q)} → {to}")),
         new("move", "files", (q, to) => OnUi(() => FileAct("move", q, to)), (q, to) => Tr($"옮기기: {FileName(q)} → {to}", $"Move: {FileName(q)} → {to}")),
         new("copy", "files", (q, to) => OnUi(() => FileAct("copy", q, to)), (q, to) => Tr($"복사: {FileName(q)} → {to}", $"Copy: {FileName(q)} → {to}")),
@@ -216,6 +228,72 @@ internal sealed class BloomTools : IToolPolicy
                     return found.Count == 0 ? "No app matches." : string.Join("\n", found);
                 });
         }
+    }
+
+    private static string Line(string s) => s.Replace('\n', ' ').Trim();
+
+    /// Bloom's notes matching the words (all of them when none), newest first: title, time, text (at most 20).
+    private static string FindNotes(string query)
+    {
+        var q = new Query(query);
+        var found = Notes.Ordered.Where(n => q.IsEmpty || Matcher.Score(q, n.Match) > 0).Take(20).ToList();
+        return found.Count == 0 ? "No notes." : string.Join("\n\n", found.Select(n => $"# {n.Title} ({n.UpdatedAt:yyyy-MM-dd HH:mm})\n{Clip(n.Text, 600)}"));
+    }
+
+    /// Writes into Bloom's notes: added to the end of the note titled `title` (or the one that clearly matches it),
+    /// else a new note (titled `title` when one was given); 메모 then shows it beside the chat.
+    private string WriteNote(string text, string title)
+    {
+        if (!Features.On("notes")) throw new ArgumentException("Bloom's notes are switched off in its settings (설정 > 기능).");
+        text = text.Trim();
+        title = title.Trim();
+        if (text.Length == 0) throw new ArgumentException("q must be the text to write.");
+        var note = title.Length == 0 ? null
+            : Notes.Ordered.FirstOrDefault(n => string.Equals(n.Title, title, StringComparison.OrdinalIgnoreCase))
+              ?? Notes.Ordered.Select(n => (n, score: Matcher.Score(new Query(title), new MatchTarget(n.Title)))).Where(x => x.score >= 800).OrderByDescending(x => x.score).Select(x => x.n).FirstOrDefault();
+        string done;
+        if (note is null)
+        {
+            note = Notes.New(title.Length > 0 ? title + "\n" + text : text);
+            done = $"Wrote a new note in Bloom (\u201c{note.Title}\u201d)";
+        }
+        else
+        {
+            Notes.SetText(note, note.Text.TrimEnd() + "\n" + text);
+            done = $"Added it to Bloom's note \u201c{note.Title}\u201d";
+        }
+        host.Tools.ShowBeside("notes", note.Id, host.ChatWindowHandle);
+        return done + "; it shows beside the chat.";
+    }
+
+    /// Starts one of Bloom's timers: q = its length ("10m", "25분", "1h 30m"), to = what it is for.
+    private static string StartTimer(string length, string label)
+    {
+        if (!Features.On("timers")) throw new ArgumentException("Bloom's timers are switched off in its settings (설정 > 기능).");
+        if (TimeParse.Read(length.Trim(), timerField: true) is not { Length: { } span } ask) throw new ArgumentException("q must be a length like 10m, 25분 or 1h 30m.");
+        var due = DateTime.Now + span;
+        var t = Timers.Add("timer", label.Trim().Length > 0 ? label.Trim() : ask.Label, due);
+        return $"Started a {Timers.DurationText(span)} timer in Bloom (\u201c{t.Label}\u201d); it rings at {due:HH:mm}.";
+    }
+
+    private static readonly string[] EventTimes = { "yyyy-MM-dd HH:mm", "yyyy-MM-dd H:mm", "yyyy-MM-ddTHH:mm", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-ddTHH:mm:ss" };
+
+    /// Puts an event on Bloom's calendar (a reminder at that moment): q = what, to = "yyyy-MM-dd HH:mm" (a date alone is
+    /// 9:00; words Bloom reads, like "오후 3시", work too).
+    private static string AddEvent(string what, string when)
+    {
+        if (!Features.On("timers")) throw new ArgumentException("Bloom's timers and calendar are switched off in its settings (설정 > 기능).");
+        what = what.Trim();
+        when = when.Trim();
+        if (what.Length == 0) throw new ArgumentException("q must say what the event is.");
+        DateTime due;
+        if (DateTime.TryParseExact(when, EventTimes, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var at)) due = at;
+        else if (DateTime.TryParseExact(when, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var day)) due = day.AddHours(9);
+        else if (TimeParse.Read(when, timerField: true) is { } ask) due = ask.Length is { } l ? DateTime.Now + l : ask.Due;
+        else throw new ArgumentException("to must be a time as yyyy-MM-dd HH:mm.");
+        if (due <= DateTime.Now) throw new ArgumentException("That time has already passed; ask the user when they mean.");
+        Timers.Add("reminder", what, due);
+        return $"Put \u201c{what}\u201d on Bloom's calendar for {due.ToString("yyyy-MM-dd (ddd) HH:mm", CultureInfo.InvariantCulture)}; Bloom reminds the user then.";
     }
 
     private string RunCommand(string name, string input)

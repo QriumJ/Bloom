@@ -8,6 +8,8 @@ using System.Windows;
 using Bloom.App;
 using Bloom.Core;
 
+[assembly: System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
+
 namespace Bloom;
 
 internal static class Program
