@@ -40,7 +40,8 @@ internal static class McpProxy
         var bloomOut = new StreamWriter(link, utf8) { AutoFlush = true, NewLine = "\n" };
         bloomOut.WriteLine(JsonSerializer.Serialize(new { bloom_proxy = conversation }));
 
-        var psi = new ProcessStartInfo(command) { UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true, StandardInputEncoding = utf8, StandardOutputEncoding = utf8 };
+        // Bloom.exe has no console of its own, so a console server started from here would open a window per server
+        var psi = new ProcessStartInfo(command) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardOutput = true, StandardInputEncoding = utf8, StandardOutputEncoding = utf8 };
         foreach (string a in def.Args) psi.ArgumentList.Add(a);
         foreach (var (k, v) in def.Env) psi.Environment[k] = v;
         Process server;
