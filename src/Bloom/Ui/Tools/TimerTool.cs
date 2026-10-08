@@ -130,33 +130,14 @@ internal sealed class TimerTool : ITool
     {
         int column = units.ColumnDefinitions.Count;
         units.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        var box = new TextBox
-        {
-            Text = "00",
-            Tag = max,
-            MaxLength = 2,
-            FontFamily = Theme.Sans,
-            FontSize = 17,
-            FontWeight = Theme.Semi,
-            Foreground = Theme.P.Text,
-            CaretBrush = Theme.P.Accent,
-            SelectionBrush = Theme.P.Selection,
-            SelectionOpacity = 1,
-            Background = Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            MinWidth = 21,
-            TextAlignment = TextAlignment.Right,
-            VerticalAlignment = VerticalAlignment.Center,
-            Template = Launcher.BareTextBox(),
-        };
-        InputMethod.SetIsInputMethodEnabled(box, false);
+        var box = DigitBox.Make("00", 2, 17, Theme.Semi, 21);
+        box.Tag = max;
         void Step(int by)
         {
             box.Text = ((Value(box) + by + max + 1) % (max + 1)).ToString("00");
             box.SelectAll();
             Heard();
         }
-        box.PreviewTextInput += (_, e) => e.Handled = !e.Text.All(char.IsAsciiDigit);
         box.PreviewKeyDown += (_, e) =>
         {
             switch (e.Key)

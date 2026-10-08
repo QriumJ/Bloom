@@ -2,6 +2,16 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.8.2
+
+- Clipboard history: set how long entries stay in minutes (Settings › Clipboard › Keep for). 0 keeps them. Your old setting carries over, so a day becomes 1440 minutes.
+- Short times now hold even when you copy nothing new. Entries go when they come due.
+
+### 한국어
+
+- 클립보드 기록 보관 기간을 분 단위로 직접 적을 수 있어요(설정 › 클립보드 › 보관 기간). 0이면 계속 남겨요. 예전 설정은 그대로 옮겨져서, 하루였다면 1440분이 돼요.
+- 짧게 잡아 두면 새로 복사하지 않아도 시간이 되는 대로 지워져요.
+
 ## 0.8.1
 
 The first public release.

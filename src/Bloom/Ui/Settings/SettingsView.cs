@@ -217,37 +217,20 @@ internal sealed partial class SettingsView : ScrollViewer
     /// keeps it, Esc puts the old one back; the row's Enter (or a click) puts the caret in it.
     private (FrameworkElement view, Action focus) NumberField(int value, int max, string unit, Action<int> set)
     {
-        var box = new TextBox
-        {
-            Text = value.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            MinWidth = 44,
-            MaxLength = 6,
-            FontFamily = Theme.Sans,
-            FontSize = 14,
-            FontWeight = Theme.Medium,
-            Foreground = Theme.P.Text,
-            CaretBrush = Theme.P.Accent,
-            SelectionBrush = Theme.P.Selection,
-            SelectionOpacity = 1,
-            Background = System.Windows.Media.Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            TextAlignment = TextAlignment.Right,
-            VerticalAlignment = VerticalAlignment.Center,
-            Template = Launcher.BareTextBox(),
-        };
-        InputMethod.SetIsInputMethodEnabled(box, false);
-        box.PreviewTextInput += (_, e) => e.Handled = !e.Text.All(char.IsAsciiDigit);
-        DataObject.AddPastingHandler(box, (_, e) =>
-        {
-            if (e.DataObject.GetData(DataFormats.UnicodeText) is not string t || !t.Trim().All(char.IsAsciiDigit)) e.CancelCommand();
-        });
+        string shown = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var box = DigitBox.Make(shown, 6, 14, Theme.Medium, 44);
         bool done = false;
         void Keep()
         {
             if (done) return;
             done = true;
             int v = int.TryParse(box.Text, out int n) ? Math.Clamp(n, 0, max) : value;
-            if (v != value) set(v);
+            if (v == value)
+            {
+                box.Text = shown; // "007" or nothing reads as it was
+                return;
+            }
+            set(v);
             Dispatcher.BeginInvoke(() => Build(lastFilter)); // the line under it follows
         }
         box.Tag = (Func<Key, bool>)(key =>
@@ -260,7 +243,7 @@ internal sealed partial class SettingsView : ScrollViewer
                     return true;
                 case Key.Escape:
                     done = true;
-                    box.Text = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    box.Text = shown;
                     FocusFilter?.Invoke();
                     return true;
                 default:
