@@ -29,6 +29,7 @@ internal static class Program
         // Claude Code or Codex starting Bloom's MCP server: a relay to the running Bloom, before anything else
         if (args.Length is 2 or 3 && args[0] == "--mcp") return App.Mcp.McpBridge.Run(args[1], args.Length == 3 ? args[2] : null);
         if (args.Length == 5 && args[0] == "--mcp-proxy") return App.Mcp.McpProxy.Run(args[1], args[2], args[3], args[4]);
+        Updates.Hooks(); // the setup's install / update / uninstall steps start Bloom with their own arguments and end here
         var opt = new Options();
         bool quit = false;
         string? export = null;
@@ -120,6 +121,8 @@ internal static class Program
         }
         if ((opt.CaptureDir is not null || opt.GlassFile is not null || opt.ChatFile is not null || opt.MeasureSeconds is not null || opt.Demo) && opt.Data is null) return 2; // QA and recording never touch the real data
         Paths.Init(opt.Data);
+        // the setup's Start-menu shortcut starts Bloom without arguments: that opens the launcher (the Run entry has --autostart)
+        if (args.Length == 0 && Updates.Installed) opt.Show = true;
         if (resetFrom >= 0) Reset(resetFrom);
         else if (restartFrom >= 0) WaitFor(restartFrom);
 
@@ -148,6 +151,8 @@ internal static class Program
             }
         }
 
+        if (Updates.ApplyAtStart(args)) return 0; // an update downloaded earlier goes in; Bloom starts again in it
+
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         var host = new Host(opt);
         app.DispatcherUnhandledException += (_, e) =>
@@ -162,7 +167,7 @@ internal static class Program
             host.Start();
             Listen(id + ".Show", () => host.Summon());
             Listen(id + ".Settings", host.OpenSettings);
-            Listen(id + ".Quit", () => host.Quit());
+            Listen(id + ".Quit", host.QuitForGood);
         };
         app.Run();
         return 0;

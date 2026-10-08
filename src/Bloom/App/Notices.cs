@@ -190,6 +190,10 @@ internal static class Notices
     /// or copied): shown whether or not 작업 알림 is on, as it answers the user's own action.
     public static void Result(bool ok, string head, string title, string? detail) => Show(new Notice(ok ? "done" : "limit", head, title, detail));
 
+    /// A new Bloom is downloaded (Updates): it goes in at the next start; a card without a sound.
+    public static void UpdateReady(string version) => Show(new Notice("done", Tr("Bloom · 업데이트", "Bloom · Update"), Tr($"새 버전({version})을 받아 뒀어요", $"Version {version} is downloaded"),
+        Tr("다음에 켤 때 적용돼요 · 설정 > 정보에서 지금 다시 시작할 수 있어요", "It goes in at the next start · Settings > About restarts into it now")), sound: false);
+
     /// A Bloom chat's AI waits for a yes or no while no Bloom window is in front.
     public static void Ask(string what) => Show(new Notice("waiting", Tr("Bloom AI · 승인 대기", "Bloom AI · Needs your OK"), what, Tr("Bloom 채팅에서 허락하거나 거절해 주세요", "Allow or decline it in Bloom's chat")));
 

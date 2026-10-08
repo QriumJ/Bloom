@@ -108,7 +108,7 @@ internal sealed partial class Host
                 });
                 break;
             case "cmd:quit":
-                Quit();
+                QuitForGood();
                 break;
         }
     }

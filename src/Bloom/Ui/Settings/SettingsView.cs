@@ -46,7 +46,12 @@ internal sealed partial class SettingsView : ScrollViewer
         HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
         Focusable = false;
         Template = Launcher.ThinScroll();
+        // 업데이트 확인's line follows the look while the window is open
+        Loaded += (_, _) => Updates.Changed += OnUpdates;
+        Unloaded += (_, _) => Updates.Changed -= OnUpdates;
     }
+
+    private void OnUpdates() => Dispatcher.BeginInvoke(() => Build(lastFilter));
 
     private static Row Line(string title, string? sub, FrameworkElement? control, char glyph)
     {

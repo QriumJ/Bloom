@@ -15,6 +15,7 @@ internal sealed class Settings
     public bool WinKey { get; set; } = true;
     public bool AltSpace { get; set; } = true;
     public bool Autostart { get; set; } = true;
+    public bool UpdateCheck { get; set; } = true; // one look at GitHub Releases a little after each start (App\Updates.cs)
     public bool FilesInRoot { get; set; } = true;
     public bool WindowsInRoot { get; set; } = true; // open windows whose title matches show under the results
     public bool LearnQueries { get; set; } = true; // what was picked for what was typed ranks first next time (Core\QueryMemory.cs)

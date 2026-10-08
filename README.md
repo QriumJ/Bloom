@@ -6,18 +6,27 @@
 A light native launcher for Windows: open apps, do maths, find files, chat with AI and translate the screen, all from one search line.</p>
 
 <p align="center">
-  <a href="#install--build">Install</a> · <a href="#features">Features</a> · <a href="#shortcuts">Shortcuts</a> · <a href="#about-the-ai-features">AI &amp; privacy</a> · <a href="README.ko.md">한국어</a>
+  <a href="#download">Download</a> · <a href="#features">Features</a> · <a href="#shortcuts">Shortcuts</a> · <a href="#about-the-ai-features">AI &amp; privacy</a> · <a href="README.ko.md">한국어</a>
 </p>
 
 <p align="center">
   <img src="docs/media/en/loop.webp" alt="Bloom demo: finding Chrome by its initials, maths, a unit, a reminder, emoji, clipboard history, the color picker, asking AI, a PC task approved on its card, notes attached beside the launcher, a Claude Code task-done card, screen translation and Space Cleaner">
 </p>
 
-<p align="center"><sub>WPF · .NET 10 · no WebView · no NuGet packages · about 80 MB with everything off · English / 한국어 · MIT</sub></p>
+<p align="center"><sub>WPF · .NET 10 · no WebView · about 80 MB with everything off · English / 한국어 · MIT</sub></p>
 
 - **One line does it.** Apps, files, maths, reminders, emoji and web searches all live in one search line, found from a few letters.
 - **The AI you already use.** No API key: ask the Claude Code or Codex you are signed in to on this PC, and hand it tidying files, notes, timers and your calendar.
 - **Light, and yours to trim.** A native app with no WebView. Switch off what you don't use and it leaves the menus, the shortcuts and the memory.
+
+## Download
+
+**[Get Bloom for Windows](https://github.com/hyeon1035298/Bloom/releases/latest)** — `BloomLauncher-win-Setup.exe` on the latest release.
+
+- Windows 10/11, 64-bit. If the PC doesn't have the .NET 10 Desktop Runtime, the setup installs it (Windows asks for permission for that part).
+- Bloom installs for your account only, into `%LOCALAPPDATA%\BloomLauncher`, with a Start-menu shortcut. Remove it in Windows Settings › Apps; your settings stay in `%APPDATA%\Bloom`.
+- Bloom isn't code-signed yet, so SmartScreen may say "Windows protected your PC". Choose **More info › Run anyway**.
+- **Updates**: once, a little after it starts, Bloom looks at this repository's latest release. A new version downloads in the background and goes in the next time Bloom starts. Settings › About has **Check for updates** (and **Restart to update** once one is ready) and a switch for the look at start.
 
 ## Features
 
@@ -198,6 +207,7 @@ Usage and terms are those of your own accounts. Without the CLIs only the AI fea
   - Codex loads MCP tool descriptions only when needed, so a one-line note of the tool's name and actions goes with each request (about +250 tokens, worked out the same way).
 
 AI usage comes from `claude -p /usage` (no model call) and the limit lookup of `codex app-server`. Work notifications only read Claude Code's and Codex's own logs on this PC (`~/.claude/sessions`, `~/.codex/sessions`) and send them nowhere.
+The update look asks GitHub's API (`api.github.com`) for this repository's latest release and downloads it from GitHub when there is one; nothing from your settings, files or chats goes with it. Switch it off in Settings › About.
 Only what you send yourself reaches the AI — your question, attached files, the screen area picked with Bloom Lens, the text to translate — and what the PC tool returns.
 Claude can read and write files only inside that chat's folder (`%LOCALAPPDATA%\Bloom\ai\files\<chat>`). ChatGPT (Codex) doesn't handle files itself, so text attachments go in the message and files it makes are taken out of the answer and saved.
 
@@ -205,7 +215,7 @@ Bloom is an unofficial personal project, not affiliated with Anthropic, OpenAI, 
 
 ## Install · build
 
-Needs: Windows 10/11, [.NET 10 SDK](https://dotnet.microsoft.com/download) (the .NET 10 Desktop Runtime is enough to run it)
+To use Bloom, take the setup file from [Download](#download). To build it yourself you need Windows 10/11 and the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
 ```powershell
 dotnet build src\Bloom\Bloom.csproj -c Release
@@ -216,6 +226,9 @@ powershell -File tools\install.ps1   # → %LOCALAPPDATA%\Programs\Bloom, Start-
 
 Data lives in `%APPDATA%\Bloom` and `%LOCALAPPDATA%\Bloom`.
 For development, `Bloom.exe --data <folder>` uses another data folder (`--lang ko|en` fixes the language).
+A copy made with `tools\install.ps1` doesn't update itself; only the setup's does.
+
+**A release**: raise `<Version>` in `src/Bloom/Bloom.csproj` and push, then run **Actions › Release › Run workflow** on GitHub. It runs the tests, builds, packs the setup file and the update packages with [Velopack](https://velopack.io) and publishes them as `v<Version>`; installed copies find it at their next start.
 
 ## Code structure
 
@@ -226,7 +239,7 @@ Under `src/Bloom`, one folder is one feature. Big classes are split into `partia
 
 | Folder | What's in it |
 | --- | --- |
-| `App/` | `Host` (wires the whole app: start · shortcuts · commands · Lens · timers/colors · running my commands · file actions), work notifications (`Notices`), the MCP server (`Mcp/` — relay · server · the `pc` tool), run options, tray, the Win key hook |
+| `App/` | `Host` (wires the whole app: start · shortcuts · commands · Lens · timers/colors · running my commands · file actions), work notifications (`Notices`), updates from GitHub Releases (`Updates`, Velopack), the MCP server (`Mcp/` — relay · server · the `pc` tool), run options, tray, the Win key hook |
 | `App/Engine/` | Making what the search line shows — root search, home blocks, item conversion, per view (files · clipboard · calendar · timers · colors …) |
 | `App/Qa/` | Off-screen capture QA (`--capture <folder> --qa-set v15 --data <folder> --lang en`) |
 | `Core/` | What is saved (settings · favourites · usage · learning per typed text · timers · notes · colors) and JSON storage, Korean search, matching, the interface language (`Lang` — `Tr("한국어", "English")`) |

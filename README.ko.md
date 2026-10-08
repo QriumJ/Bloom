@@ -6,18 +6,27 @@
 Windows용 가벼운 네이티브 런처예요. 앱 실행부터 계산, 파일, AI 채팅, 화면 번역까지 검색창 하나에서 해요.</p>
 
 <p align="center">
-  <a href="#설치--빌드">설치</a> · <a href="#기능">기능</a> · <a href="#단축키">단축키</a> · <a href="#ai-기능에-대해">AI와 개인정보</a> · <a href="README.md">English</a>
+  <a href="#다운로드">다운로드</a> · <a href="#기능">기능</a> · <a href="#단축키">단축키</a> · <a href="#ai-기능에-대해">AI와 개인정보</a> · <a href="README.md">English</a>
 </p>
 
 <p align="center">
   <img src="docs/media/loop.webp" alt="Bloom 데모: 한/영 오타로 Chrome 찾기, 계산, 평 단위 변환, 알림, 이모지, 클립보드 기록, 컬러 피커, AI에게 묻기, 승인 카드로 PC 작업 맡기기, 런처 옆에 메모 붙이기, Claude Code 작업 완료 알림, 화면 번역, Space Cleaner">
 </p>
 
-<p align="center"><sub>WPF · .NET 10 · WebView 없음 · NuGet 패키지 없음 · 모두 끈 상태 약 80 MB · 한국어 / English · MIT</sub></p>
+<p align="center"><sub>WPF · .NET 10 · WebView 없음 · 모두 끈 상태 약 80 MB · 한국어 / English · MIT</sub></p>
 
 - **한 줄로 다 해요.** 앱 · 파일 · 계산 · 알림 · 이모지 · 웹 검색이 검색창 하나에 있어요. 한/영을 안 바꿔도, 초성만 쳐도 찾아요.
 - **쓰던 AI를 그대로 써요.** API 키 없이, 이 PC에 로그인해 둔 Claude Code · Codex로 묻고 파일 정리 · 메모 · 타이머 · 일정까지 맡겨요.
 - **가볍고 내 마음대로예요.** WebView 없는 네이티브 앱이에요. 안 쓰는 기능은 꺼 두면 메뉴 · 단축키 · 메모리에서 빠져요.
+
+## 다운로드
+
+**[Windows용 Bloom 받기](https://github.com/hyeon1035298/Bloom/releases/latest)** — 최신 릴리즈의 `BloomLauncher-win-Setup.exe`를 받아 실행하세요.
+
+- Windows 10/11 64비트. PC에 .NET 10 Desktop Runtime이 없으면 설치 파일이 같이 설치해요(그 부분만 Windows가 권한을 물어봐요).
+- 내 계정에만 `%LOCALAPPDATA%\BloomLauncher`로 설치되고 시작 메뉴에 바로 가기가 생겨요. 지울 때는 Windows 설정 › 앱에서 지우면 되고, 설정은 `%APPDATA%\Bloom`에 남아요.
+- 아직 코드 서명이 없어서 SmartScreen이 "Windows의 PC 보호"를 띄울 수 있어요. **추가 정보 › 실행**을 누르세요.
+- **업데이트**: 켜고 조금 뒤 한 번만 이 저장소의 최신 릴리즈를 확인해요. 새 버전은 뒤에서 받아 두었다가 다음에 켤 때 적용돼요. 설정 › 정보에 **업데이트 확인**(준비되면 **다시 시작해서 업데이트**)과 켤 때 확인 스위치가 있어요.
 
 ## 기능
 
@@ -196,6 +205,7 @@ Bloom은 **로그인 정보를 받거나 저장하지 않습니다.** AI 기능�
   - 대화마다 실행할 때 `-c mcp_servers.bloom…`으로만 붙여요.
   - Codex는 MCP 도구 설명을 필요할 때만 불러오므로, 도구 이름과 동작을 한 줄로 알려 줘요(요청마다 약 +250 토큰, 같은 방식으로 어림).
 
+업데이트 확인은 GitHub API(`api.github.com`)에 이 저장소의 최신 릴리즈만 묻고, 새 버전이 있으면 GitHub에서 받아요. 설정 · 파일 · 대화 내용은 보내지 않아요. 설정 › 정보에서 끌 수 있어요.
 AI 사용량은 `claude -p /usage`(모델 호출 없음)와 `codex app-server`의 한도 조회로 받아요. 작업 알림은 이 PC에 있는 Claude Code · Codex의 기록(`~/.claude/sessions`, `~/.codex/sessions`)을 읽기만 하고 어디로도 보내지 않아요.
 AI에게는 사용자가 직접 보낸 내용(질문, 첨부한 파일, Bloom Lens로 고른 화면, 번역할 글자)과 PC 작업 도구가 돌려준 결과만 전달됩니다.
 Claude는 그 대화의 폴더(`%LOCALAPPDATA%\Bloom\ai\files\<대화>`) 안에서만 파일을 읽고 쓸 수 있어요. ChatGPT(Codex)는 파일을 직접 다루지 않아서, 텍스트 첨부는 메시지에 담아 보내고 만든 파일은 답변에서 꺼내 저장합니다.
@@ -204,7 +214,7 @@ Bloom은 Anthropic · OpenAI · voidtools · Raycast와 관련 없는 비공식 
 
 ## 설치 · 빌드
 
-필요한 것: Windows 10/11, [.NET 10 SDK](https://dotnet.microsoft.com/download) (실행만 할 때는 .NET 10 Desktop Runtime)
+쓰기만 할 때는 [다운로드](#다운로드)의 설치 파일을 받으세요. 직접 빌드하려면 Windows 10/11과 [.NET 10 SDK](https://dotnet.microsoft.com/download)가 필요해요.
 
 ```powershell
 dotnet build src\Bloom\Bloom.csproj -c Release
@@ -215,6 +225,9 @@ powershell -File tools\install.ps1   # → %LOCALAPPDATA%\Programs\Bloom, 시작
 
 데이터는 `%APPDATA%\Bloom`과 `%LOCALAPPDATA%\Bloom`에 저장돼요.
 개발용 실행은 `Bloom.exe --data <폴더>`로 다른 데이터 폴더를 쓸 수 있어요(`--lang ko|en`으로 언어 고정).
+`tools\install.ps1`로 만든 설치본은 스스로 업데이트하지 않아요. 설치 파일로 설치한 것만 업데이트돼요.
+
+**릴리즈 내기**: `src/Bloom/Bloom.csproj`의 `<Version>`을 올려 푸시한 뒤, GitHub에서 **Actions › Release › Run workflow**를 눌러요. 테스트 → 빌드 → [Velopack](https://velopack.io)으로 설치 파일과 업데이트 패키지 만들기 → `v<Version>` 릴리즈 올리기까지 해 주고, 설치된 Bloom은 다음에 켤 때 찾아요.
 
 ## 코드 구조
 
@@ -225,7 +238,7 @@ powershell -File tools\install.ps1   # → %LOCALAPPDATA%\Programs\Bloom, 시작
 
 | 폴더 | 내용 |
 | --- | --- |
-| `App/` | `Host`(앱 전체의 연결: 시작 · 단축키 · 명령 · Lens · 타이머/컬러 · 내 명령 실행 · 파일 동작), 작업 알림(`Notices`), MCP 서버(`Mcp/` — 중계 · 서버 · `pc` 도구), 실행 옵션, 트레이, Win 키 훅 |
+| `App/` | `Host`(앱 전체의 연결: 시작 · 단축키 · 명령 · Lens · 타이머/컬러 · 내 명령 실행 · 파일 동작), 작업 알림(`Notices`), GitHub 릴리즈 업데이트(`Updates`, Velopack), MCP 서버(`Mcp/` — 중계 · 서버 · `pc` 도구), 실행 옵션, 트레이, Win 키 훅 |
 | `App/Engine/` | 검색창에 보일 결과 만들기 — 루트 검색, 홈 블록, 항목 변환, 보기별(파일 · 클립보드 · 캘린더 · 타이머 · 색 …) |
 | `App/Qa/` | 화면 밖 캡처 QA (`--capture <폴더> --qa-set v15 --data <폴더> --lang en`) |
 | `Core/` | 저장되는 것(설정 · 즐겨찾기 · 사용 기록 · 입력어 학습 · 타이머 · 메모 · 색)과 JSON 저장, 한글 검색, 매칭, 화면 언어(`Lang` — `Tr("한국어", "English")`) |

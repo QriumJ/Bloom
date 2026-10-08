@@ -1,0 +1,54 @@
+# Release: builds Bloom on GitHub, packs the setup file and the update packages with Velopack, and publishes them as
+# the release v<Version> (the <Version> in src/Bloom/Bloom.csproj). Started by hand: Actions > Release > Run workflow.
+# Installed copies find it the next time they look (App/Updates.cs).
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Version
+        id: version
+        shell: pwsh
+        run: |
+          $v = [regex]::Match((Get-Content src/Bloom/Bloom.csproj -Raw), '<Version>([^<]+)</Version>').Groups[1].Value
+          if (-not $v) { throw 'no <Version> in Bloom.csproj' }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Tests
+        run: dotnet run --project tests/Bloom.Tests -c Release
+
+      - name: Publish
+        run: dotnet publish src/Bloom/Bloom.csproj -c Release -r win-x64 --self-contained false -p:DebugType=none -o publish
+
+      - name: Install vpk
+        run: dotnet tool install -g vpk --version 1.2.161
+
+      # the last release, so the new one also gets a small delta package (none yet before the first release)
+      - name: Download the last release
+        continue-on-error: true
+        run: vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }}
+
+      # framework-dependent: the setup installs the .NET 10 Desktop Runtime when the PC lacks it
+      - name: Pack
+        run: >-
+          vpk pack --packId BloomLauncher --packVersion ${{ steps.version.outputs.version }} --packDir publish
+          --mainExe Bloom.exe --packTitle Bloom --packAuthors Hyeon --icon src/Bloom/Assets/icon.ico
+          --framework net10.0-x64-desktop --shortcuts StartMenuRoot
+
+      - name: Upload
+        run: >-
+          vpk upload github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }}
+          --publish --releaseName "Bloom ${{ steps.version.outputs.version }}" --tag v${{ steps.version.outputs.version }}

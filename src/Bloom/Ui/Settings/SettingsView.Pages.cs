@@ -485,6 +485,41 @@ internal sealed partial class SettingsView
         Header(Tr("버전", "Version"));
         string ver = typeof(SettingsView).Assembly.GetName().Version?.ToString(3) ?? "";
         Add($"Bloom {ver}", Tr("가벼운 네이티브(WPF) 런처", "A light native (WPF) launcher"), null, G.Info, null, null, filter);
+        UpdateRows(s, filter);
         Add(Tr("Bloom 둘러보기", "Bloom tour"), Tr("처음 설정과 사용법 안내를 다시 보기", "See the first-run setup and the guide again"), null, G.Info, () => host.ShowOnboarding(), null, filter);
+    }
+
+    /// 업데이트 확인: what the last look found (a click looks now, or restarts into a downloaded version); a copy not
+    /// installed with the setup file opens the releases page instead. Under it, whether Bloom looks once at each start.
+    private void UpdateRows(Settings s, string filter)
+    {
+        var now = Updates.Now;
+        string sub = now switch
+        {
+            Updates.Stage.NotInstalled => Tr("설치 파일로 설치한 Bloom만 스스로 업데이트해요 · 눌러서 릴리즈 페이지 열기", "Only a Bloom installed with the setup file updates itself · click for the releases page"),
+            Updates.Stage.Checking => Tr("확인하는 중…", "Checking…"),
+            Updates.Stage.Latest => Tr("최신 버전이에요", "This is the latest version"),
+            Updates.Stage.Downloading => Tr($"새 버전({Updates.Found})을 받는 중…", $"Downloading {Updates.Found}…"),
+            Updates.Stage.Ready => Tr($"새 버전({Updates.Found})이 준비됐어요 · 눌러서 다시 시작하면 적용돼요", $"{Updates.Found} is ready · click to restart into it"),
+            Updates.Stage.Failed => Tr("확인하지 못했어요 · 인터넷 연결을 확인하고 다시 눌러 주세요", "Couldn't check · check the connection and click again"),
+            _ => Tr("GitHub 릴리즈에서 새 버전을 찾아요", "Looks for a new version on GitHub Releases"),
+        };
+        Add(now == Updates.Stage.Ready ? Tr("다시 시작해서 업데이트", "Restart to update") : Tr("업데이트 확인", "Check for updates"), sub, null, G.Refresh, () =>
+        {
+            switch (Updates.Now)
+            {
+                case Updates.Stage.NotInstalled:
+                    Launch.Open(Updates.Page);
+                    break;
+                case Updates.Stage.Ready:
+                    host.UpdateNow();
+                    break;
+                default:
+                    _ = Updates.Check(true);
+                    break;
+            }
+        }, null, filter);
+        var checkSw = Toggle(s.UpdateCheck, v => s.UpdateCheck = v, out var checkT);
+        Add(Tr("켤 때 업데이트 확인", "Check when Bloom starts"), Tr("켜고 조금 뒤 한 번만 확인해요 · 새 버전은 받아 두었다가 다음에 켤 때 적용", "Once, a little after it starts · a new version is downloaded and goes in at the next start"), checkSw, G.Sync, checkT, null, filter);
     }
 }

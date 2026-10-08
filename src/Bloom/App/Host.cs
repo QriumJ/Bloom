@@ -174,9 +174,10 @@ internal sealed partial class Host
                 tray = new Tray();
                 tray.Toggle += () => Window.Summon();
                 tray.OpenSettings += OpenSettings;
-                tray.Quit += () => Quit();
+                tray.Quit += QuitForGood;
             }
             if (Settings.Current.Autostart && !Paths.IsDev && !Autostart.IsCurrent()) Autostart.Set(true);
+            if (!Opt.Demo) Updates.Start(ui);
             Window.Prewarm();
             Tools.Restore(); // floating tool windows come back now, attached ones with the launcher
             if (Settings.Current.Onboarded != true) ShowOnboarding();
@@ -463,6 +464,22 @@ internal sealed partial class Host
     }
 
     /// `save: false` is the reset: nothing in memory goes back to the data that is about to be deleted.
+    /// Quitting on purpose (the tray, 끝내기, --quit): a downloaded update goes in once Bloom has ended.
+    public void QuitForGood()
+    {
+        Updates.ApplyOnQuit();
+        Quit();
+    }
+
+    /// 설정 > 정보 > 다시 시작해서 업데이트: everything saved, then the update goes in and the new Bloom starts.
+    public void UpdateNow()
+    {
+        Tools.Save();
+        SaveAll();
+        Chats.Shutdown();
+        Updates.ApplyAndRestart();
+    }
+
     public void Quit(bool save = true)
     {
         Log.Write("quit");
