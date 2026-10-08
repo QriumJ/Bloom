@@ -8,7 +8,7 @@ using Bloom.Search;
 namespace Bloom.Ui;
 
 /// 계산기: the answer while you type (units and currency too, as in the search line); Enter copies it and keeps the
-/// line below, where a click copies it again.
+/// line below, where a click copies it again; the head's 기록 지우기 clears those lines.
 internal sealed class CalcTool : ITool
 {
     private readonly Grid view = new();
@@ -16,12 +16,13 @@ internal sealed class CalcTool : ITool
     private readonly TextBox input;
     private readonly TextBlock answer, detail;
     private readonly List<(string expr, string value, string copy)> lines = new();
+    private readonly SmoothBorder clearButton;
 
     public string Key => "calc";
     public string Name => Tr("계산기", "Calculator");
     public char Glyph => G.Calculator;
     public FrameworkElement View => view;
-    public FrameworkElement? Head => null;
+    public FrameworkElement? Head => clearButton;
     public string? State => null;
 
     public CalcTool()
@@ -43,6 +44,12 @@ internal sealed class CalcTool : ITool
         var scroll = ToolUi.Scroll(history);
         Grid.SetRow(scroll, 2);
         view.Children.Add(scroll);
+        clearButton = ToolUi.Button(G.Delete, Tr("기록 지우기", "Clear the history"), () =>
+        {
+            lines.Clear();
+            detail.Text = Tr("기록을 지웠어요", "History cleared");
+            Fill();
+        });
         input.TextChanged += (_, _) => Show();
         input.PreviewKeyDown += (_, e) =>
         {
@@ -75,6 +82,7 @@ internal sealed class CalcTool : ITool
     private void Fill()
     {
         history.Children.Clear();
+        clearButton.Visibility = lines.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (lines.Count == 0)
         {
             history.Children.Add(ToolUi.Empty(Tr("Enter로 답을 복사하고 여기에 남겨요", "Enter copies the answer and keeps it here")));

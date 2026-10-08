@@ -331,11 +331,19 @@ internal sealed partial class ChatWindow : Window, IChatHost
         }
         if (host.Chats.IsLive(thread))
         {
-            var end = TextButton(G.Stop, Tr("세션 종료", "End session"), () => host.Chats.EndSession(thread));
-            end.ToolTip = Tr("이 대화의 CLI를 지금 닫아요 — 대화는 남고, 다음 메시지에서 이어서 시작해요", "Closes this chat's CLI now — the chat stays and picks up again with the next message");
+            var end = TextButton(G.Stop, Tr("세션 종료", "End session"), () => EndSession(thread));
+            end.ToolTip = Tr("이 대화의 CLI를 지금 닫고 새 대화로 넘어가요 — 지난 대화는 목록에 남아요", "Closes this chat's CLI now and starts a new chat — the last one stays in the list");
             end.Margin = new Thickness(8, 0, 0, 0);
             tools.Children.Add(end);
         }
+    }
+
+    /// 세션 종료 on a conversation: its CLI closes; when it is the open one, a new chat takes its place (it stays in the
+    /// list, and its next message resumes the session).
+    private void EndSession(ChatThread t)
+    {
+        host.Chats.EndSession(t);
+        if (ReferenceEquals(t, thread)) Open(host.Chats.New());
     }
 
     // ── keys ────────────────────────────────────────────────────────────────────────────────────

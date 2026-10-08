@@ -52,10 +52,11 @@ internal sealed partial class Launcher
                     var endChip = HeadChip(Tr("세션 종료", "End session"), () =>
                     {
                         host.Chats.EndSession(t);
-                        ShowToast(Tr("세션을 닫았어요 — 다음 메시지에서 이어서 시작해요", "Session closed — the next message picks it up again"));
+                        ShowChat(host.Chats.New());
+                        ShowToast(Tr("세션을 닫고 새 대화를 열었어요 — 지난 대화는 목록에 남아요", "Session closed, a new chat is open — the last one stays in the list"));
                     });
                     endChip.Margin = new Thickness(6, 0, 0, 0);
-                    endChip.ToolTip = Tr("이 대화의 CLI를 닫아 메모리를 돌려줘요 · 대화는 남아요", "Closes this chat's CLI to free its memory · the chat stays");
+                    endChip.ToolTip = Tr("이 대화의 CLI를 닫아 메모리를 돌려주고 새 대화로 넘어가요 · 지난 대화는 남아요", "Closes this chat's CLI to free its memory and starts a new chat · the last one stays");
                     hint.Children.Add(endChip);
                 }
                 Foot(busy ? Tr("중지", "Stop") : Tr("보내기", "Send"), busy ? "Esc" : "Enter");

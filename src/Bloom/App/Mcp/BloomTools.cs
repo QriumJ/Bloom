@@ -265,21 +265,23 @@ internal sealed class BloomTools : IToolPolicy
         return done + "; it shows beside the chat.";
     }
 
-    /// Starts one of Bloom's timers: q = its length ("10m", "25분", "1h 30m"), to = what it is for.
-    private static string StartTimer(string length, string label)
+    /// Starts one of Bloom's timers: q = its length ("10m", "25분", "1h 30m"), to = what it is for; 타이머 · 알림
+    /// then shows beside the chat.
+    private string StartTimer(string length, string label)
     {
         if (!Features.On("timers")) throw new ArgumentException("Bloom's timers are switched off in its settings (설정 > 기능).");
         if (TimeParse.Read(length.Trim(), timerField: true) is not { Length: { } span } ask) throw new ArgumentException("q must be a length like 10m, 25분 or 1h 30m.");
         var due = DateTime.Now + span;
         var t = Timers.Add("timer", label.Trim().Length > 0 ? label.Trim() : ask.Label, due);
+        host.Tools.ShowBeside("timers", null, host.ChatWindowHandle);
         return $"Started a {Timers.DurationText(span)} timer in Bloom (\u201c{t.Label}\u201d); it rings at {due:HH:mm}.";
     }
 
     private static readonly string[] EventTimes = { "yyyy-MM-dd HH:mm", "yyyy-MM-dd H:mm", "yyyy-MM-ddTHH:mm", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-ddTHH:mm:ss" };
 
     /// Puts an event on Bloom's calendar (a reminder at that moment): q = what, to = "yyyy-MM-dd HH:mm" (a date alone is
-    /// 9:00; words Bloom reads, like "오후 3시", work too).
-    private static string AddEvent(string what, string when)
+    /// 9:00; words Bloom reads, like "오후 3시", work too); 타이머 · 알림, which lists it, then shows beside the chat.
+    private string AddEvent(string what, string when)
     {
         if (!Features.On("timers")) throw new ArgumentException("Bloom's timers and calendar are switched off in its settings (설정 > 기능).");
         what = what.Trim();
@@ -292,6 +294,7 @@ internal sealed class BloomTools : IToolPolicy
         else throw new ArgumentException("to must be a time as yyyy-MM-dd HH:mm.");
         if (due <= DateTime.Now) throw new ArgumentException("That time has already passed; ask the user when they mean.");
         Timers.Add("reminder", what, due);
+        host.Tools.ShowBeside("timers", null, host.ChatWindowHandle);
         return $"Put \u201c{what}\u201d on Bloom's calendar for {due.ToString("yyyy-MM-dd (ddd) HH:mm", CultureInfo.InvariantCulture)}; Bloom reminds the user then.";
     }
 

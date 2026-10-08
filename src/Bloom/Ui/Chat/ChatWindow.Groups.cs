@@ -226,7 +226,7 @@ internal sealed partial class ChatWindow
         });
         if (t.Group is not null) list.Add(new ActionItem { Title = Tr("그룹에서 빼기", "Take out of the group"), Glyph = Out, Run = () => host.Chats.MoveTo(t, null) });
         if (host.Chats.IsLive(t) || host.Chats.Threads.Contains(t)) list.Add(new ActionItem { Title = "" });
-        if (host.Chats.IsLive(t)) list.Add(new ActionItem { Title = Tr("세션 종료 — 대화는 남아요", "End session — the chat stays"), Glyph = G.Stop, Run = () => host.Chats.EndSession(t) });
+        if (host.Chats.IsLive(t)) list.Add(new ActionItem { Title = Tr("세션 종료 — 대화는 남아요", "End session — the chat stays"), Glyph = G.Stop, Run = () => EndSession(t) });
         if (host.Chats.Threads.Contains(t))
             list.Add(new ActionItem
             {

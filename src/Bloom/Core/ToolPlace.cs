@@ -10,6 +10,6 @@ internal sealed class ToolPlace
     public int Y { get; set; }
     public int W { get; set; }
     public int H { get; set; }
-    public bool OnTop { get; set; } = true; // floating: above other windows (a sticky note)
+    public bool OnTop { get; set; } // floating: above other windows (a sticky note); off until switched on
     public string? Note { get; set; } // 메모: the note it shows
 }

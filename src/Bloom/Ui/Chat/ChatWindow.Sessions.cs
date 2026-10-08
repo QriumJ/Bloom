@@ -251,7 +251,7 @@ internal sealed partial class ChatWindow
         g.Children.Add(words);
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0), Visibility = Visibility.Collapsed };
-        if (live) buttons.Children.Add(SmallButton(G.Stop, Tr("세션 종료 — 대화는 남아요", "End session — the chat stays"), b => host.Chats.EndSession(t)));
+        if (live) buttons.Children.Add(SmallButton(G.Stop, Tr("세션 종료 — 대화는 남아요", "End session — the chat stays"), b => EndSession(t)));
         buttons.Children.Add(SmallButton(More, Tr("그룹으로 옮기기 · 더보기", "Move to a group · more"), b => menu.Open(ThreadActions(t, b), b)));
         if (host.Chats.Threads.Contains(t))
         {

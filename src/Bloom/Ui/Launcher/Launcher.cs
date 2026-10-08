@@ -454,15 +454,11 @@ internal sealed partial class Launcher : Window, IChatHost
     private void OnDeactivated()
     {
         if (Capturing || !IsVisible) return;
-        // after the focus has landed: in an attached tool the group stays (and pins itself), elsewhere it lets go
+        // after the focus has landed: in an attached tool the group stays, elsewhere it lets go
         Dispatcher.BeginInvoke(() =>
         {
             if (!IsVisible || IsActive) return;
-            if (host.Tools.Owns(Win32.GetForegroundWindow()))
-            {
-                SetPinned(true);
-                return;
-            }
+            if (host.Tools.Owns(Win32.GetForegroundWindow())) return;
             GroupLeft();
         }, DispatcherPriority.Input);
     }

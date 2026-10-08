@@ -549,7 +549,8 @@ internal sealed class ChatView : Grid
             list.Insert(0, new ActionItem { Title = Tr("거절: ", "Decline: ") + ask.Says, Glyph = G.Close, StayOpen = true, Run = () => host.Chats.Answer(t, ask, false) });
             list.Insert(0, new ActionItem { Title = Tr("허용: ", "Allow: ") + ask.Says, Glyph = G.Shield, StayOpen = true, Run = () => host.Chats.Answer(t, ask, true) });
         }
-        if (t is not null && host.Chats.IsLive(t)) list.Add(new ActionItem { Title = Tr("세션 종료 — 대화는 남아요", "End session — the chat stays"), Glyph = G.Stop, StayOpen = true, Run = () => host.Chats.EndSession(t) });
+        if (t is not null && host.Chats.IsLive(t))
+            list.Add(new ActionItem { Title = Tr("세션 종료 — 새 대화로 넘어가요", "End session — on to a new chat"), Glyph = G.Stop, StayOpen = true, Run = () => { host.Chats.EndSession(t); owner.ShowChat(host.Chats.New()); } });
         if (t is { Messages.Count: > 0 })
             list.Add(new ActionItem { Title = Tr("이 대화 삭제", "Delete this chat"), Glyph = G.Delete, Danger = true, StayOpen = true, Run = () => { host.DeleteThread(t); owner.ShowChat(host.Chats.New()); } });
         return list;

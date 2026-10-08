@@ -69,7 +69,7 @@ No API key. Answers come from the Claude Code or Codex CLI you have installed an
   - What was done stays under the answer as ✓ / ✕.
 - **Notes, timers and events stay in Bloom**
   - "Write my shopping list in a note" attaches Bloom's notes beside the chat and writes it there.
-  - "A 25 minute timer" and "put a meeting on my calendar tomorrow at 3pm" go into Bloom's timers and calendar.
+  - "A 25 minute timer" and "put a meeting on my calendar tomorrow at 3pm" go into Bloom's timers and calendar, and the timers tool comes up beside the chat to show them.
   - No files are made and no other app is opened for them.
 - **Quick AI actions** (Ctrl+Alt+A): in any app, turn the selected text (or the clipboard when nothing is selected) into something else and paste it back.
   - Summarize · translate · fix spelling · polish · shorter · longer · formal · casual · key points as a list · explain simply · draft a reply
@@ -103,13 +103,12 @@ No API key. Answers come from the Claude Code or Codex CLI you have installed an
   - Move a tool by its head and size it by its edges.
   - Near the launcher, another tool or a screen edge, it snaps in place.
   - Dropped beside the launcher it stays attached right there, at that size: it moves with the launcher and comes and goes with it.
-  - Pulled away, it floats on its own (always on top on or off).
-  - Once you start using an attached tool, the launcher pins itself.
+  - Pulled away, it floats on its own. The pin on its head keeps it always on top (off at first).
 - **Notes**: several notes, kept as you type. Pin them; deleted ones go to a trash.
   - Type `note buy milk` in the search line to keep a note at once.
   - Notes are searched too.
 - **Timers**: write `10 min`, `25 min focus` or `3pm meeting` and press Enter (or ↵). The time left shows, with 5 more minutes and cancel.
-- **Calculator**: the same sums as the search line. Enter copies the answer and keeps it in the list.
+- **Calculator**: the same sums as the search line. Enter copies the answer and keeps it in the list; the bin in its head clears the list.
 - **Clipboard history** (Ctrl+Alt+V): the text, images and files you copied. Click one to copy it again; pin the ones you keep.
 - **Pin · move · size the launcher**
   - 📌 (Ctrl+P) keeps the launcher on screen.

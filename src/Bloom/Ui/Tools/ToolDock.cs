@@ -15,8 +15,9 @@ namespace Bloom.Ui;
 /// and the group they make with it. A tool opened while nothing was put by hand joins a column on the launcher's
 /// right (the launcher's height shared); once a tool is dragged or sized, every attached one keeps the place it has
 /// (free: an offset from the launcher, in dip at 100 %). Attached tools show and hide with the launcher and keep it
-/// open while you work in them (the launcher pins itself); floating ones live on their own. Settings.Tools remembers
-/// them across starts.
+/// open while you work in them (it isn't pinned for that: a click outside the group lets both go); floating ones live
+/// on their own, not on top of other windows until their 항상 위 is switched on. Settings.Tools remembers them across
+/// starts.
 internal sealed class ToolDock
 {
     private readonly Host host;
@@ -81,7 +82,7 @@ internal sealed class ToolDock
             Front(open);
             return;
         }
-        var w = new ToolWindow(this, Make(key, note), null, true);
+        var w = new ToolWindow(this, Make(key, note), null, false);
         windows.Add(w);
         if (L.IsVisible) AttachNew(w);
         else Float(w, null);
@@ -100,7 +101,7 @@ internal sealed class ToolDock
             if (!open.IsVisible && (open.Edge is null || L.IsVisible)) open.Show();
             return;
         }
-        var w = new ToolWindow(this, Make(key, note), null, true);
+        var w = new ToolWindow(this, Make(key, note), null, false);
         windows.Add(w);
         if (L.IsVisible) AttachNew(w);
         else if (chat != IntPtr.Zero && Win32.GetWindowRect(chat, out var cr))
@@ -453,11 +454,11 @@ internal sealed class ToolDock
         foreach (var w in windows.Where(w => w.Edge is not null)) w.Topmost = on;
     }
 
-    /// Working in an attached tool keeps the launcher open: it pins itself (자동 고정).
+    /// Working in an attached tool keeps the group in front (the launcher stays open while the focus is in the group;
+    /// its pin is left as the user set it).
     public void Activated(ToolWindow w)
     {
         if (w.Edge is null) return;
-        L.SetPinned(true);
         L.Topmost = true;
         SetTopmost(true);
     }
