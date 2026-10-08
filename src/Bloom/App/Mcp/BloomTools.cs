@@ -51,12 +51,11 @@ internal sealed class BloomTools : IToolPolicy
     /// What the description says of each group (with every group on, the wording the tool picking was tested with).
     private static readonly Dictionary<string, string> About = new()
     {
-        ["look"] = "Look up: find_apps, find_files (Everything syntax: ext:pdf dm:today), find_recent, find_windows, find_timers (Bloom's timers, reminders and calendar events), find_notes (Bloom's notes), find_commands (q = words).",
+        ["look"] = "Look up: find_apps, find_files (Everything syntax: ext:pdf dm:today), find_recent, find_windows, find_timers (timers, reminders, events), find_notes, find_commands (q = words).",
         ["open"] = "run_line (q = what the user would type in Bloom's search box + Enter: volume 볼륨 30, dark mode, site shortcuts yt lofi), "
             + "open (q = app, path or URL), run_command (q = saved command, to = its input)",
-        ["bloom"] = "Bloom's own notes, timers and calendar — use these whenever the user means 메모/a note, 타이머/a timer or 일정/알림/an event or reminder, never a file or another app: "
-            + "note (q = the text; to = an existing note's title to add it to, else a new note; it shows beside the chat), timer (q = length like 10m or 1h 30m, to = label), "
-            + "event (q = what, to = when as yyyy-MM-dd HH:mm; it goes on Bloom's calendar and Bloom reminds the user then)",
+        ["bloom"] = "Bloom's own notes, timers and calendar (for 메모, 타이머, 일정; never files or other apps): note (q = text, to = an existing note's title, else a new note), "
+            + "timer (q = 10m, to = label), event (q = what, to = yyyy-MM-dd HH:mm)",
         ["files"] = "rename, move, copy, recycle (q = full path, to = new name or folder)",
         ["clip"] = "clip_read, clip_write (q = text)",
     };
@@ -96,7 +95,7 @@ internal sealed class BloomTools : IToolPolicy
     public string Hint => $"Bloom's PC tool is {Prefix}{Name} (server bloom, tool {Name}) taking {{do, q, to}}; do = "
         + string.Join(", ", actions.Where(x => GroupOn(x.Group)).Select(x => x.Do))
         + (GroupOn("open") ? ". run_line q = what the user would type in Bloom's search box (볼륨 30, yt lofi)" : "")
-        + (GroupOn("bloom") ? ". note/timer/event are Bloom's own notes, timers and calendar: use them for 메모, 타이머, 일정, never files or other apps (event to = yyyy-MM-dd HH:mm)" : "")
+        + (GroupOn("bloom") ? ". note/timer/event = Bloom's notes, timers, calendar (for 메모, 타이머, 일정; never files or other apps; event to = yyyy-MM-dd HH:mm)" : "")
         + (GroupOn("files") ? ". rename/move/copy/recycle q = full path, to = new name or folder" : "") + ". Call it directly; no need to look it up. ";
 
     private static bool IsPc(string tool) => tool == Prefix + Name || tool == Name;

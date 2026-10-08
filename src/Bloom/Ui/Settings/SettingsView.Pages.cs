@@ -280,7 +280,7 @@ internal sealed partial class SettingsView
 
         Header(Tr("연결", "Connection"));
         Add(Tr("연결 방식", "How it connects"), Tr("Claude Code에 등록하지 않아요 · Bloom 채팅에만 붙고 이 PC 안에서만 이어져요", "Not registered in Claude Code · only Bloom's chats get it, inside this PC only"), null, G.Shield, null, null, filter);
-        Add(Tr("쓰는 양", "What it costs"), Tr("요청마다 Claude 약 +400 · ChatGPT 약 +190 토큰 (켠 일이 적을수록 줄어요) · 쓰는 동안 메모리 약 10 MB", "Per request: Claude about +400, ChatGPT about +190 tokens (less with fewer kinds on) · about 10 MB of memory while in use"), null, G.Speed, null, null, filter);
+        Add(Tr("쓰는 양", "What it costs"), Tr("요청마다 Claude 약 +500 · ChatGPT 약 +250 토큰 (켠 일이 적을수록 줄어요) · 쓰는 동안 메모리 약 10 MB", "Per request: Claude about +500, ChatGPT about +250 tokens (less with fewer kinds on) · about 10 MB of memory while in use"), null, G.Speed, null, null, filter);
     }
 
     private void PageFeatures(Settings s, string filter)
