@@ -81,6 +81,11 @@ internal sealed class SettingsWindow : Window
         });
 
         view = new SettingsView(host) { ClearFilter = () => box.Clear() };
+        view.FocusFilter = () =>
+        {
+            box.Focus();
+            Keyboard.Focus(box);
+        };
         var navScroll = new ScrollViewer { Content = view.Nav, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Focusable = false, Template = Launcher.ThinScroll() };
         Grid.SetRow(navScroll, 1);
         side.Children.Add(navScroll);

@@ -36,7 +36,7 @@ internal sealed class ClipboardHistory : IDisposable
     private ClipFile data;
     private HwndSource? window;
     private bool listening;
-    private readonly DispatcherTimer settle;
+    private readonly DispatcherTimer settle, expiry;
     private IntPtr winEvent;
     private WinEventProc? winEventProc; // kept alive while hooked
     private IntPtr lastForeground;
@@ -56,6 +56,12 @@ internal sealed class ClipboardHistory : IDisposable
         {
             settle.Stop();
             Capture();
+        };
+        expiry = new DispatcherTimer(DispatcherPriority.Background, ui);
+        expiry.Tick += (_, _) =>
+        {
+            expiry.Stop();
+            if (Prune()) Changed?.Invoke();
         };
     }
 
@@ -116,6 +122,7 @@ internal sealed class ClipboardHistory : IDisposable
 
     public void Dispose()
     {
+        expiry.Stop();
         saver.Flush();
         if (winEvent != IntPtr.Zero) UnhookWinEvent(winEvent);
         winEvent = IntPtr.Zero;
@@ -312,12 +319,21 @@ internal sealed class ClipboardHistory : IDisposable
         return gone.Count;
     }
 
-    /// Unpinned entries older than the kept days, beyond the newest 500, or past 4 M characters of
-    /// text in all (the history lives in the launcher's memory all day).
-    private void Prune()
+    /// 보관 기간 changed (설정): what is now too old goes at once, and the wake-up moves.
+    public void KeepChanged()
     {
-        int days = Settings.Current.ClipKeepDays;
-        long cut = days > 0 ? DateTimeOffset.UtcNow.AddDays(-days).ToUnixTimeMilliseconds() : long.MinValue;
+        if (Prune()) Changed?.Invoke();
+    }
+
+    /// Unpinned entries older than the kept minutes, beyond the newest 500, or past 4 M characters of text in all (the
+    /// history lives in the launcher's memory all day); then one wake-up for when the next one comes due, so a short
+    /// 보관 기간 holds with nothing new copied. True: some went.
+    private bool Prune()
+    {
+        long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        long keep = Settings.Current.ClipKeepMinutes * 60_000L;
+        long cut = keep > 0 ? now - keep : long.MinValue;
+        long due = long.MaxValue; // the oldest unpinned entry that stays, when it comes due
         var gone = new List<ClipEntry>();
         lock (gate)
         {
@@ -328,13 +344,25 @@ internal sealed class ClipboardHistory : IDisposable
                 if (e.Pinned) continue;
                 chars += e.Text?.Length ?? 0;
                 if (e.Copied < cut || ++kept > MaxItems || chars > MaxTotalText) gone.Add(e);
+                else if (keep > 0) due = Math.Min(due, e.Copied + keep);
             }
-            if (gone.Count == 0) return;
-            var ids = gone.Select(x => x.Id).ToHashSet();
-            data.Items.RemoveAll(x => ids.Contains(x.Id));
+            if (gone.Count > 0)
+            {
+                var ids = gone.Select(x => x.Id).ToHashSet();
+                data.Items.RemoveAll(x => ids.Contains(x.Id));
+            }
         }
+        ui.BeginInvoke(() =>
+        {
+            expiry.Stop();
+            if (due == long.MaxValue) return;
+            expiry.Interval = TimeSpan.FromMilliseconds(Math.Clamp(due - now + 500, 1000, int.MaxValue));
+            expiry.Start();
+        });
+        if (gone.Count == 0) return false;
         foreach (var e in gone) DropImage(e);
         saver.Touch();
+        return true;
     }
 
     private void DropImage(ClipEntry e)

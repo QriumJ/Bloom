@@ -318,8 +318,14 @@ internal sealed partial class SettingsView
         var clip = host.Clipboard;
         var clSw = Toggle(s.ClipHistory, v => { s.ClipHistory = v; host.ApplyHotkeys(); }, out var clT);
         Add(Tr("클립보드 기록", "Clipboard history"), s.ClipHistory ? Tr($"켜짐 · {clip.Items.Count}개 · 메모리 약 +2 MB부터, 그림이 많을수록 늘어요 · 비밀번호 관리자가 숨긴 복사는 남기지 않아요", $"On · {clip.Items.Count} · from about +2 MB of memory, more with pictures · copies that password managers hide are never kept") : Tr("꺼짐 — 복사한 것을 모으지 않아요 · 켜면 메모리 약 +2 MB부터", "Off — nothing you copy is kept · on: from about +2 MB"), clSw, G.Paste, clT, null, filter);
-        Choice(Tr("보관 기간", "Keep for"), Tr("고정한 항목은 기간과 상관없이 남아요 · 최대 500개", "Pinned entries always stay · 500 at most"), G.History,
-            new[] { ("1", Tr("하루", "1 day")), ("7", Tr("7일", "7 days")), ("30", Tr("30일", "30 days")), ("90", Tr("90일", "90 days")) }, s.ClipKeepDays.ToString(), v => s.ClipKeepDays = int.Parse(v), filter);
+        var keep = NumberField(s.ClipKeepMinutes, 525_600, Tr("분", "min"), v =>
+        {
+            s.ClipKeepMinutes = v;
+            Settings.Save();
+            clip.KeepChanged();
+        });
+        Add(Tr("보관 기간", "Keep for"), KeepText(s.ClipKeepMinutes) + Tr(" · 0이면 계속 · 고정한 항목은 늘 남아요 · 최대 500개", " · 0 = for good · pinned ones always stay · 500 at most"),
+            keep.view, G.History, keep.focus, null, filter);
         Shortcut("clipboard", Tr("단축키", "Shortcut"), Tr("누르면 클립보드 기록이 바로 열려요", "Opens the clipboard history right away"), G.Keyboard, new[] { "ctrl+alt+v", "ctrl+shift+v" }, s.ClipHotkey, v => s.ClipHotkey = v, filter);
         Header(Tr("정리", "Clean up"));
         Add(Tr("기록 모두 지우기", "Clear the history"), Tr("고정한 항목은 남겨요", "Pinned entries stay"), null, G.Delete, () =>
@@ -487,6 +493,18 @@ internal sealed partial class SettingsView
         Add($"Bloom {ver}", Tr("가벼운 네이티브(WPF) 런처", "A light native (WPF) launcher"), null, G.Info, null, null, filter);
         UpdateRows(s, filter);
         Add(Tr("Bloom 둘러보기", "Bloom tour"), Tr("처음 설정과 사용법 안내를 다시 보기", "See the first-run setup and the guide again"), null, G.Info, () => host.ShowOnboarding(), null, filter);
+    }
+
+    /// 보관 기간 in words: "1일 2시간", "45분", 0 = for good.
+    private static string KeepText(int minutes)
+    {
+        if (minutes <= 0) return Tr("계속 남겨요", "Kept for good");
+        var parts = new System.Collections.Generic.List<string>();
+        if (minutes / 1440 > 0) parts.Add(Tr($"{minutes / 1440}일", $"{minutes / 1440} d"));
+        if (minutes / 60 % 24 > 0) parts.Add(Tr($"{minutes / 60 % 24}시간", $"{minutes / 60 % 24} h"));
+        if (minutes % 60 > 0) parts.Add(Tr($"{minutes % 60}분", $"{minutes % 60} min"));
+        string text = string.Join(" ", parts);
+        return Tr($"{text} 동안 남겨요", $"Kept for {text}");
     }
 
     /// 업데이트 확인: what the last look found (a click looks now, or restarts into a downloaded version); a copy not

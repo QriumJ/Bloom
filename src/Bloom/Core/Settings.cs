@@ -43,7 +43,9 @@ internal sealed class Settings
     public int UsageMinutes { get; set; } = 10; // the home's AI usage: asked of Claude Code / Codex every 5 or 10 minutes (App\AiUsage.cs)
     public bool UsageLeft { get; set; } // the usage cards count what's left ("68% 남음", the bar shrinking) instead of what's used
     public bool ClipHistory { get; set; } = true;
-    public int ClipKeepDays { get; set; } = 30; // 0 = forever (pinned entries always stay)
+    public int ClipKeepMinutes { get; set; } = 30 * 24 * 60; // how long unpinned entries stay; 0 = for good (pinned ones always stay)
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? ClipKeepDays { get; set; } // a settings file from before minutes: read once into ClipKeepMinutes
     public string ClipHotkey { get; set; } = "ctrl+alt+v"; // off | ctrl+alt+v | ctrl+shift+v
     public bool TimerSound { get; set; } = true; // a due timer / reminder rings (Windows Alarm01) besides the card
     public string ColorHotkey { get; set; } = "off"; // the colour picker straight from anywhere
@@ -90,6 +92,12 @@ internal sealed class Settings
         bool existed = File.Exists(Paths.In("settings.json"));
         Current = Json.Load<Settings>(Paths.In("settings.json"));
         Current.Onboarded ??= existed; // someone who already used Bloom doesn't get the first-run screens
+        // the clipboard history was kept by days before it was kept by minutes
+        if (Current.ClipKeepDays is { } days)
+        {
+            Current.ClipKeepMinutes = Math.Max(0, days) * 24 * 60;
+            Current.ClipKeepDays = null;
+        }
         Lang.Init(Current.Language);
         // before Claude and ChatGPT had a model each, "chatgpt" was one of the models
         if (Current.AiModel.StartsWith("chatgpt", StringComparison.Ordinal))

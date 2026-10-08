@@ -38,6 +38,9 @@ internal sealed partial class SettingsView : ScrollViewer
     /// Clears the window's filter line (a category picked while filtering).
     public Action? ClearFilter;
 
+    /// Puts the keyboard back in the window's filter line (after a number field is done).
+    public Action? FocusFilter;
+
     public SettingsView(Host host)
     {
         this.host = host;
@@ -208,6 +211,87 @@ internal sealed partial class SettingsView : ScrollViewer
             host.ApplyHotkeys();
             Dispatcher.BeginInvoke(() => Build(lastFilter)); // the status line under it
         }, filter);
+    }
+
+    /// A number typed in with its unit after it (보관 기간's 분): digits only, from 0 to `max`. Enter or leaving the field
+    /// keeps it, Esc puts the old one back; the row's Enter (or a click) puts the caret in it.
+    private (FrameworkElement view, Action focus) NumberField(int value, int max, string unit, Action<int> set)
+    {
+        var box = new TextBox
+        {
+            Text = value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            MinWidth = 44,
+            MaxLength = 6,
+            FontFamily = Theme.Sans,
+            FontSize = 14,
+            FontWeight = Theme.Medium,
+            Foreground = Theme.P.Text,
+            CaretBrush = Theme.P.Accent,
+            SelectionBrush = Theme.P.Selection,
+            SelectionOpacity = 1,
+            Background = System.Windows.Media.Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            TextAlignment = TextAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center,
+            Template = Launcher.BareTextBox(),
+        };
+        InputMethod.SetIsInputMethodEnabled(box, false);
+        box.PreviewTextInput += (_, e) => e.Handled = !e.Text.All(char.IsAsciiDigit);
+        DataObject.AddPastingHandler(box, (_, e) =>
+        {
+            if (e.DataObject.GetData(DataFormats.UnicodeText) is not string t || !t.Trim().All(char.IsAsciiDigit)) e.CancelCommand();
+        });
+        bool done = false;
+        void Keep()
+        {
+            if (done) return;
+            done = true;
+            int v = int.TryParse(box.Text, out int n) ? Math.Clamp(n, 0, max) : value;
+            if (v != value) set(v);
+            Dispatcher.BeginInvoke(() => Build(lastFilter)); // the line under it follows
+        }
+        box.Tag = (Func<Key, bool>)(key =>
+        {
+            switch (key)
+            {
+                case Key.Enter:
+                    Keep();
+                    FocusFilter?.Invoke();
+                    return true;
+                case Key.Escape:
+                    done = true;
+                    box.Text = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    FocusFilter?.Invoke();
+                    return true;
+                default:
+                    return false; // the caret moves, the digits go in
+            }
+        });
+        box.LostKeyboardFocus += (_, _) => Keep();
+        var label = Theme.T(unit, 13, Theme.P.TextDim, Theme.Medium, false);
+        label.VerticalAlignment = VerticalAlignment.Center;
+        label.Margin = new Thickness(5, 1, 0, 0);
+        var well = new SmoothBorder
+        {
+            Background = Theme.P.Well,
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(10, 5, 10, 6),
+            VerticalAlignment = VerticalAlignment.Center,
+            Cursor = Cursors.IBeam,
+            Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { box, label } },
+        };
+        void Focus()
+        {
+            box.Focus();
+            Keyboard.Focus(box);
+            box.SelectAll();
+        }
+        well.MouseLeftButtonDown += (_, e) =>
+        {
+            Focus();
+            e.Handled = true;
+        };
+        return (well, Focus);
     }
 
     /// A choice from a list that opens under the value (many options): click or Enter opens it, ←→ step.
@@ -495,6 +579,7 @@ internal sealed partial class SettingsView : ScrollViewer
     public bool HandleKey(Key key)
     {
         if (dropdowns.Find(d => d.IsOpen) is { } open) return open.HandleKey(key);
+        if (Keyboard.FocusedElement is TextBox { Tag: Func<Key, bool> numberKey }) return numberKey(key); // typing in a number field
         bool ctrl = (Keyboard.Modifiers & ModifierKeys.Control) != 0, shift = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
         switch (key)
         {
