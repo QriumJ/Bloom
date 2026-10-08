@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Bloom — GitHub 배너</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+<style>
+  /* 1280 × 640, github.html in Korean (the top of README.ko.md). Bloom's plum dark, its rose only on the caret. */
+  :root {
+    --base: #1a1416;
+    --app: #0e0b0c;
+    --ink: #f1ecee;
+    --dim: #c1b8bb;
+    --faint: #8c8186;
+    --rose: #ff7a9e;
+    --hair: rgba(253, 237, 244, 0.14);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1280px; height: 640px; overflow: hidden; background: var(--base); }
+  body {
+    position: relative;
+    font-family: "Wanted Sans Variable", "Wanted Sans", sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+    line-break: strict;
+  }
+  .copy { position: absolute; left: 72px; top: 60px; width: 500px; }
+  /* letter and word spacing of the type below: optical.js (the rules at the end of the page) */
+  .brand { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 700; }
+  .brand img { width: 38px; height: 38px; }
+  h1 { margin-top: 32px; font-size: 60px; font-weight: 800; line-height: 1.08; }
+  .caret { display: inline-block; width: 6px; height: 0.8em; margin-left: 8px; border-radius: 3px; background: var(--rose); vertical-align: -0.04em; }
+  /* 할 수 있는 일: 이름과 설명 두 줄씩(줄은 직접 끊어 모든 칸의 높이를 맞춤), 두 줄 단, 상자 없이 */
+  .features { margin-top: 28px; list-style: none; display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; row-gap: 12px; }
+  .features li > b { display: block; font-size: 15.5px; font-weight: 700; }
+  .features li > span { display: block; margin-top: 3px; font-size: 13px; font-weight: 500; line-height: 1.38; color: var(--dim); text-wrap: balance; }
+  .foot { position: absolute; left: 72px; bottom: 30px; width: 500px; font-size: 12.5px; line-height: 1.5; color: var(--faint); }
+  /* the real launcher, whole, as it opens: rounded, a hairline, a soft shadow */
+  .app { position: absolute; left: 596px; top: 104px; width: 644px; border: 1px solid var(--hair); border-radius: 18px; overflow: hidden; background: var(--app);
+         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 34px 90px rgba(0, 0, 0, 0.5); }
+  .app img { display: block; width: 100%; }
+  /* one notice card (the capture holds two: only the top one shows) */
+  .notice { position: absolute; left: 896px; top: 464px; width: 350px; height: 90px; overflow: hidden; }
+  .notice img { display: block; width: 350px; }
+</style>
+</head>
+<body>
+  <section class="copy">
+    <div class="brand"><img src="assets/mark-tile.png" alt="">Bloom</div>
+    <h1>Win 키 한 번,<br>한 줄이면 끝<span class="caret"></span></h1>
+    <ul class="features">
+      <li><b>검색창 하나로</b><span>앱, 파일, 웹 검색,<br>계산까지 한 줄에서</span></li>
+      <li><b>AI 채팅</b><span>쓰던 Claude Code, Codex<br>로그인 그대로, API 키 없이</span></li>
+      <li><b>PC 작업 맡기기</b><span>파일 옮기기, 타이머를 말로.<br>하기 전에 꼭 물어봐요</span></li>
+      <li><b>작업 알림</b><span>AI 작업이 끝나거나<br>승인을 기다리면 알려 줘요</span></li>
+      <li><b class="latin">Bloom Lens</b><span>화면을 골라 묻고,<br>번역하고, 글자를 복사해요</span></li>
+      <li><b class="latin">Bloom Space Cleaner</b><span>디스크를 어디에 썼는지<br>지도로 보고 정리해요</span></li>
+      <li><b>옆에 붙는 도구</b><span>메모, 타이머, 계산기,<br>클립보드를 런처 옆에</span></li>
+      <li><b>내게 맞게</b><span>안 쓰는 기능은 끄고,<br>크기도 맞춰요</span></li>
+    </ul>
+  </section>
+  <p class="foot">WebView 없는 네이티브 앱이고, 무료 오픈소스(MIT)예요. Windows 10, 11용.<br>Anthropic, OpenAI와 관계없는 비공식 프로젝트예요.</p>
+  <div class="app"><img src="assets/ko-dark-p1-home.png" alt=""></div>
+  <div class="notice"><img src="assets/ko-dark-p5-notices.png" alt=""></div>
+  <script>
+    window.OPTICAL = [
+      { sel: '.brand', track: -0.01 },
+      { sel: 'h1', track: -0.025, space: 0.07, kern: { '줄이': 0.05 } }, // 줄|이 measured 4 px at 2x, under 이's own ㅇ|ㅣ 12
+      { sel: '.features li > b:not(.latin)', track: -0.01, space: 0.11 },
+      { sel: '.features li > b.latin', track: 0, space: 0.15 }, // English-only names: github.html's rule, measured the same
+      { sel: '.features li > span', track: -0.005, space: 0.115, strength: 0.6 },
+      { sel: '.foot', track: 0, space: 0.125, strength: 0.5 },
+    ];
+  </script>
+  <script src="optical.js"></script>
+</body>
+</html>

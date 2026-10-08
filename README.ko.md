@@ -1,9 +1,6 @@
-<p align="center"><img src="docs/media/mark.png" width="88" alt=""></p>
+<p align="center"><img src="promo/bloom-github-kr.png" alt="Bloom. Win 키 한 번, 한 줄이면 끝. 검색창 하나로, AI 채팅, PC 작업 맡기기, 작업 알림, Bloom Lens, Bloom Space Cleaner, 옆에 붙는 도구, 내게 맞게 — AI 사용량, 이번 주, Claude Code 승인 대기 카드가 보이는 런처 옆에"></p>
 
-<h1 align="center">Bloom</h1>
-
-<p align="center"><b>Win 키 한 번, 한 줄이면 끝.</b><br>
-Windows용 가벼운 네이티브 런처예요. 앱 실행부터 계산, 파일, AI 채팅, 화면 번역까지 검색창 하나에서 해요.</p>
+<p align="center">Windows용 가벼운 네이티브 런처예요. 앱 실행부터 계산, 파일, AI 채팅, 화면 번역까지 검색창 하나에서 해요.</p>
 
 <p align="center">
   <a href="#다운로드">다운로드</a> · <a href="#기능">기능</a> · <a href="#단축키">단축키</a> · <a href="#ai-기능에-대해">AI와 개인정보</a> · <a href="README.md">English</a>

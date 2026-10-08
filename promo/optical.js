@@ -9,6 +9,8 @@
 //   strength  0..1, how far each pair moves toward the median (default 1; small text wants less)
 //   depth     em: how deep into an open side the white still counts (default 0.1)
 //   spaceDepth the same for the two sides of a word space (default 0.03: a word gap is read edge to edge)
+//   kern      { 'ab': em } added to those pairs after the measure: a hand correction where the shape model is
+//             wrong (a Hangul syllable's round ㅇ side pulled closer than the gap inside the syllable)
 // When it is done, <html data-optical="done">, and window.opticalReport holds each element's measures.
 (async () => {
   const M = 240; // glyphs are measured at 240 px and kept in em
@@ -102,6 +104,7 @@
     const depth = rule.depth ?? 0.1;
     const spaceDepth = rule.spaceDepth ?? 0.03;
     const wordGap = rule.space ?? null;
+    const kern = rule.kern ?? {};
     await document.fonts.load(`${cs.fontStyle} ${cs.fontWeight} ${size}px ${cs.fontFamily}`, el.textContent);
 
     // one span per character; <br> and other elements (the caret) stay and end a line
@@ -154,7 +157,7 @@
         p.space.el.style.marginRight = `${s.toFixed(4)}em`;
       } else {
         s = track + strength * (natural - p.w);
-        s = Math.max(s, floor - p.closest);
+        s = Math.max(s, floor - p.closest) + (kern[p.left.ch + p.right.ch] ?? 0);
         p.left.el.style.marginRight = `${s.toFixed(4)}em`;
       }
       report.pairs.push(`${p.left.ch}${p.space ? '␣' : ''}${p.right.ch} w${p.w.toFixed(3)} s${s.toFixed(3)}`);

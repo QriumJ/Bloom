@@ -1,9 +1,6 @@
-<p align="center"><img src="docs/media/mark.png" width="88" alt=""></p>
+<p align="center"><img src="promo/bloom-github.png" alt="Bloom. Press Win. Type one line. One search line, AI chat, handing off PC work, work notices, Bloom Lens, Bloom Space Cleaner, docked tools, yours to trim — beside the launcher with AI usage, this week and a Claude Code approval card"></p>
 
-<h1 align="center">Bloom</h1>
-
-<p align="center"><b>Press Win. Type one line.</b><br>
-A light native launcher for Windows: open apps, do maths, find files, chat with AI and translate the screen, all from one search line.</p>
+<p align="center">A light native launcher for Windows: open apps, do maths, find files, chat with AI and translate the screen, all from one search line.</p>
 
 <p align="center">
   <a href="#download">Download</a> · <a href="#features">Features</a> · <a href="#shortcuts">Shortcuts</a> · <a href="#about-the-ai-features">AI &amp; privacy</a> · <a href="README.ko.md">한국어</a>
