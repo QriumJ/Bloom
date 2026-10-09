@@ -30,6 +30,7 @@ internal sealed class ToolDock
         ("timers", Tr("타이머 · 알림", "Timers"), G.Stopwatch),
         ("calc", Tr("계산기", "Calculator"), G.Calculator),
         ("clipboard", Tr("클립보드", "Clipboard"), G.Paste),
+        ("keys", Tr("단축키", "Shortcuts"), G.Keyboard),
     };
 
     public ToolDock(Host host)
@@ -62,6 +63,7 @@ internal sealed class ToolDock
         "notes" => new NotesTool(state),
         "timers" => new TimerTool(),
         "calc" => new CalcTool(),
+        "keys" => new KeysTool(host),
         _ => new ClipTool(host),
     };
 

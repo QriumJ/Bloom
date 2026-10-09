@@ -727,6 +727,9 @@ Copy: {0} → {1}	コピー: {0} → {1}
 To the Recycle Bin: {0}{1}	ごみ箱へ: {0}{1}
 Read the clipboard	クリップボードを読む
 Copy to the clipboard: {0}	クリップボードにコピー: {0}
+Downloads	ダウンロード
+color picker	color picker
+left half	left half
 Log analysis	ログ分析
 Find when the errors piled up in yesterday's server log	昨日のサーバーログでエラーが集中した時間帯を探して
 62% of the errors fall between 3 and 4 am.	エラーの 62% が午前 3 時から 4 時に集中しています。
@@ -809,7 +812,6 @@ Design review	デザインレビュー
 10 min timer	10 min timer
 Sum up my week	今週の予定をまとめて
 One thing this week:\n\n- **Tomorrow 3 PM** design review\n\nWant a list of what to finish before it?	今週の予定は 1 件です。\n\n- **明日 15:00** デザインレビュー\n\nそれまでに終わらせることをリストにしましょうか？
-left half	left half
 in 100 days	in 100 days
 days until christmas	days until christmas
 new york 3pm	new york 3pm
@@ -1090,7 +1092,6 @@ Network Connections	ネットワーク接続
 System Properties	システムのプロパティ
 Environment Variables	環境変数
 Power Options	電源オプション
-Downloads	ダウンロード
 Desktop	デスクトップ
 Pictures	ピクチャ
 Videos	ビデオ
@@ -1471,6 +1472,7 @@ A file for the folder icon	フォルダー アイコンにするファイル
 Images, icons, programs|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp;*.ico;*.exe;*.lnk|All files|*.*	画像、アイコン、プログラム|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp;*.ico;*.exe;*.lnk|すべてのファイル|*.*
 Please try again	もう一度試してください
 Size {0:0}%	サイズ {0:0}%
+Attach tools (Ctrl+J)	ツールを並べる (Ctrl+J)
 Attach files or pictures — Ctrl+O, pasting or dropping works too	ファイルや画像を添付 — Ctrl+O、貼り付け、ドロップでも OK
 Settings (Ctrl+,)	設定 (Ctrl+,)
 Keep on screen (Ctrl+P) — stays when you click elsewhere · drag the search line or the bottom bar to move it	画面に表示したままにする (Ctrl+P) — ほかをクリックしても残ります · 検索欄か下のバーをドラッグで移動
@@ -1775,6 +1777,12 @@ Copied — paste it anywhere	コピーしました — どこにでも貼り付�
 Couldn't copy it	コピーできませんでした
 Picture {0}×{1}	画像 {0}×{1}
 Files: 	ファイル: 
+Shortcuts	ショートカット
+Find by name or keys	名前かキーで探す
+The shortcuts you set · click one to run it	自分で設定したショートカット · クリックで実行
+Change or remove shortcuts	ショートカットを変更 · 削除
+No shortcuts yet — pick an app, folder or command in the launcher, then Ctrl+K › Set a shortcut	まだショートカットがありません — ランチャーでアプリ・フォルダー・コマンドを選び、Ctrl+K › ショートカットを設定
+Another app uses these keys	別のアプリがこのキーを使っています
 Find a note · Enter for a new one	メモを探す · Enter で新しいメモ
 Saved	保存しました
 All notes	すべてのメモ

@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Bloom.Ai;
 using Bloom.App;
+using Bloom.Core;
 using Bloom.Search;
 
 namespace Bloom.Ui;
@@ -109,6 +110,7 @@ internal sealed partial class Launcher
                 break;
         }
         attachButton.Visibility = Mode == Mode.Chat ? Visibility.Visible : Visibility.Collapsed;
+        toolsButton.Visibility = Mode != Mode.Chat && Features.On("notes") ? Visibility.Visible : Visibility.Collapsed;
         lead.Content = leadEl;
         placeholder.Text = ph;
         placeholder.Visibility = box.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;

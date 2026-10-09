@@ -2,6 +2,16 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.11.4
+
+- A **Shortcuts** tool beside the launcher, like the notes and the timers: every shortcut you gave an app, folder, command or window layout, with its keys. Find one by name or keys; a click runs it. Open it from the tools menu (Ctrl+J).
+- The tools button is back at the end of the search line, left of the settings. It hides in the quick AI.
+
+### 한국어
+
+- 메모 · 타이머처럼 런처 옆에 붙는 **단축키** 도구가 생겼어요. 앱 · 폴더 · 명령 · 창 배치에 지정한 단축키를 키와 함께 모아 보여 줘요. 이름이나 키로 찾을 수 있고, 누르면 바로 실행돼요. 도구 메뉴(Ctrl+J)에서 열어요.
+- 검색줄 끝, 설정 왼쪽에 도구 버튼이 다시 생겼어요. 빠른 AI에서는 보이지 않아요.
+
 ## 0.11.3
 
 - Uninstall and Reset check the folders before deleting them: only Bloom's own data folders (Bloom under %APPDATA% and %LOCALAPPDATA%) can go, never another folder by mistake.

@@ -129,7 +129,8 @@ API 키는 필요 없어요. 이 PC에 설치하고 로그인해 둔 Claude Code
 
 <img src="docs/media/tools.webp" alt="고정한 런처의 오른쪽에 메모, 아래에 계산기가 붙어 있는 모습">
 
-- **Ctrl+J**(또는 위쪽 막대의 도구 버튼)로 메모 · 타이머 · 계산기 · 클립보드를 작은 창으로 열어요. 한 번 더 누르면 메뉴가 닫혀요.
+- **Ctrl+J**(또는 위쪽 막대의 도구 버튼)로 메모 · 타이머 · 계산기 · 클립보드 · 단축키를 작은 창으로 열어요. 한 번 더 누르면 메뉴가 닫혀요.
+- **단축키** 도구에는 앱 · 폴더 · 명령에 지정한 단축키(Ctrl+K › 단축키 지정)가 키와 함께 모여 있어요. 누르면 바로 실행돼요.
 - **어디든 자유롭게 놓아요.**
   - 머리 부분을 잡고 끌어 옮기고, 가장자리를 잡고 크기를 바꿔요.
   - 런처나 다른 도구, 화면 가장자리에 가까워지면 착 붙어요.
@@ -187,7 +188,7 @@ API 키는 필요 없어요. 이 PC에 설치하고 로그인해 둔 Claude Code
 | `Tab` / `Shift+Tab` | 검색창의 글자로 AI에게 묻기 / 새 대화로 묻기 |
 | `Ctrl+K` | 고른 결과로 할 수 있는 일 |
 | `Ctrl+1` … `Ctrl+9` | 즐겨찾기 |
-| `Ctrl+J` | 도구 (메모 · 타이머 · 계산기 · 클립보드) |
+| `Ctrl+J` | 도구 (메모 · 타이머 · 계산기 · 클립보드 · 단축키) |
 | `Ctrl+P` | 런처 고정 |
 | `Ctrl+E` | 홈 편집 |
 | `Ctrl+=` · `Ctrl+-` · `Ctrl+0` | 크게 · 작게 · 100% |
@@ -273,7 +274,7 @@ powershell -File tools\install.ps1   # → %LOCALAPPDATA%\Programs\Bloom, 시작
 | `Ocr/` | 화면 영역 고르기, Windows OCR, 번역 창, 색 찍기 |
 | `Clip/`, `Space/`, `Browser/` | 클립보드 기록, 디스크 공간 지도, 브라우저로 넘기기 |
 | `Native/` | Win32 호출(System32의 DLL만), WinRT 호출(`WinRt`), 시스템 토글(`SystemControl` — 소리 · 무선 · 다크 모드 …), 탐색기 방식 파일 작업(`ShellFiles`) |
-| `Ui/Tools/` | 도구 창: 자유 배치 · 붙이기 · 자석 정렬 · 크기 맞춤(`ToolDock`), 창 틀(`ToolWindow`), 메모 · 타이머 · 계산기 · 클립보드 |
+| `Ui/Tools/` | 도구 창: 자유 배치 · 붙이기 · 자석 정렬 · 크기 맞춤(`ToolDock`), 창 틀(`ToolWindow`), 메모 · 타이머 · 계산기 · 클립보드 · 단축키 |
 | `Ui/` | 런처 창(`Launcher/` — 보기마다 칩 · 안내 · 결과를 `Launcher.ViewSpecs.cs` 한 곳에), AI 채팅 창(`Chat/`), 설정 창(`Settings/`), 알림 카드, 공용 컨트롤(`Controls/` — 연속 곡률 모서리 `SmoothBorder`, `Dropdown`, `PopupMenu`), 테마(`Theme/` — 애니메이션 설정은 `Motion`) |
 | `tests/Bloom.Tests` | 자동 테스트(계산기 · 시간 읽기 · 날짜와 세계 시간 · 경로 · winget 목록 · 단축키 · 매칭 · 학습 · 이모지 · 언어 · AI 프롬프트 · MCP 도구 · 사용량 읽기 · 작업 기록 · 내 명령) — 테스트 프레임워크 없이 콘솔 실행 |
 

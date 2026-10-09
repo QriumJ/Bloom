@@ -37,6 +37,7 @@ internal static partial class Captures
         ["v16"] = V16Screens,
         ["v17"] = V17Screens,
         ["lang"] = LangScreens,
+        ["keys"] = KeysScreens,
         ["chat"] = ChatScreens,
         ["chatwin"] = ChatWindowScreens,
         ["mine"] = MineScreens,

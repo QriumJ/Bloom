@@ -727,6 +727,9 @@ Copy: {0} → {1}	复制：{0} → {1}
 To the Recycle Bin: {0}{1}	移到回收站：{0}{1}
 Read the clipboard	读取剪贴板
 Copy to the clipboard: {0}	复制到剪贴板：{0}
+Downloads	下载
+color picker	color picker
+left half	left half
 Log analysis	日志分析
 Find when the errors piled up in yesterday's server log	找出昨天服务器日志中错误集中的时间段
 62% of the errors fall between 3 and 4 am.	62% 的错误集中在凌晨 3 点到 4 点之间。
@@ -809,7 +812,6 @@ Design review	设计评审
 10 min timer	10 min timer
 Sum up my week	总结一下我这周的安排
 One thing this week:\n\n- **Tomorrow 3 PM** design review\n\nWant a list of what to finish before it?	这周只有一项安排：\n\n- **明天 15:00** 设计评审\n\n要列一下在那之前要完成的事吗？
-left half	left half
 in 100 days	in 100 days
 days until christmas	days until christmas
 new york 3pm	new york 3pm
@@ -1090,7 +1092,6 @@ Network Connections	网络连接
 System Properties	系统属性
 Environment Variables	环境变量
 Power Options	电源选项
-Downloads	下载
 Desktop	桌面
 Pictures	图片
 Videos	视频
@@ -1471,6 +1472,7 @@ A file for the folder icon	用作文件夹图标的文件
 Images, icons, programs|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp;*.ico;*.exe;*.lnk|All files|*.*	图片、图标、程序|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp;*.ico;*.exe;*.lnk|所有文件|*.*
 Please try again	请再试一次
 Size {0:0}%	大小 {0:0}%
+Attach tools (Ctrl+J)	附加工具 (Ctrl+J)
 Attach files or pictures — Ctrl+O, pasting or dropping works too	附加文件或图片 — 也可按 Ctrl+O、粘贴或拖放
 Settings (Ctrl+,)	设置 (Ctrl+,)
 Keep on screen (Ctrl+P) — stays when you click elsewhere · drag the search line or the bottom bar to move it	保持显示 (Ctrl+P) — 点击别处也不会消失 · 拖动搜索栏或底栏即可移动
@@ -1775,6 +1777,12 @@ Copied — paste it anywhere	已复制 — 可随处粘贴
 Couldn't copy it	无法复制
 Picture {0}×{1}	图片 {0}×{1}
 Files: 	文件：
+Shortcuts	快捷键
+Find by name or keys	按名称或按键查找
+The shortcuts you set · click one to run it	你设置的快捷键 · 点击即可运行
+Change or remove shortcuts	更改或删除快捷键
+No shortcuts yet — pick an app, folder or command in the launcher, then Ctrl+K › Set a shortcut	还没有快捷键 — 在启动器中选择应用、文件夹或命令，然后 Ctrl+K › 设置快捷键
+Another app uses these keys	其他应用正在使用这组按键
 Find a note · Enter for a new one	查找便笺 · 按 Enter 新建
 Saved	已保存
 All notes	全部便笺

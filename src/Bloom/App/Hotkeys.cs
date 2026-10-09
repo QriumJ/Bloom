@@ -177,8 +177,11 @@ internal sealed class Hotkeys : IDisposable
     }
 
     /// "ctrl+alt+o" → "Ctrl+Alt+O", "printscreen" → "PrintScreen"
-    public static string Label(string combo) => combo == "off" ? Tr("끔", "Off")
-        : string.Join("+", Array.ConvertAll(combo.Split('+'), p => p switch { "ctrl" => "Ctrl", "alt" => "Alt", "shift" => "Shift", "win" => "Win", _ => KeyNames.Label(p) }));
+    public static string Label(string combo) => combo == "off" ? Tr("끔", "Off") : string.Join("+", Parts(combo));
+
+    /// Each key of a combo as it is labelled ("ctrl+numplus" → Ctrl, Num +): one key cap each.
+    public static string[] Parts(string combo) =>
+        Array.ConvertAll(combo.Split('+'), p => p switch { "ctrl" => "Ctrl", "alt" => "Alt", "shift" => "Shift", "win" => "Win", _ => KeyNames.Label(p) });
 
     public void Dispose()
     {

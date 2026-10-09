@@ -10,7 +10,7 @@ internal sealed partial class Host
 {
     // ── commands ────────────────────────────────────────────────────────────────────────────────
     /// An item's own shortcut was pressed: it runs as if picked in the launcher (a gone app or file says so on a card).
-    private void RunItemKey(Favorites.Entry entry)
+    public void RunItemKey(Favorites.Entry entry)
     {
         if (Engine.FromFavorite(entry) is not { Run: { } run } item)
         {

@@ -164,7 +164,10 @@ internal sealed partial class Launcher : Window, IChatHost
         Grid.SetColumn(hint, 3);
         bar.Children.Add(hint);
         var corner = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
-        // the bar's right end: 📎 in the quick AI, ⚙ 설정 always; 📌 only while the launcher is pinned (Ctrl+P), a click lets it go
+        // the bar's right end: 도구 붙이기 outside the quick AI (Ctrl+J's menu), 📎 in it, ⚙ 설정 always; 📌 only while the
+        // launcher is pinned (Ctrl+P), a click lets it go
+        toolsButton = BarButton(G.NewWindow, Tr("도구 붙이기 (Ctrl+J)", "Attach tools (Ctrl+J)"), OpenTools);
+        corner.Children.Add(toolsButton);
         attachButton = BarButton(G.Attach, Tr("파일 · 사진 첨부 — Ctrl+O, 붙여넣기나 끌어 놓기도 돼요", "Attach files or pictures — Ctrl+O, pasting or dropping works too"), PickFiles);
         attachButton.Visibility = Visibility.Collapsed;
         corner.Children.Add(attachButton);
@@ -480,7 +483,7 @@ internal sealed partial class Launcher : Window, IChatHost
     /// tool); Esc still hides it, and hiding lets the pin go.
     public bool Pinned { get; private set; }
 
-    private readonly SmoothBorder pinButton, attachButton;
+    private readonly SmoothBorder pinButton, attachButton, toolsButton;
 
     public void SetPinned(bool on)
     {
@@ -492,7 +495,7 @@ internal sealed partial class Launcher : Window, IChatHost
         pinButton.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    /// The 도구 menu (Ctrl+J): each tool opens beside the launcher, or closes; asked again while it is
+    /// The 도구 menu (Ctrl+J, the bar button): each tool opens beside the launcher, or closes; asked again while it is
     /// open, the menu closes.
     public void OpenTools()
     {

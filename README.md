@@ -130,7 +130,8 @@ No API key. Answers come from the Claude Code or Codex CLI you have installed an
 
 <img src="docs/media/en/tools.webp" alt="The pinned launcher with notes attached on its right and the calculator under it">
 
-- **Ctrl+J** (or the tools button at the top) opens notes, timers, calculator and clipboard history as small windows. Asked again, the menu closes.
+- **Ctrl+J** (or the tools button at the top) opens notes, timers, calculator, clipboard history and your shortcuts as small windows. Asked again, the menu closes.
+- The **Shortcuts** tool lists every shortcut you gave an app, folder or command (Ctrl+K › Set a shortcut) with its keys; a click runs it.
 - **Put them anywhere.**
   - Move a tool by its head and size it by its edges.
   - Near the launcher, another tool or a screen edge, it snaps in place.
@@ -188,7 +189,7 @@ A map of where a drive's or folder's space went, every folder and file a block a
 | `Tab` / `Shift+Tab` | Ask AI what's in the search line / in a new chat |
 | `Ctrl+K` | Everything you can do with the picked result |
 | `Ctrl+1` … `Ctrl+9` | Favourites |
-| `Ctrl+J` | Tools (notes · timers · calculator · clipboard) |
+| `Ctrl+J` | Tools (notes · timers · calculator · clipboard · shortcuts) |
 | `Ctrl+P` | Pin the launcher |
 | `Ctrl+E` | Edit the home |
 | `Ctrl+=` · `Ctrl+-` · `Ctrl+0` | Bigger · smaller · 100 % |
