@@ -22,22 +22,25 @@ internal readonly record struct ScreenRect(int X, int Y, int Width, int Height)
 
 /// Screen pictures for OCR: the whole desktop frozen under one dimmed window per monitor, a
 /// rectangle dragged over it (Esc cancels); and later grabs of the same rectangle for live mode.
+/// With `draw` (화면 캡처) the screen stays frozen after the drag for the pen and highlighter (DrawLayer).
 internal static class ScreenGrab
 {
-    /// The picked rectangle and its pixels (BGRA), or null when cancelled.
-    public static async Task<(ScreenRect rect, byte[] bgra)?> Pick(string hint)
+    /// The picked rectangle and its pixels (BGRA), or null when cancelled. With `draw`, the pixels have the ink in
+    /// them and `then` is what the drawing bar chose (capture · pin · ask · save); otherwise `then` is null.
+    public static async Task<(ScreenRect rect, byte[] bgra, string? then)?> Pick(string hint, bool draw = false)
     {
         int vx = Win32.GetSystemMetrics(76), vy = Win32.GetSystemMetrics(77), vw = Win32.GetSystemMetrics(78), vh = Win32.GetSystemMetrics(79);
         var shot = Grab(new ScreenRect(vx, vy, vw, vh));
         if (shot is null) return null;
         var desktop = BitmapSource.Create(vw, vh, 96, 96, PixelFormats.Bgra32, null, shot, vw * 4);
         desktop.Freeze();
-        var done = new TaskCompletionSource<ScreenRect?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var done = new TaskCompletionSource<(ScreenRect rect, string? then)?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var windows = new List<Window>();
-        void Finish(ScreenRect? r)
+        DrawLayer? layer = null;
+        void Finish(ScreenRect? r, string? then = null)
         {
             // done first: closing an overlay deactivates it, and its Deactivated calls back in here
-            if (!done.TrySetResult(r)) return;
+            if (!done.TrySetResult(r is { } x && then != "" ? (x, then) : null)) return;
             foreach (var w in windows.ToArray())
                 try
                 {
@@ -53,7 +56,8 @@ internal static class ScreenGrab
             var info = new Win32.MONITORINFO { cbSize = Marshal.SizeOf<Win32.MONITORINFO>() };
             if (!Win32.GetMonitorInfo(mon, ref info)) continue;
             var m = info.rcMonitor;
-            windows.Add(Overlay(desktop, new ScreenRect(m.Left, m.Top, m.Right - m.Left, m.Bottom - m.Top), vx, vy, hint, Finish));
+            windows.Add(Overlay(desktop, new ScreenRect(m.Left, m.Top, m.Right - m.Left, m.Bottom - m.Top), vx, vy, hint, r => Finish(r),
+                !draw ? null : (canvas, sel, room, r) => layer = new DrawLayer(canvas, sel, room, then => Finish(r, then)), () => layer));
         }
         foreach (var w in windows) w.Show();
         // the window under the mouse takes the keyboard (Esc)
@@ -65,11 +69,16 @@ internal static class ScreenGrab
                 Win32.ForceForeground(new WindowInteropHelper(w).Handle);
             }
         var picked = await done.Task;
-        if (picked is not { IsEmpty: false } rect) return null;
-        return (rect, Crop(shot, vw, rect.X - vx, rect.Y - vy, rect.Width, rect.Height));
+        if (picked is not { rect.IsEmpty: false } p) return null;
+        var rect = p.rect;
+        var px = Crop(shot, vw, rect.X - vx, rect.Y - vy, rect.Width, rect.Height);
+        return (rect, layer?.Merge(px, rect.Width, rect.Height) ?? px, p.then);
     }
 
-    private static Window Overlay(BitmapSource desktop, ScreenRect mon, int vx, int vy, string hint, Action<ScreenRect?> finish)
+    /// One monitor's frozen picture. `startDraw` (화면 캡처) turns a finished drag into the drawing layer instead of
+    /// the answer; `drawing` is that layer once any monitor has it (the other monitors then stay still).
+    private static Window Overlay(BitmapSource desktop, ScreenRect mon, int vx, int vy, string hint, Action<ScreenRect?> finish,
+        Func<Canvas, Rect, Size, ScreenRect, DrawLayer>? startDraw, Func<DrawLayer?> drawing)
     {
         var w = new Window
         {
@@ -155,6 +164,7 @@ internal static class ScreenGrab
         w.SizeChanged += (_, _) => Paint(new Rect());
         w.MouseLeftButtonDown += (_, e) =>
         {
+            if (drawing() is not null) return;
             from = e.GetPosition(root);
             w.CaptureMouse();
             tip.Visibility = Visibility.Collapsed;
@@ -170,12 +180,25 @@ internal static class ScreenGrab
             var r = Sel(a, e.GetPosition(root));
             from = null;
             double s = VisualTreeHelper.GetDpi(w).DpiScaleX;
-            finish(new ScreenRect(mon.X + (int)Math.Round(r.X * s), mon.Y + (int)Math.Round(r.Y * s), (int)Math.Round(r.Width * s), (int)Math.Round(r.Height * s)));
+            var picked = new ScreenRect(mon.X + (int)Math.Round(r.X * s), mon.Y + (int)Math.Round(r.Y * s), (int)Math.Round(r.Width * s), (int)Math.Round(r.Height * s));
+            if (startDraw is null || picked.IsEmpty)
+            {
+                finish(picked);
+                return;
+            }
+            size.Visibility = Visibility.Collapsed; // the bar takes its place
+            ((TextBlock)tip.Child).Text = DrawLayer.Hint;
+            tip.Visibility = Visibility.Visible;
+            startDraw(canvas, r, new Size(w.ActualWidth, w.ActualHeight), picked);
         };
-        w.MouseRightButtonUp += (_, _) => finish(null);
-        w.KeyDown += (_, e) =>
+        w.MouseRightButtonUp += (_, _) =>
+        {
+            if (drawing() is null) finish(null); // a stray right click must not throw the drawing away
+        };
+        w.PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape) finish(null);
+            else if (drawing() is { } d && d.HandleKey(e)) e.Handled = true;
         };
         w.Deactivated += (_, _) =>
         {

@@ -744,6 +744,7 @@ Copy: {0} → {1}	コピー: {0} → {1}
 To the Recycle Bin: {0}{1}	ごみ箱へ: {0}{1}
 Read the clipboard	クリップボードを読む
 Copy to the clipboard: {0}	クリップボードにコピー: {0}
+saved captures	保存したキャプチャ
 Downloads	ダウンロード
 color picker	color picker
 left half	left half
@@ -948,10 +949,24 @@ Reminder	リマインダー
 today	今日
 tomorrow	明日
 Click where to pick · arrow keys move one pixel · Esc cancels	色を取る場所をクリック · 矢印キーで 1 ピクセル移動 · Esc でキャンセル
+Pen P · highlighter H · eraser E · Enter copies · Esc cancels	ペン P · 蛍光ペン H · 消しゴム E · Enter でコピー · Esc でキャンセル
+Pen	ペン
+Pen (P)	ペン (P)
+Highlighter	蛍光ペン
+Highlighter (H)	蛍光ペン (H)
+Eraser (E) · removes whole strokes	消しゴム (E) · 線を丸ごと消します
+Thin line	細い線
+Medium line	中くらいの線
+Thick line	太い線
+Undo (Ctrl+Z)	元に戻す (Ctrl+Z)
+Redo (Ctrl+Y)	やり直す (Ctrl+Y)
+Pin to the screen	画面に固定
+Ask AI	AI に聞く
+Save the picture…	画像を保存…
+Cancel (Esc)	キャンセル (Esc)
 Bloom pinned picture	Bloom 固定画像
 Drag to move · wheel to size · Ctrl+wheel to fade · 0 back to size · double click · Esc closes · right click for more	ドラッグで移動 · ホイールでサイズ · Ctrl+ホイールで透明度 · 0 で元のサイズ · ダブルクリック · Esc で閉じる · 右クリックでその他
 Copy the picture	画像をコピー
-Save the picture…	画像を保存…
 Read and copy the text	文字を読み取ってコピー
 Back to its size	元のサイズに戻す
 Close	閉じる
@@ -1017,8 +1032,7 @@ Make and run scripts, snippets and chains of actions	スクリプト、スニペ
 Site shortcuts · keyword + words searches right away	サイトのショートカット · キーワード + 語ですぐに検索
 Pick an area of the screen: ask AI, translate, copy text, live translation, capture	画面の範囲を選ぶ: AI に聞く、翻訳、テキストのコピー、リアルタイム翻訳、キャプチャ
 Screen capture	画面キャプチャ
-Copies an area as a picture · paste it with Ctrl+V (Bloom Lens)	範囲を画像としてコピー · Ctrl+V で貼り付け (Bloom Lens)
-Pin to the screen	画面に固定
+Mark up an area with a pen or highlighter, then copy it · paste with Ctrl+V (Bloom Lens)	選んだ範囲にペン · 蛍光ペンで書き込んでコピー · Ctrl+V で貼り付け (Bloom Lens)
 Keep an area of the screen on top as a picture (Bloom Lens)	画面の範囲を画像として最前面に表示 (Bloom Lens)
 Or type "10 min timer", "remind me at 3:30pm meeting"	または "10 min timer"、"remind me at 3:30pm meeting" のように入力
 Pick colours from the screen · HEX · RGB · gradient ideas	画面から色を取る · HEX · RGB · グラデーションの提案
@@ -1627,7 +1641,7 @@ After the area: reads and translates it (1 use each)	範囲を選んだあと: �
 Live translation right away	すぐにリアルタイム翻訳
 Keeps reading the area and translates when it changes (ongoing usage)	範囲を読み続け、変わったときに翻訳します (継続して使用)
 Capture right away	すぐにキャプチャ
-After the area: copies it as a picture — paste with Ctrl+V	範囲を選んだあと: 画像としてコピー — Ctrl+V で貼り付け
+After the area: a pen and highlighter bar opens — Enter copies, Ctrl+V pastes	範囲を選ぶとペン · 蛍光ペンのバーが開きます — Enter でコピー、Ctrl+V で貼り付け
 Reading text	文字の読み取り
 Copy the text at once	すぐにテキストをコピー
 Off: copy it from the launcher	オフ: ランチャーからコピー
@@ -1650,6 +1664,12 @@ How often the screen is read again (reading uses nothing · it translates only w
 1.5 s	1.5 秒
 3 s	3 秒
 5 s	5 秒
+Saved captures	保存したキャプチャ
+Open the saved captures folder	保存したキャプチャのフォルダーを開く
+Pictures: {0} · {1} · on this PC only · the last {2} kept	{0} 枚 · {1} · この PC にのみ保存 · 最新 {2} 枚まで保持
+Delete all saved captures	保存したキャプチャをすべて削除
+Pinned pictures stay · picture previews in AI chats go too	画面に固定した画像は保持 · AI チャットの画像プレビューも削除
+Saved captures deleted: {0}	保存したキャプチャ {0} 枚を削除済み
 Shortcuts and options for switching windows, emoji, AI actions, timers and the colour picker	ウィンドウの切り替え、絵文字、AI クイック操作、タイマー、カラーピッカーのショートカットと設定
 Windows · emoji · AI actions	ウィンドウ · 絵文字 · AI クイック操作
 Switch windows shortcut	ウィンドウ切り替えのショートカット

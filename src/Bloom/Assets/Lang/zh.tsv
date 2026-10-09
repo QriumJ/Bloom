@@ -744,6 +744,7 @@ Copy: {0} → {1}	复制：{0} → {1}
 To the Recycle Bin: {0}{1}	移到回收站：{0}{1}
 Read the clipboard	读取剪贴板
 Copy to the clipboard: {0}	复制到剪贴板：{0}
+saved captures	已保存的截图
 Downloads	下载
 color picker	color picker
 left half	left half
@@ -948,10 +949,24 @@ Reminder	提醒
 today	今天
 tomorrow	明天
 Click where to pick · arrow keys move one pixel · Esc cancels	点击要取色的位置 · 方向键移动 1 像素 · Esc 取消
+Pen P · highlighter H · eraser E · Enter copies · Esc cancels	笔 P · 荧光笔 H · 橡皮擦 E · Enter 复制 · Esc 取消
+Pen	笔
+Pen (P)	笔 (P)
+Highlighter	荧光笔
+Highlighter (H)	荧光笔 (H)
+Eraser (E) · removes whole strokes	橡皮擦 (E) · 整条擦除笔画
+Thin line	细线
+Medium line	中等线
+Thick line	粗线
+Undo (Ctrl+Z)	撤销 (Ctrl+Z)
+Redo (Ctrl+Y)	重做 (Ctrl+Y)
+Pin to the screen	固定到屏幕
+Ask AI	问 AI
+Save the picture…	保存图片…
+Cancel (Esc)	取消 (Esc)
 Bloom pinned picture	Bloom 固定图片
 Drag to move · wheel to size · Ctrl+wheel to fade · 0 back to size · double click · Esc closes · right click for more	拖动移动 · 滚轮调整大小 · Ctrl+滚轮调整透明度 · 0 恢复原大小 · 双击 · Esc 关闭 · 右键查看更多
 Copy the picture	复制图片
-Save the picture…	保存图片…
 Read and copy the text	识别文字并复制
 Back to its size	恢复原大小
 Close	关闭
@@ -1017,8 +1032,7 @@ Make and run scripts, snippets and chains of actions	创建并运行脚本、片
 Site shortcuts · keyword + words searches right away	网站快捷方式 · 关键词 + 搜索词直接搜索
 Pick an area of the screen: ask AI, translate, copy text, live translation, capture	选择屏幕区域：问 AI、翻译、复制文字、实时翻译、截图
 Screen capture	屏幕截图
-Copies an area as a picture · paste it with Ctrl+V (Bloom Lens)	把区域复制为图片 · 用 Ctrl+V 粘贴 (Bloom Lens)
-Pin to the screen	固定到屏幕
+Mark up an area with a pen or highlighter, then copy it · paste with Ctrl+V (Bloom Lens)	用笔 · 荧光笔在所选区域上标注后复制 · 用 Ctrl+V 粘贴 (Bloom Lens)
 Keep an area of the screen on top as a picture (Bloom Lens)	把屏幕区域作为图片置顶显示 (Bloom Lens)
 Or type "10 min timer", "remind me at 3:30pm meeting"	或输入 "10 min timer"、"remind me at 3:30pm meeting"
 Pick colours from the screen · HEX · RGB · gradient ideas	从屏幕取色 · HEX · RGB · 渐变推荐
@@ -1627,7 +1641,7 @@ After the area: reads and translates it (1 use each)	选择区域后：识别并
 Live translation right away	直接实时翻译
 Keeps reading the area and translates when it changes (ongoing usage)	持续读取区域，内容变化时翻译 (持续消耗额度)
 Capture right away	直接截图
-After the area: copies it as a picture — paste with Ctrl+V	选择区域后：复制为图片 — 用 Ctrl+V 粘贴
+After the area: a pen and highlighter bar opens — Enter copies, Ctrl+V pastes	选择区域后打开笔 · 荧光笔工具栏 — Enter 复制，Ctrl+V 粘贴
 Reading text	文字识别
 Copy the text at once	立即复制文字
 Off: copy it from the launcher	关闭：在启动器中复制
@@ -1650,6 +1664,12 @@ How often the screen is read again (reading uses nothing · it translates only w
 1.5 s	1.5 秒
 3 s	3 秒
 5 s	5 秒
+Saved captures	已保存的截图
+Open the saved captures folder	打开已保存截图的文件夹
+Pictures: {0} · {1} · on this PC only · the last {2} kept	{0} 张 · {1} · 仅保存在此电脑 · 只保留最近 {2} 张
+Delete all saved captures	删除所有已保存的截图
+Pinned pictures stay · picture previews in AI chats go too	固定在屏幕上的图片保留 · AI 聊天中的图片预览也会删除
+Saved captures deleted: {0}	已删除 {0} 张已保存的截图
 Shortcuts and options for switching windows, emoji, AI actions, timers and the colour picker	切换窗口、表情、AI 快捷操作、计时器和取色器的快捷键与设置
 Windows · emoji · AI actions	窗口 · 表情 · AI 快捷操作
 Switch windows shortcut	切换窗口快捷键

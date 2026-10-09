@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -8,7 +7,6 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Bloom.App;
-using Bloom.Core;
 using Bloom.Native;
 using Bloom.Search;
 using Bloom.Ui;
@@ -22,8 +20,7 @@ internal sealed class PinWindow : Window
 {
     private readonly Host host;
     private readonly ScreenRect area; // where it was taken (physical pixels)
-    private readonly string png; // the Lens copy on disk (Local\lens), for 저장
-    private readonly DateTime at;
+    private readonly LensShot shot; // its Lens copy on disk (Local\lens) is what 복사 and 저장 hand on
     private readonly BitmapSource picture; // the only copy of the pixels this window keeps
     private readonly PopupMenu menu = new();
     private double scale = 1;
@@ -32,8 +29,7 @@ internal sealed class PinWindow : Window
     {
         this.host = host;
         area = shot.Rect;
-        png = shot.Png;
-        at = shot.At;
+        this.shot = shot with { Bgra = [] }; // the pixels live in `picture` only
         picture = BitmapSource.Create(shot.Rect.Width, shot.Rect.Height, 96, 96, PixelFormats.Bgra32, null, shot.Bgra, shot.Rect.Width * 4);
         picture.Freeze();
         Title = Tr("Bloom 화면 고정", "Bloom pinned picture");
@@ -129,26 +125,9 @@ internal sealed class PinWindow : Window
         Win32.SetWindowPos(h, Win32.HWND_TOPMOST, x, y, Math.Max(8, (int)Math.Round(area.Width * scale)), Math.Max(8, (int)Math.Round(area.Height * scale)), Win32.SWP_NOACTIVATE);
     }
 
-    private void Copy() => Launch.CopyImage(picture, png);
+    private void Copy() => Launch.CopyImage(picture, shot.Png);
 
-    private void Save()
-    {
-        var dlg = new Microsoft.Win32.SaveFileDialog
-        {
-            FileName = "Bloom " + at.ToString("yyyy-MM-dd HHmmss", System.Globalization.CultureInfo.InvariantCulture) + ".png",
-            Filter = "PNG|*.png",
-            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
-        };
-        if (dlg.ShowDialog(this) != true) return;
-        try
-        {
-            File.Copy(png, dlg.FileName, true);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            Log.Error("pin save", e);
-        }
-    }
+    private void Save() => Host.SavePicture(shot, picture, this);
 
     private async void ReadText()
     {

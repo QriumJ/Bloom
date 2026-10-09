@@ -50,6 +50,7 @@ internal static partial class Captures
         ["long"] = LongScreens,
         ["readme"] = ReadmeScreens,
         ["new"] = NewScreens,
+        ["draw"] = DrawScreens,
     };
 
     public static async Task Run(Host host, string dir)

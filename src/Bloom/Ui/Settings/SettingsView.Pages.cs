@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -342,7 +343,7 @@ internal sealed partial class SettingsView
         Shortcut("ocr", Tr("바로 글자 복사", "Copy text right away"), Tr("영역을 고르면 글자를 읽어 복사합니다 (PC 안에서만, 사용량 없음)", "After the area: reads and copies the text (on this PC, no usage)"), G.Copy, s.OcrHotkey, v => s.OcrHotkey = v, filter);
         Shortcut("translate", Tr("바로 번역", "Translate right away"), Tr("영역을 고르면 읽어서 번역합니다 (번역마다 사용량 1회)", "After the area: reads and translates it (1 use each)"), G.Globe, s.TranslateHotkey, v => s.TranslateHotkey = v, filter);
         Shortcut("live", Tr("바로 실시간 번역", "Live translation right away"), Tr("영역을 계속 읽어 바뀔 때만 번역합니다 (사용량 계속)", "Keeps reading the area and translates when it changes (ongoing usage)"), G.Refresh, s.LiveHotkey, v => s.LiveHotkey = v, filter);
-        Shortcut("capture", Tr("바로 캡처", "Capture right away"), Tr("영역을 고르면 그림으로 복사합니다 — Ctrl+V로 붙여넣기", "After the area: copies it as a picture — paste with Ctrl+V"), G.Camera, s.CaptureHotkey, v => s.CaptureHotkey = v, filter);
+        Shortcut("capture", Tr("바로 캡처", "Capture right away"), Tr("영역을 고르면 펜 · 형광펜 막대가 열립니다 — Enter로 복사, Ctrl+V로 붙여넣기", "After the area: a pen and highlighter bar opens — Enter copies, Ctrl+V pastes"), G.Camera, s.CaptureHotkey, v => s.CaptureHotkey = v, filter);
         Header(Tr("글자 읽기", "Reading text"));
         var ocCopy = Toggle(s.OcrCopy, v => s.OcrCopy = v, out var ocT);
         Add(Tr("읽은 글자 바로 복사", "Copy the text at once"), Tr("끄면 런처에서 고른 뒤에 복사합니다", "Off: copy it from the launcher"), ocCopy, G.Copy, ocT, null, filter);
@@ -368,6 +369,19 @@ internal sealed partial class SettingsView
         Choice(Tr("번역할 언어", "Translate into"), Tr("자동: 한국어는 영어로, 나머지는 한국어로", "Auto: Korean text to English, other text to Korean"), G.Globe, Translator.Targets, s.TranslateTo, v => s.TranslateTo = v, filter);
         Choice(Tr("실시간 번역 간격", "Live translation interval"), Tr("화면을 다시 읽는 간격 (읽기는 사용량 없음 · 글이 바뀌고 멈췄을 때만 번역)", "How often the screen is read again (reading uses nothing · it translates only when the text changed and settled)"), G.History,
             new[] { ("1", Tr("1초", "1 s")), ("1.5", Tr("1.5초", "1.5 s")), ("3", Tr("3초", "3 s")), ("5", Tr("5초", "5 s")) }, s.LiveSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture), v => s.LiveSeconds = double.Parse(v, System.Globalization.CultureInfo.InvariantCulture), filter);
+        Header(Tr("캡처 저장본", "Saved captures"));
+        var (shots, bytes) = Host.LensFiles();
+        Add(Tr("캡처 저장본 폴더 열기", "Open the saved captures folder"), Tr($"{shots}장 · {Engine.Size(bytes)} · 이 PC에만 저장 · 최근 {Host.LensKeep}장만 보관", $"Pictures: {shots} · {Engine.Size(bytes)} · on this PC only · the last {Host.LensKeep} kept"), null, G.Folder, () =>
+        {
+            Directory.CreateDirectory(Host.LensDir);
+            Launch.Open(Host.LensDir);
+        }, null, filter);
+        Add(Tr("캡처 저장본 모두 삭제", "Delete all saved captures"), Tr("화면에 고정한 그림은 유지 · AI 채팅의 그림 미리보기도 삭제", "Pinned pictures stay · picture previews in AI chats go too"), null, G.Delete, () =>
+        {
+            int n = host.ClearLensFiles();
+            Build(lastFilter);
+            Notices.Result(true, "Bloom Lens", Tr($"캡처 저장본 {n}장 삭제 완료", $"Saved captures deleted: {n}"), null);
+        }, null, filter);
     }
 
     private void PageTools(Settings s, string filter)
