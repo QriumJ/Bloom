@@ -34,7 +34,7 @@ internal sealed class Settings
     public bool TabContinuesLastThread { get; set; } = true;
     public string? SeenVersion { get; set; } // the version Bloom last started as: a newer one shows 바뀐 점 once (ReleaseNotes)
     public bool GpuDrawing { get; set; } = true; // WPF draws with the GPU; off = software drawing, ~30 MB less (measured 10-09), read at start
-    public int AiIdleMinutes { get; set; } = 5; // a chat's CLI closes after this long unused (its memory back); 0 = stays open
+    public int AiIdleMinutes { get; set; } = 10; // a chat's CLI closes after this long unused (its memory back); 0 = stays open
     public bool AiTitles { get; set; } = true; // the AI names each task "[◆ Opus • Code ] …" (ChatTitles)
     public bool AiTools { get; set; } = true; // Claude chats get Bloom's MCP tools (actions asked in the chat first)
     public bool AiToolsGpt { get; set; } = true; // ChatGPT (Codex) chats get them too (Bloom asks in the chat itself)
@@ -103,6 +103,9 @@ internal sealed class Settings
             Current.ClipKeepMinutes = Math.Max(0, days) * 24 * 60;
             Current.ClipKeepDays = null;
         }
+        // 0.9.2 saved its default of 5 idle minutes: a restarted Claude CLI rewrites its whole prompt cache, so 0.9.3 is
+        // back at 10 (the first start after 0.9.2 only; SeenVersion moves on at that start)
+        if (Current.SeenVersion == "0.9.2" && Current.AiIdleMinutes == 5) Current.AiIdleMinutes = 10;
         Lang.Init(Current.Language);
         // before Claude and ChatGPT had a model each, "chatgpt" was one of the models
         if (Current.AiModel.StartsWith("chatgpt", StringComparison.Ordinal))

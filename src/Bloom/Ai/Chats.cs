@@ -50,7 +50,7 @@ internal sealed class ChatGroup
 }
 
 /// Conversations (one JSON file each under chats\) and their CLI sessions. A session left unused for
-/// Settings.AiIdleMinutes (5 by default, 0 = never) is closed to give its memory back; the next message resumes it by id. A new
+/// Settings.AiIdleMinutes (10 by default, 0 = never) is closed to give its memory back; the next message resumes it by id. A new
 /// model or level restarts the session (resumed when the provider stays); a switch between Claude
 /// and ChatGPT starts a new one that gets the conversation so far with the next message.
 internal sealed partial class Chats

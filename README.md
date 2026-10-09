@@ -84,7 +84,7 @@ No API key. Answers come from the Claude Code or Codex CLI you have installed an
   - Open or save the files the AI makes.
   - Chats name themselves per task, like `[◆ Opus • Code ] Fix the login` (model · field · task); the title changes only when a new task starts.
   - Pick several chats and groups and delete them at once: ✓ by the chat search, Ctrl+click, or ⋯ › Select.
-  - A chat left alone closes its CLI after 5 minutes to give the memory back; set minutes or hours (or 0 = never) in Settings › AI chat.
+  - A chat left alone closes its CLI after 10 minutes to give the memory back; set minutes or hours (or 0 = never) in Settings › AI chat.
 - **Copy any part**: drag over an answer, your message or a code block (in the quick chat too) and press Ctrl+C or right-click › Copy.
 - **Hand off PC tasks**: "move the quote PDF I got yesterday into Documents", "volume 30", "find last week's videos in Downloads".
   - Anything that changes something is asked about on a card in the chat, every time (Allow · Always in this chat · Decline).
