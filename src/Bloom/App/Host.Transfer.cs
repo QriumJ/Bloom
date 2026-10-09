@@ -90,7 +90,7 @@ internal sealed partial class Host
         return true;
     }
 
-    /// 설정 > 정보 > Bloom 삭제 (also "Bloom 삭제" in the search): asked twice (sure? the chats, settings and favorites
+    /// 설정 > 정보 > Bloom 삭제 (only there, never in the search): asked twice (sure? the chats, settings and favorites
     /// too?), then a new Bloom waits for this one to end, deletes the data folders when asked and runs the setup's
     /// uninstaller (the files, the Apps entry, the shortcuts). A copy not installed with the setup (the portable zip)
     /// can't remove its own folder: it stops starting with Windows and its folder opens in Explorer to be deleted.

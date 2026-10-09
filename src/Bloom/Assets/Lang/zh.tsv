@@ -1027,8 +1027,6 @@ Bloom tour	Bloom 导览
 See the first-run setup and the guide again	再次查看首次设置和使用指南
 Export settings	导出设置
 Settings, favorites, app names and browser shortcuts in one file	把设置、收藏、应用名称和浏览器快捷方式存成一个文件
-Uninstall Bloom	删除 Bloom
-Remove Bloom from this PC · asks twice	从本机删除 Bloom · 会确认两次
 Import settings	导入设置
 From an exported settings file	从导出的设置文件导入
 Bloom settings	Bloom 设置
@@ -1732,6 +1730,7 @@ Settings, favorites, app names, browser shortcuts and recent colours in one file
 Reset Bloom	重置 Bloom
 Deletes all settings and history and starts from the first-run screens · asks to export first	删除所有设置和记录，从首次使用界面重新开始 · 会先询问是否导出
 From an exported file · your current settings stay in the data folder's backups	从导出的文件导入 · 当前设置会保留在数据文件夹的 backups 中
+Uninstall Bloom	删除 Bloom
 Removes Bloom from this PC · asks once more about your chats and settings	从本机删除 Bloom · 会再确认一次是否删除对话和设置
 Version	版本
 A light native (WPF) launcher	轻量的原生 (WPF) 启动器

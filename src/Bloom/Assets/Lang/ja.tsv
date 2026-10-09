@@ -1027,8 +1027,6 @@ Bloom tour	Bloom ツアー
 See the first-run setup and the guide again	最初の設定とガイドをもう一度見る
 Export settings	設定をエクスポート
 Settings, favorites, app names and browser shortcuts in one file	設定、お気に入り、アプリ名、ブラウザーのショートカットを 1 つのファイルに
-Uninstall Bloom	Bloom を削除
-Remove Bloom from this PC · asks twice	この PC から Bloom を削除 · 2 回確認します
 Import settings	設定をインポート
 From an exported settings file	エクスポートした設定ファイルから
 Bloom settings	Bloom の設定
@@ -1732,6 +1730,7 @@ Settings, favorites, app names, browser shortcuts and recent colours in one file
 Reset Bloom	Bloom をリセット
 Deletes all settings and history and starts from the first-run screens · asks to export first	すべての設定と履歴を削除して最初の設定画面から始めます · 先にエクスポートするか確認します
 From an exported file · your current settings stay in the data folder's backups	エクスポートしたファイルから · 今の設定はデータ フォルダーの backups に残ります
+Uninstall Bloom	Bloom を削除
 Removes Bloom from this PC · asks once more about your chats and settings	この PC から Bloom を削除します · チャットと設定も消すかもう一度確認します
 Version	バージョン
 A light native (WPF) launcher	軽量なネイティブ (WPF) ランチャー

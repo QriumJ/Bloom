@@ -2,14 +2,14 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
-## 0.11.1
+## 0.11.2
 
-- Uninstall Bloom from Bloom itself: Settings › About › Uninstall Bloom, or "uninstall bloom" in the search. It asks twice: are you sure, and should your chats, settings and favorites go too. A copy run from the portable zip stops starting with Windows and opens its folder for you to delete.
+- Uninstall Bloom from Bloom itself: Settings › About › Uninstall Bloom. It asks twice: are you sure, and should your chats, settings and favorites go too. A copy run from the portable zip stops starting with Windows and opens its folder for you to delete.
 - Install from PowerShell in one line: `irm https://raw.githubusercontent.com/hyeon1035298/Bloom/main/install.ps1 | iex`. It downloads the same setup from the latest release and runs it.
 
 ### 한국어
 
-- Bloom 안에서 Bloom을 지울 수 있어요. 설정 › 정보 › Bloom 삭제, 또는 검색창에서 "Bloom 삭제". 정말 지울지, 대화 · 설정 · 즐겨찾기까지 지울지 두 번 물어봐요. 압축본으로 쓰던 Bloom은 Windows 시작 시 자동 실행을 풀고, 직접 지울 수 있게 폴더를 열어 줘요.
+- Bloom 안에서 Bloom을 지울 수 있어요. 설정 › 정보 › Bloom 삭제를 누르면 정말 지울지, 대화 · 설정 · 즐겨찾기까지 지울지 두 번 물어봐요. 압축본으로 쓰던 Bloom은 Windows 시작 시 자동 실행을 풀고, 직접 지울 수 있게 폴더를 열어 줘요.
 - PowerShell 한 줄로 설치할 수 있어요: `irm https://raw.githubusercontent.com/hyeon1035298/Bloom/main/install.ps1 | iex`. 최신 릴리즈의 같은 설치 파일을 받아 실행해요.
 
 ## 0.11.0
