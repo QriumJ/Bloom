@@ -86,6 +86,9 @@ internal static class ScreenGrab
             ResizeMode = ResizeMode.NoResize,
             ShowInTaskbar = false,
             Topmost = true,
+            // only the one under the mouse is activated (in Pick): showing the next monitor's one activated would
+            // deactivate the first, which reads as "another app came forward" and cancelled Lens at once
+            ShowActivated = false,
             Background = Brushes.Black,
             Cursor = Cursors.Cross,
             Tag = mon,

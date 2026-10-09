@@ -7,12 +7,14 @@ Each release on GitHub shows its section from this file (the workflow looks for 
 - Screen capture now lets you mark up the area before it goes anywhere. After you drag over the area, a bar opens beside it: pen (P), highlighter (H), eraser (E), four colours (1–4), three line sizes, undo (Ctrl+Z) and redo (Ctrl+Y). Enter copies the picture with your marks; the bar can also pin it, ask AI about it or save it. Esc cancels.
 - Bloom remembers the tool, colour and size you used last.
 - Settings › Bloom Lens has a new Saved captures section: open the folder where Bloom keeps the last 30 captures on this PC, or delete them all. Pinned pictures stay on screen after deleting.
+- Fixed: with two monitors, Bloom Lens could close the moment it opened (most often right after the launcher hid because you clicked another window), so its shortcut seemed to do nothing.
 
 ### 한국어
 
 - 화면 캡처에서 영역을 고른 뒤 바로 표시할 수 있습니다. 영역 옆에 펜(P) · 형광펜(H) · 지우개(E) · 색 4가지(1~4) · 굵기 3단계 · 되돌리기(Ctrl+Z) · 다시 하기(Ctrl+Y) 막대가 표시됩니다. Enter를 누르면 표시한 내용까지 함께 복사됩니다. 막대에서 화면에 고정 · AI에게 묻기 · 그림 저장도 할 수 있고, Esc로 취소합니다.
 - 마지막에 쓴 도구 · 색 · 굵기를 기억합니다.
 - 설정 › Bloom Lens에 캡처 저장본 항목이 생겼습니다. 이 PC에 보관하는 최근 캡처 30장의 폴더를 열거나 모두 삭제할 수 있습니다. 삭제해도 화면에 고정한 그림은 그대로 표시됩니다.
+- 수정: 모니터가 2개일 때 Bloom Lens가 열리자마자 닫혀 단축키가 반응하지 않는 것처럼 보이던 문제를 고쳤습니다. 다른 창을 눌러 런처가 숨겨진 직후에 주로 발생했습니다.
 
 ## 0.12.0
 
