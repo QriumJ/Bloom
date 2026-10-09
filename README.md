@@ -20,6 +20,12 @@
 
 **[Get Bloom for Windows](https://github.com/hyeon1035298/Bloom/releases/latest)** — `BloomLauncher-win-Setup.exe` on the latest release.
 
+Or from PowerShell, which downloads that same setup and runs it ([install.ps1](install.ps1)):
+
+```powershell
+irm https://raw.githubusercontent.com/hyeon1035298/Bloom/main/install.ps1 | iex
+```
+
 - Windows 10/11, 64-bit. If the PC doesn't have the .NET 10 Desktop Runtime, the setup installs it (Windows asks for permission for that part).
 - Bloom installs for your account only, into `%LOCALAPPDATA%\BloomLauncher`, with a Start-menu shortcut. Remove it in Windows Settings › Apps; your settings stay in `%APPDATA%\Bloom`.
 - Bloom isn't code-signed yet, so SmartScreen may say "Windows protected your PC". Choose **More info › Run anyway**.
