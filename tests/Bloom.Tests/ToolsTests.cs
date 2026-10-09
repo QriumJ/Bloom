@@ -1,5 +1,8 @@
+using System;
+using System.IO;
 using System.Windows.Input;
 using Bloom.App;
+using Bloom.Core;
 using Bloom.Search;
 
 namespace Bloom.Tests;
@@ -69,6 +72,19 @@ internal static class ToolsTests
         Check.Eq(Uninstalls.Split(@"C:\Program Files\App\uninstall.exe --remove"), (@"C:\Program Files\App\uninstall.exe", "--remove"), "unquoted with a space in the path");
         Check.Eq(Uninstalls.Split("msiexec.exe /x {11111111-2222-3333-4444-555555555555}"), ("msiexec.exe", "/x {11111111-2222-3333-4444-555555555555}"), "msiexec");
         Check.Eq(Uninstalls.Split("rundll32 shell32,Control_RunDLL"), ("rundll32", "shell32,Control_RunDLL"), "no .exe");
+    }
+
+    public static void DataFolders()
+    {
+        string app = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        Check.True(Paths.Deletable(Path.Combine(app, "Bloom")), "%APPDATA%\\Bloom");
+        Check.True(Paths.Deletable(Path.Combine(local, "Bloom") + "\\"), "%LOCALAPPDATA%\\Bloom\\");
+        Check.True(!Paths.Deletable(Path.Combine(local, "BloomLauncher")), "the install folder is the uninstaller's");
+        Check.True(!Paths.Deletable(app), "%APPDATA% itself");
+        Check.True(!Paths.Deletable("Bloom"), "a relative Bloom");
+        Check.True(!Paths.Deletable(@"C:\"), "a drive's root");
+        Check.True(!Paths.Deletable(Path.Combine(app, "Other", "Bloom")), "a Bloom deeper down");
     }
 
     public static void Layouts()

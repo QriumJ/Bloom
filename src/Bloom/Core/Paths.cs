@@ -33,6 +33,24 @@ internal static class Paths
         Directory.CreateDirectory(Local);
     }
 
+    /// A folder the reset and the uninstall may delete whole: the real data (a folder named Bloom right under
+    /// %APPDATA% or %LOCALAPPDATA%), or a dev --data folder that holds settings.json and its local\ inside it. Anything
+    /// else — a relative path, a drive's root, a folder chosen by mistake — never goes.
+    public static bool Deletable(string dir)
+    {
+        if (!Path.IsPathFullyQualified(dir)) return false;
+        string full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(dir));
+        if (Path.GetDirectoryName(full) is not { Length: > 0 } parent) return false; // a drive's root
+        if (IsDev)
+            return File.Exists(Path.Combine(full, "settings.json"))
+                || (string.Equals(full, Path.TrimEndingDirectorySeparator(Local), StringComparison.OrdinalIgnoreCase) && File.Exists(Path.Combine(Data, "settings.json")));
+        return string.Equals(Path.GetFileName(full), "Bloom", StringComparison.OrdinalIgnoreCase)
+            && (Same(parent, AppData) || Same(parent, LocalAppData));
+    }
+
+    private static bool Same(string a, string b) =>
+        b.Length > 0 && string.Equals(Path.TrimEndingDirectorySeparator(a), Path.TrimEndingDirectorySeparator(b), StringComparison.OrdinalIgnoreCase);
+
     public static string In(string name) => Path.Combine(Data, name);
 
     public static string InLocal(string name)

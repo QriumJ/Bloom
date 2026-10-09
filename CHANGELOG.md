@@ -2,6 +2,14 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.11.3
+
+- Uninstall and Reset check the folders before deleting them: only Bloom's own data folders (Bloom under %APPDATA% and %LOCALAPPDATA%) can go, never another folder by mistake.
+
+### 한국어
+
+- Bloom 삭제와 초기화가 지우기 전에 폴더를 한 번 더 확인해요. Bloom의 데이터 폴더(%APPDATA% · %LOCALAPPDATA% 안의 Bloom)만 지우고, 다른 폴더는 실수로라도 지우지 않아요.
+
 ## 0.11.2
 
 - Uninstall Bloom from Bloom itself: Settings › About › Uninstall Bloom. It asks twice: are you sure, and should your chats, settings and favorites go too. A copy run from the portable zip stops starting with Windows and opens its folder for you to delete.

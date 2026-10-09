@@ -218,7 +218,7 @@ internal static class Program
     /// Both data folders (settings, chats, favorites … and the local caches and logs), retried while a file still closes.
     private static void DeleteData()
     {
-        foreach (string dir in new[] { Paths.Data, Paths.Local }.Distinct())
+        foreach (string dir in new[] { Paths.Data, Paths.Local }.Distinct().Where(Paths.Deletable))
             for (int attempt = 0; attempt < 10 && Directory.Exists(dir); attempt++)
                 try
                 {
