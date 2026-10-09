@@ -5,7 +5,9 @@
 <title>Bloom — GitHub preview</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
 <style>
-  /* 1280 × 640: GitHub's social preview size. Bloom's own colours: a plum-tinted dark, its rose only on the caret. */
+  /* 1280 × 640: GitHub's social preview size, opened as github.html?lang=<en|ko|ja|zh> (the top of each README).
+     Bloom's own colours: a plum-tinted dark, its rose only on the caret. Words follow docs/COPY.md: what it is and
+     what each part does, no slogan. */
   :root {
     --base: #1a1416;
     --app: #0e0b0c;
@@ -23,19 +25,23 @@
     color: var(--ink);
     -webkit-font-smoothing: antialiased;
     word-break: keep-all;
+    line-break: strict;
   }
+  /* Wanted Sans has Latin and Hangul only: kana and Han come from the system fonts the app itself uses */
+  :lang(ja) body { font-family: "Wanted Sans Variable", "Wanted Sans", "Yu Gothic UI", "Meiryo", sans-serif; }
+  :lang(zh) body { font-family: "Wanted Sans Variable", "Wanted Sans", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif; }
   /* the left column runs from the top margin to the bottom one (44 px each; the note's box is 4 px deeper than its
      letters), so the brand and the note sit at the same distance from the edges */
   .copy { position: absolute; left: 72px; top: 44px; bottom: 40px; width: 500px; display: flex; flex-direction: column; }
   /* letter and word spacing of the type below: optical.js (the rules at the end of the page) */
   .brand { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 700; }
   .brand img { width: 38px; height: 38px; }
-  h1 { margin-top: 34px; font-size: 60px; font-weight: 800; line-height: 1.04; }
+  h1 { margin-top: 34px; font-size: 52px; font-weight: 800; line-height: 1.1; }
   .caret { display: inline-block; width: 6px; height: 0.78em; margin-left: 8px; border-radius: 3px; background: var(--rose); vertical-align: -0.03em; }
   /* what it does: a name and one line each, two columns, no boxes */
-  .features { margin-top: 32px; list-style: none; display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; row-gap: 14px; }
+  .features { margin-top: 30px; list-style: none; display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; row-gap: 14px; }
   .features li > b { display: block; font-size: 15.5px; font-weight: 650; }
-  .features li > span { display: block; margin-top: 3px; font-size: 13px; font-weight: 450; line-height: 1.35; color: var(--dim); text-wrap: balance; }
+  .features li > span { display: block; margin-top: 3px; font-size: 13px; font-weight: 450; line-height: 1.38; color: var(--dim); text-wrap: balance; }
   .foot { margin-top: auto; font-size: 12.5px; line-height: 1.5; color: var(--faint); }
   /* the real launcher, whole, as it opens: rounded, a hairline, a soft shadow */
   .app { position: absolute; left: 596px; top: 98px; width: 644px; border: 1px solid var(--hair); border-radius: 18px; overflow: hidden; background: var(--app);
@@ -49,22 +55,83 @@
 <body>
   <section class="copy">
     <div class="brand"><img src="assets/mark-tile.png" alt="">Bloom</div>
-    <h1>Press Win.<br>Type one line<span class="caret"></span></h1>
-    <ul class="features">
-      <li><b>One search line</b><span>Apps, files, settings, web search and maths</span></li>
-      <li><b>AI chat</b><span>Your own Claude Code and Codex login, no API key</span></li>
-      <li><b>Hand off PC work</b><span>Ask it to move files or set timers; it checks first</span></li>
-      <li><b>Work notices</b><span>When an AI task finishes or waits for approval</span></li>
-      <li><b>Bloom Lens</b><span>Ask about, translate or copy any part of the screen</span></li>
-      <li><b>Bloom Space Cleaner</b><span>See where your disk space went, and clear big files</span></li>
-      <li><b>Docked tools</b><span>Notes, timers, calculator and clipboard beside it</span></li>
-      <li><b>Yours to trim</b><span>Switch off what you don't use, scale it to fit</span></li>
-    </ul>
-    <p class="foot">A native Windows app (WPF), free and open source under MIT. For Windows 10 and 11.<br>Unofficial, not affiliated with Anthropic or OpenAI.</p>
+    <h1 id="title"></h1>
+    <ul class="features" id="features"></ul>
+    <p class="foot" id="foot"></p>
   </section>
-  <div class="app"><img src="assets/en-dark-p1-home.png" alt=""></div>
-  <div class="notice"><img src="assets/en-dark-p5-notices.png" alt=""></div>
+  <div class="app"><img id="home" alt=""></div>
+  <div class="notice"><img id="notice" alt=""></div>
   <script>
+    // Each language: the title (one line break), eight parts as name + what it does, the note. Product names stay.
+    const T = {
+      en: {
+        title: ["Windows launcher", "for search and AI"],
+        features: [
+          ["One search line", "Apps, files, settings, web search and maths"],
+          ["AI chat", "Claude Code or Codex signed in on this PC, no API key"],
+          ["PC actions", "Moves files and sets timers after your approval"],
+          ["Work notifications", "AI task done or waiting for approval"],
+          ["Bloom Lens", "Ask about, translate or copy a screen area"],
+          ["Bloom Space Cleaner", "Disk space map and large-file cleanup"],
+          ["Docked tools", "Notes, timers, calculator and clipboard beside the launcher"],
+          ["Features on and off", "Switched-off features release memory and shortcuts"],
+        ],
+        foot: ["Native Windows app (WPF) · MIT · Windows 10 and 11", "Unofficial project, not affiliated with Anthropic or OpenAI"],
+      },
+      ko: {
+        title: ["검색과 AI를 위한", "Windows 런처"],
+        features: [
+          ["검색줄 하나", "앱, 파일, 설정, 웹 검색, 계산"],
+          ["AI 채팅", "이 PC의 Claude Code · Codex 로그인 사용, API 키 불필요"],
+          ["PC 작업", "승인 후 파일 이동 · 타이머 설정"],
+          ["작업 알림", "AI 작업 완료 · 승인 대기"],
+          ["Bloom Lens", "화면 영역 질문 · 번역 · 글자 복사"],
+          ["Bloom Space Cleaner", "디스크 사용량 지도 · 큰 파일 정리"],
+          ["옆에 붙는 도구", "런처 옆 메모 · 타이머 · 계산기 · 클립보드"],
+          ["기능 켜고 끄기", "끈 기능의 메모리 · 단축키 해제"],
+        ],
+        foot: ["네이티브 Windows 앱(WPF) · MIT · Windows 10, 11", "Anthropic, OpenAI와 관계없는 비공식 프로젝트"],
+      },
+      ja: {
+        title: ["検索と AI のための", "Windows ランチャー"],
+        features: [
+          ["1 本の検索欄", "アプリ、ファイル、設定、ウェブ検索、計算"],
+          ["AI チャット", "この PC の Claude Code、Codex のサインインを使用、API キー不要"],
+          ["PC の操作", "承認後にファイル移動、タイマー設定"],
+          ["作業の通知", "AI 作業の完了、承認待ち"],
+          ["Bloom Lens", "画面の範囲について質問、翻訳、文字のコピー"],
+          ["Bloom Space Cleaner", "ディスク使用量のマップ、大きいファイルの整理"],
+          ["横に付くツール", "ランチャー横のメモ、タイマー、電卓、クリップボード"],
+          ["機能のオン/オフ", "オフにした機能のメモリ、ショートカットを解放"],
+        ],
+        foot: ["ネイティブ Windows アプリ (WPF) · MIT · Windows 10、11", "Anthropic、OpenAI とは関係のない非公式プロジェクト"],
+      },
+      zh: {
+        title: ["用于搜索和 AI 的", "Windows 启动器"],
+        features: [
+          ["一个搜索栏", "应用、文件、设置、网页搜索、计算"],
+          ["AI 聊天", "使用本机 Claude Code、Codex 的登录，无需 API 密钥"],
+          ["电脑操作", "批准后移动文件、设置计时器"],
+          ["工作通知", "AI 任务完成、等待批准"],
+          ["Bloom Lens", "对屏幕区域提问、翻译、复制文字"],
+          ["Bloom Space Cleaner", "磁盘占用地图、清理大文件"],
+          ["旁边的工具", "启动器旁的笔记、计时器、计算器、剪贴板"],
+          ["功能开关", "关闭的功能释放内存和快捷键"],
+        ],
+        foot: ["原生 Windows 应用 (WPF) · MIT · Windows 10、11", "非官方项目，与 Anthropic、OpenAI 无关"],
+      },
+    };
+    const lang = new URLSearchParams(location.search).get("lang") || "en";
+    const t = T[lang];
+    // assets/<lang>-dark-…: the app's `--qa-set promo --demo --qa-scale 2 --lang <lang>` captures
+    const shot = `${lang}-dark`;
+    document.documentElement.lang = lang === "zh" ? "zh-CN" : lang;
+    const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    document.getElementById("title").innerHTML = t.title.map(esc).join("<br>") + '<span class="caret"></span>';
+    document.getElementById("features").innerHTML = t.features.map(([b, s]) => `<li><b>${esc(b)}</b><span>${esc(s)}</span></li>`).join("");
+    document.getElementById("foot").innerHTML = t.foot.map(esc).join("<br>");
+    document.getElementById("home").src = `assets/${shot}-p1-home.png`;
+    document.getElementById("notice").src = `assets/${shot}-p5-notices.png`;
     window.OPTICAL = [
       { sel: '.brand', track: -0.01 },
       { sel: 'h1', track: -0.02, space: 0.15 },

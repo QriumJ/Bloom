@@ -79,8 +79,9 @@ internal static partial class Captures
         string l = En ? "en" : "ko";
         var t = new ChatThread { Id = "qa-mcp", Title = Tr("다운로드 정리", "Tidy downloads"), Model = "sonnet" };
         t.Messages.Add(new ChatMessage { Role = "user", Text = Tr("어제 받은 견적서 PDF 찾아서 문서 폴더로 옮기고, 10분 타이머 맞춰줘", "Find yesterday's quote PDF, move it to Documents, and set a 10 min timer") });
-        var a = new ChatMessage { Role = "assistant", Text = Tr("`견적서_1007.pdf`를 찾았어요. 문서 폴더로 옮길게요.", "Found `quote_1007.pdf`. Moving it to Documents."), Streaming = true, Status = Tr("허락을 기다려요", "Waiting for your OK") };
-        a.Done = new() { "✓ " + Tr("Bloom에서 실행: 10분 타이머", "Run in Bloom: 10 min timer") };
+        var a = new ChatMessage { Role = "assistant", Text = Tr("`견적서_1007.pdf`를 찾았습니다. 문서 폴더로 옮깁니다.", "Found `quote_1007.pdf`. Moving it to Documents."), Streaming = true, Status = Tr("승인 대기", "Approval pending") };
+        string timer = Tr("10분 타이머", "10 min timer");
+        a.Done = new() { "✓ " + Tr($"Bloom에서 실행: {timer}", $"Run in Bloom: {timer}") };
         a.Asks.Add(new ToolAsk("qa", "mcp__bloom__pc", "{}", Tr(@"옮기기: 견적서_1007.pdf → C:\Users\me\Documents", @"Move: quote_1007.pdf → C:\Users\me\Documents")));
         t.Messages.Add(a);
         host.Chats.SetLiveForQa(t, true);

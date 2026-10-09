@@ -104,7 +104,7 @@ internal static partial class Captures
         }
         string move = Tr(@"옮기기: 견적서_1007.pdf → C:\Users\me\Documents", @"Move: quote_1007.pdf → C:\Users\me\Documents");
         job.Messages.Add(new ChatMessage { Role = "user", Text = jobAsk });
-        var did = new ChatMessage { Role = "assistant", Text = Tr("`견적서_1007.pdf`를 찾았어요. 문서 폴더로 옮길게요.", "Found `quote_1007.pdf`. Moving it to Documents."), Streaming = true, Status = Tr("허락을 기다려요", "Waiting for you") };
+        var did = new ChatMessage { Role = "assistant", Text = Tr("`견적서_1007.pdf`를 찾았습니다. 문서 폴더로 옮깁니다.", "Found `quote_1007.pdf`. Moving it to Documents."), Streaming = true, Status = Tr("승인 대기", "Approval pending") };
         did.Asks.Add(new ToolAsk("motion", "mcp__bloom__pc", "{}", move));
         job.Messages.Add(did);
         host.Chats.SetLiveForQa(job, true);
@@ -112,7 +112,7 @@ internal static partial class Captures
         await Snap(w, dir, "L-pc-ask");
         did.Asks.Clear();
         did.Done = new() { "✓ " + move };
-        did.Text += Tr("\n\n옮겼어요. 문서 폴더에 있어요.", "\n\nDone. It's in Documents now.");
+        did.Text += Tr("\n\n문서 폴더로 옮겼습니다.", "\n\nMoved to Documents.");
         did.Streaming = false;
         did.Status = null;
         host.Chats.SetLiveForQa(job, false);
@@ -177,9 +177,7 @@ internal static partial class Captures
         // Bloom Lens → 번역: the card with what was read and its translation
         var tw = new Ocr.TranslateWindow(host, new Ocr.ScreenRect(0, 0, 0, 0), null, false) { Left = -32000, Top = -32000, ShowActivated = false };
         tw.Show();
-        tw.FillForQa(
-            Tr("The meeting has moved to Friday at 3 PM.\nPlease bring the updated slides.", "会議は金曜日の午後3時に変更になりました。\n修正したスライドを持ってきてください。"),
-            Tr("회의가 금요일 오후 3시로 옮겨졌어요.\n고친 슬라이드를 가져와 주세요.", "The meeting has moved to Friday at 3 PM.\nPlease bring the updated slides."), 1);
+        tw.FillForQa(string.Join("\n", LensSource), LensTranslation, 1);
         await Task.Delay(300);
         tw.Capture(Path.Combine(dir, "TW-translate.png"));
         double tww = tw.ActualWidth, twh = tw.ActualHeight;
@@ -189,7 +187,7 @@ internal static partial class Captures
         var nw = new NoticeWindow { Offscreen = true };
         Settings.Current.NoticeSpot = "bottom-right";
         Settings.Current.NoticeSize = "m";
-        nw.Add(new Notice("done", Tr("Claude Code · 작업 완료", "Claude Code · Done"), Tr("결제 모듈 테스트 추가", "Add payment module tests"), Tr("12분 걸렸어요", "Took 12 min")));
+        nw.Add(SampleDone("Claude Code", Tr("결제 모듈 테스트 추가", "Add payment module tests"), 12));
         await Task.Delay(400);
         await nw.Dispatcher.InvokeAsync(() => nw.Capture(Path.Combine(dir, "N-done.png")), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         nw.Close();
@@ -210,22 +208,36 @@ internal static partial class Captures
 
     private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
+    // The Lens sample: a message in another language, translated into the interface language — English into Korean,
+    // Japanese or Chinese, and in English runs Japanese into English. Message text (a person's words), not interface
+    // text, so it is per language here rather than in the tables.
+    private static bool LensFromJapanese => Lang.Code == "en";
+
+    private static string[] LensSource => LensFromJapanese
+        ? new[] { "会議は金曜日の午後3時に変更になりました。", "修正したスライドを持ってきてください。" }
+        : new[] { "The meeting has moved to Friday at 3 PM.", "Please bring the updated slides." };
+
+    private static string LensTranslation => Lang.Code switch
+    {
+        "en" => "The meeting has moved to Friday at 3 PM.\nPlease bring the updated slides.",
+        "ja" => "会議は金曜日の午後3時に変更になりました。\n修正したスライドを持ってきてください。",
+        "zh" => "会议改到周五下午 3 点了。\n请带上修改后的幻灯片。",
+        _ => "회의가 금요일 오후 3시로 변경되었습니다.\n수정한 슬라이드를 가져와 주세요.",
+    };
+
     /// The message the Lens cut picks from: a light card as another app would show it (fictional sender), saved at 2×.
     /// Returns its size and the picked lines' area (dip), and those lines' pixels at 2× as a 200 % screen would give them.
     private static (double W, double H, Rect Pick, (int w, int h) PickPx, byte[] Bgra) LensCard(string file)
     {
         const double W = 560, H = 176, Line = 32;
         var face = new Typeface(new FontFamily("Segoe UI, Yu Gothic UI"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
-        // English to translate into Korean; in English runs Japanese to translate into English (as the 번역 card's sample)
-        string[] lines = En
-            ? new[] { "会議は金曜日の午後3時に変更になりました。", "修正したスライドを持ってきてください。" }
-            : new[] { "The meeting has moved to Friday at 3 PM.", "Please bring the updated slides." };
+        string[] lines = LensSource;
         FormattedText Text(string s, double size, Brush b) => new(s, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, face, size, b, 1.0);
         var dv = new DrawingVisual();
         using (var dc = dv.RenderOpen())
         {
             dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromRgb(0xFB, 0xF8, 0xF9)), null, new Rect(0, 0, W, H), 16, 16);
-            dc.DrawText(Text(En ? "Haruka · 2:14 PM" : "Alex Kim · 2:14 PM", 13, new SolidColorBrush(Color.FromRgb(0x7A, 0x72, 0x76))), new Point(24, 20));
+            dc.DrawText(Text(LensFromJapanese ? "Haruka · 2:14 PM" : "Alex Kim · 2:14 PM", 13, new SolidColorBrush(Color.FromRgb(0x7A, 0x72, 0x76))), new Point(24, 20));
             for (int i = 0; i < lines.Length; i++) dc.DrawText(Text(lines[i], 20, new SolidColorBrush(Color.FromRgb(0x1D, 0x1A, 0x1B))), new Point(24, 58 + (i * Line)));
         }
         double textW = lines.Max(l => Text(l, 20, Brushes.Black).WidthIncludingTrailingWhitespace);

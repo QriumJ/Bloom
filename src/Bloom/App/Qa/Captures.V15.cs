@@ -152,6 +152,25 @@ internal static partial class Captures
         sw.Close();
     }
 
+    // Made-up work notices worded exactly as Notices words the real ones (the pictures show the app's own text).
+    private static Notice SampleDone(string tool, string task, int minutes)
+    {
+        string took = Notices.Span(TimeSpan.FromMinutes(minutes));
+        return new Notice("done", $"{tool} · {Tr("작업 완료", "Done")}", task, Tr($"소요 시간 {took}", $"Elapsed: {took}"));
+    }
+
+    private static Notice SampleWaiting(string tool, string task, string key) =>
+        new("waiting", $"{tool} · {Tr("승인 대기", "Needs approval")}", task, Tr("승인 대기", "Approval pending"), key);
+
+    private static Notice SampleLimit(string who, string limit, int left, TimeSpan resets)
+    {
+        string when = Notices.Span(resets);
+        return new Notice("limit", $"{who} · {Tr("한도 임박", "Limit near")}", Tr($"{limit} 한도 {left}% 남음", $"{limit} limit · {left}% left"), Tr($"{when} 뒤 초기화", $"Resets in {when}"));
+    }
+
+    private static Notice SampleRecover(string who, string limit) =>
+        new("recover", $"{who} · {Tr("한도 복구", "Limit reset")}", Tr($"{limit} 한도 초기화 완료", $"{limit} limit reset"), null);
+
     /// `--qa-set notices`: one card of each kind (made-up tasks), dark and light, then the large size.
     private static async Task NoticeScreens(Host host, Launcher w, string dir)
     {
@@ -159,10 +178,10 @@ internal static partial class Captures
         var samples = new[]
         {
             new Notice("start", Tr("Claude Code · 진행 중", "Claude Code · Working"), Tr("로그인 화면 리팩터링과 세션 만료 처리, 오류 문구까지 한 번에 정리", "Refactor the sign-in screen, session expiry and the error wording in one go"), Tr("“세션이 끊기면 다시 로그인하는 흐름도 같이 고쳐 줘, 테스트도 추가하고”", "“Also fix signing in again after the session drops, and add tests”")),
-            new Notice("done", Tr("Codex · 작업 완료", "Codex · Done"), Tr("결제 모듈 테스트 추가", "Add payment module tests"), Tr("12분 걸렸어요", "Took 12 min")),
-            new Notice("waiting", Tr("Claude Code · 승인 대기", "Claude Code · Needs approval"), Tr("빌드 스크립트 정리", "Tidy the build script"), Tr("명령 실행을 허락해 주세요", "Allow the command to run"), "qa"),
-            new Notice("limit", Tr("Claude Max 20x · 한도 임박", "Claude Max 20x · Limit near"), Tr("주간 한도 18% 남았어요", "18% of the weekly limit left"), Tr("2일 4시간 뒤 초기화", "Resets in 2 d 4 h")),
-            new Notice("recover", Tr("ChatGPT Plus · 한도 복구", "ChatGPT Plus · Limit back"), Tr("5시간 한도가 다시 찼어요", "The 5-hour limit is full again"), null),
+            SampleDone("Codex", Tr("결제 모듈 테스트 추가", "Add payment module tests"), 12),
+            SampleWaiting("Claude Code", Tr("빌드 스크립트 정리", "Tidy the build script"), "qa"),
+            SampleLimit("Claude Max 20x", Tr("주간", "Weekly"), 18, new TimeSpan(2, 4, 0, 0)),
+            SampleRecover("ChatGPT Plus", Tr("5시간", "5h")),
         };
         var nw = new NoticeWindow { Offscreen = true };
         foreach (string theme in new[] { "dark", "light" })
@@ -253,12 +272,12 @@ internal static partial class Captures
         await Shot(w, dir, $"{l}-dark-p3-timer", Mode.Root, Tr("10분 타이머", "10 min timer"), 700);
         var t = new ChatThread { Id = "promo", Title = "Bloom", Model = "sonnet" };
         t.Messages.Add(new ChatMessage { Role = "user", Text = Tr("이번 주 일정 요약해 줘", "Sum up my week") });
-        t.Messages.Add(new ChatMessage { Role = "assistant", Text = Tr("이번 주는 일정이 하나예요.\n\n- **내일 15:00** 디자인 리뷰\n\n그 전에 끝낼 일을 정리해 드릴까요?", "One thing this week:\n\n- **Tomorrow 3 PM** design review\n\nWant a list of what to finish before it?") });
+        t.Messages.Add(new ChatMessage { Role = "assistant", Text = Tr("이번 주 일정은 1개입니다.\n\n- **내일 15:00** 디자인 리뷰", "One event this week:\n\n- **Tomorrow 3 PM** design review") });
         w.ShowChat(t);
         await Snap(w, dir, $"{l}-dark-p4-chat");
         var nw = new NoticeWindow { Offscreen = true };
-        nw.Add(new Notice("waiting", Tr("Claude Code · 승인 대기", "Claude Code · Needs approval"), Tr("빌드 스크립트 정리", "Tidy the build script"), Tr("확인을 기다리고 있어요", "Waiting for you"), "promo"));
-        nw.Add(new Notice("done", Tr("Codex · 작업 완료", "Codex · Done"), Tr("결제 모듈 테스트 추가", "Add payment module tests"), Tr("12분 걸렸어요", "Took 12 min")));
+        nw.Add(SampleWaiting("Claude Code", Tr("빌드 스크립트 정리", "Tidy the build script"), "promo"));
+        nw.Add(SampleDone("Codex", Tr("결제 모듈 테스트 추가", "Add payment module tests"), 12));
         await Task.Delay(400);
         await nw.Dispatcher.InvokeAsync(() => nw.Capture(Path.Combine(dir, $"{l}-dark-p5-notices.png")), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         nw.Close();

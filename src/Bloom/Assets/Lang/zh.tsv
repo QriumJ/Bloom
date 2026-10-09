@@ -194,7 +194,7 @@ Resets in {0}	{0}后重置
 Limit used up	额度已用完
 {0} limit used up	{0} 额度已用完
 Limit near	即将达到上限
-{0} limit · {1}% left	{0} 额度 · 剩余 {1}%
+{0} limit · {1}% left	{0}额度 · 剩余 {1}%
 Bloom · Update	Bloom · 更新
 Version {0} downloaded	已下载版本 {0}
 Applies at next start	下次启动时应用
@@ -785,8 +785,7 @@ D:\\my photos	D:\\my photos
 Tidy downloads	整理下载文件
 Find yesterday's quote PDF, move it to Documents, and set a 10 min timer	找到昨天的报价单 PDF，移到“文档”，再设一个 10 分钟计时器
 Found `quote_1007.pdf`. Moving it to Documents.	找到了 `quote_1007.pdf`。正在移到“文档”。
-Waiting for your OK	正在等待你的许可
-Run in Bloom: 10 min timer	在 Bloom 中运行：10 min timer
+10 min timer	10 min timer
 Move: quote_1007.pdf → C:\\Users\\me\\Documents	移动：quote_1007.pdf → C:\\Users\\me\\Documents
 end process	end process
 end process 	end process
@@ -796,13 +795,9 @@ laundry in 30 min	laundry in 30 min
 List what to prep for next week's talk	列出下周演讲要准备的事
 Here's what to do before the talk.\n\n1. **Draft the slides** by Thursday\n2. **Rehearse** once with the team\n3. **List five questions** people may ask\n\nWant to go through them one by one?	这是演讲前要做的事。\n\n1. 周四前完成**幻灯片初稿**\n2. 和团队**彩排**一次\n3. 整理**五个**可能被问到的**问题**\n\n要一个一个来看吗？
 Move yesterday's quote PDF to Documents	把昨天的报价单 PDF 移到“文档”
-Waiting for you	正在等你确认
-\n\nDone. It's in Documents now.	\n\n好了，已经在“文档”里了。
+\n\nMoved to Documents.	\n\n已移到“文档”文件夹。
 Groceries\n- milk\n- eggs\n- bread	购物\n- 牛奶\n- 鸡蛋\n- 面包
-会議は金曜日の午後3時に変更になりました。\n修正したスライドを持ってきてください。	会議は金曜日の午後3時に変更になりました。\n修正したスライドを持ってきてください。
-The meeting has moved to Friday at 3 PM.\nPlease bring the updated slides.	The meeting has moved to Friday at 3 PM.\nPlease bring the updated slides.
 Add payment module tests	添加支付模块测试
-Took 12 min	用时 12 分钟
 ntpd	ntpd
 chrom	chrom
 Friday meeting\nresend the quote · fix the date	周五会议\n重新发送报价单 · 确定日期
@@ -823,16 +818,10 @@ Refresh every	刷新间隔
 Refactor the sign-in screen, session expiry and the error wording in one go	一次性重构登录界面、会话过期处理和错误文案
 “Also fix signing in again after the session drops, and add tests”	“会话断开后重新登录的流程也一起修好，再加上测试”
 Tidy the build script	整理构建脚本
-Allow the command to run	请允许运行命令
-Claude Max 20x · Limit near	Claude Max 20x · 即将达到上限
-Resets in 2 d 4 h	2 天 4 小时后重置
-ChatGPT Plus · Limit back	ChatGPT Plus · 额度已恢复
-The 5-hour limit is full again	5 小时额度已恢复满
 limit	limit
 Design review	设计评审
-10 min timer	10 min timer
 Sum up my week	总结一下我这周的安排
-One thing this week:\n\n- **Tomorrow 3 PM** design review\n\nWant a list of what to finish before it?	这周只有一项安排：\n\n- **明天 15:00** 设计评审\n\n要列一下在那之前要完成的事吗？
+One event this week:\n\n- **Tomorrow 3 PM** design review	本周有 1 个日程：\n\n- **明天 15:00** 设计评审
 in 100 days	in 100 days
 days until christmas	days until christmas
 new york 3pm	new york 3pm

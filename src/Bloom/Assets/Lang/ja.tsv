@@ -194,7 +194,7 @@ Resets in {0}	{0}後にリセット
 Limit used up	上限に到達
 {0} limit used up	{0} の上限到達
 Limit near	上限が近い
-{0} limit · {1}% left	{0} の上限 · 残り {1}%
+{0} limit · {1}% left	{0}の上限 · 残り {1}%
 Bloom · Update	Bloom · アップデート
 Version {0} downloaded	バージョン {0} のダウンロード完了
 Applies at next start	次回起動時に適用
@@ -785,8 +785,7 @@ D:\\my photos	D:\\my photos
 Tidy downloads	ダウンロードを整理
 Find yesterday's quote PDF, move it to Documents, and set a 10 min timer	昨日の見積書 PDF を探してドキュメントに移動し、10 分のタイマーをセットして
 Found `quote_1007.pdf`. Moving it to Documents.	`quote_1007.pdf` が見つかりました。ドキュメントに移動します。
-Waiting for your OK	許可を待っています
-Run in Bloom: 10 min timer	Bloom で実行: 10 min timer
+10 min timer	10 min timer
 Move: quote_1007.pdf → C:\\Users\\me\\Documents	移動: quote_1007.pdf → C:\\Users\\me\\Documents
 end process	end process
 end process 	end process 
@@ -796,13 +795,9 @@ laundry in 30 min	laundry in 30 min
 List what to prep for next week's talk	来週の発表の準備をリストにして
 Here's what to do before the talk.\n\n1. **Draft the slides** by Thursday\n2. **Rehearse** once with the team\n3. **List five questions** people may ask\n\nWant to go through them one by one?	発表の前にやることです。\n\n1. **スライドの下書き**を木曜までに\n2. チームと一度**リハーサル**\n3. 出そうな**質問を5つ**まとめる\n\n一つずつ見ていきましょうか？
 Move yesterday's quote PDF to Documents	昨日の見積書 PDF をドキュメントに移動して
-Waiting for you	あなたの確認を待っています
-\n\nDone. It's in Documents now.	\n\n完了しました。ドキュメントに移動しました。
+\n\nMoved to Documents.	\n\nドキュメント フォルダーに移動しました。
 Groceries\n- milk\n- eggs\n- bread	買い物\n- 牛乳\n- 卵\n- パン
-会議は金曜日の午後3時に変更になりました。\n修正したスライドを持ってきてください。	会議は金曜日の午後3時に変更になりました。\n修正したスライドを持ってきてください。
-The meeting has moved to Friday at 3 PM.\nPlease bring the updated slides.	The meeting has moved to Friday at 3 PM.\nPlease bring the updated slides.
 Add payment module tests	決済モジュールのテストを追加
-Took 12 min	所要時間12分
 ntpd	ntpd
 chrom	chrom
 Friday meeting\nresend the quote · fix the date	金曜の会議\n見積書を再送 · 日程を確定
@@ -823,16 +818,10 @@ Refresh every	更新間隔
 Refactor the sign-in screen, session expiry and the error wording in one go	サインイン画面、セッション切れ、エラー文言をまとめてリファクタリング
 “Also fix signing in again after the session drops, and add tests”	「セッションが切れたあとの再サインインも直して、テストも追加して」
 Tidy the build script	ビルド スクリプトを整理
-Allow the command to run	コマンドの実行を許可してください
-Claude Max 20x · Limit near	Claude Max 20x · 上限が近い
-Resets in 2 d 4 h	2日4時間後にリセット
-ChatGPT Plus · Limit back	ChatGPT Plus · 上限が回復
-The 5-hour limit is full again	5時間枠の利用可能量回復
 limit	limit
 Design review	デザインレビュー
-10 min timer	10 min timer
 Sum up my week	今週の予定をまとめて
-One thing this week:\n\n- **Tomorrow 3 PM** design review\n\nWant a list of what to finish before it?	今週の予定は 1 件です。\n\n- **明日 15:00** デザインレビュー\n\nそれまでに終わらせることをリストにしましょうか？
+One event this week:\n\n- **Tomorrow 3 PM** design review	今週の予定は1件です。\n\n- **明日 15:00** デザインレビュー
 in 100 days	in 100 days
 days until christmas	days until christmas
 new york 3pm	new york 3pm
