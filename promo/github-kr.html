@@ -25,7 +25,9 @@
     word-break: keep-all;
     line-break: strict;
   }
-  .copy { position: absolute; left: 72px; top: 60px; width: 500px; }
+  /* the left column runs from the top margin to the bottom one (44 px each; the note's box is 4 px deeper than its
+     letters), so the brand and the note sit at the same distance from the edges */
+  .copy { position: absolute; left: 72px; top: 44px; bottom: 40px; width: 500px; display: flex; flex-direction: column; }
   /* letter and word spacing of the type below: optical.js (the rules at the end of the page) */
   .brand { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 700; }
   .brand img { width: 38px; height: 38px; }
@@ -35,13 +37,13 @@
   .features { margin-top: 28px; list-style: none; display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; row-gap: 12px; }
   .features li > b { display: block; font-size: 15.5px; font-weight: 700; }
   .features li > span { display: block; margin-top: 3px; font-size: 13px; font-weight: 500; line-height: 1.38; color: var(--dim); text-wrap: balance; }
-  .foot { position: absolute; left: 72px; bottom: 30px; width: 500px; font-size: 12.5px; line-height: 1.5; color: var(--faint); }
+  .foot { margin-top: auto; font-size: 12.5px; line-height: 1.5; color: var(--faint); }
   /* the real launcher, whole, as it opens: rounded, a hairline, a soft shadow */
-  .app { position: absolute; left: 596px; top: 104px; width: 644px; border: 1px solid var(--hair); border-radius: 18px; overflow: hidden; background: var(--app);
+  .app { position: absolute; left: 596px; top: 98px; width: 644px; border: 1px solid var(--hair); border-radius: 18px; overflow: hidden; background: var(--app);
          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 34px 90px rgba(0, 0, 0, 0.5); }
   .app img { display: block; width: 100%; }
   /* one notice card (the capture holds two: only the top one shows) */
-  .notice { position: absolute; left: 896px; top: 464px; width: 350px; height: 90px; overflow: hidden; }
+  .notice { position: absolute; left: 896px; top: 458px; width: 350px; height: 90px; overflow: hidden; }
   .notice img { display: block; width: 350px; }
 </style>
 </head>
@@ -59,8 +61,8 @@
       <li><b>옆에 붙는 도구</b><span>메모, 타이머, 계산기,<br>클립보드를 런처 옆에</span></li>
       <li><b>내게 맞게</b><span>안 쓰는 기능은 끄고,<br>크기도 맞춰요</span></li>
     </ul>
+    <p class="foot">WebView 없는 네이티브 앱이고, 무료 오픈소스(MIT)예요. Windows 10, 11용.<br>Anthropic, OpenAI와 관계없는 비공식 프로젝트예요.</p>
   </section>
-  <p class="foot">WebView 없는 네이티브 앱이고, 무료 오픈소스(MIT)예요. Windows 10, 11용.<br>Anthropic, OpenAI와 관계없는 비공식 프로젝트예요.</p>
   <div class="app"><img src="assets/ko-dark-p1-home.png" alt=""></div>
   <div class="notice"><img src="assets/ko-dark-p5-notices.png" alt=""></div>
   <script>
