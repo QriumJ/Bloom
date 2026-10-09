@@ -485,6 +485,7 @@ internal sealed partial class SettingsView
         Add(Tr("설정 내보내기", "Export settings"), Tr("설정 · 즐겨찾기 · 앱 이름 · 브라우저 바로 가기 · 최근 색을 파일 하나로", "Settings, favorites, app names, browser shortcuts and recent colours in one file"), null, G.Send, () => host.ExportSettings(Window.GetWindow(this)), null, filter);
         Add(Tr("Bloom 초기화", "Reset Bloom"), Tr("모든 설정과 기록을 지우고 처음 설정 화면부터 다시 · 지우기 전에 내보낼지 물어봐요", "Deletes all settings and history and starts from the first-run screens · asks to export first"), null, G.Delete, () => host.ResetAll(Window.GetWindow(this)), null, filter);
         Add(Tr("설정 불러오기", "Import settings"), Tr("내보낸 파일에서 · 지금 설정은 데이터 폴더의 backups에 남겨요", "From an exported file · your current settings stay in the data folder's backups"), null, G.Import, () => host.ImportSettings(Window.GetWindow(this)), null, filter);
+        Add(Tr("Bloom 삭제", "Uninstall Bloom"), Tr("PC에서 Bloom을 지워요 · 대화 · 설정까지 지울지 한 번 더 물어봐요", "Removes Bloom from this PC · asks once more about your chats and settings"), null, G.Delete, () => host.UninstallBloom(Window.GetWindow(this)), null, filter);
         Header(Tr("버전", "Version"));
         string ver = typeof(SettingsView).Assembly.GetName().Version?.ToString(3) ?? "";
         Add($"Bloom {ver}", Tr("가벼운 네이티브(WPF) 런처", "A light native (WPF) launcher"), null, G.Info, null, null, filter);

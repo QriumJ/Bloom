@@ -109,6 +109,10 @@ internal sealed partial class Host
                 Window.Dismiss();
                 ImportSettings(null);
                 break;
+            case "cmd:uninstall":
+                Window.Dismiss();
+                UninstallBloom(null);
+                break;
             case "cmd:welcome":
                 Window.Dismiss();
                 ShowOnboarding();

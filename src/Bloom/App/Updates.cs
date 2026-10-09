@@ -34,6 +34,14 @@ internal static class Updates
     /// Installed with the setup file (Velopack), so able to update itself.
     public static bool Installed => Manager() is not null;
 
+    /// The setup's uninstaller (Update.exe beside current\), or null for a copy not installed with the setup.
+    public static string? Uninstaller()
+    {
+        if (!Installed) return null;
+        string u = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "Update.exe"));
+        return File.Exists(u) ? u : null;
+    }
+
     private static UpdateManager? Manager()
     {
         if (looked) return manager;

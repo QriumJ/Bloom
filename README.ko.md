@@ -27,7 +27,7 @@ irm https://raw.githubusercontent.com/hyeon1035298/Bloom/main/install.ps1 | iex
 ```
 
 - Windows 10/11 64비트. PC에 .NET 10 Desktop Runtime이 없으면 설치 파일이 같이 설치해요(그 부분만 Windows가 권한을 물어봐요).
-- 내 계정에만 `%LOCALAPPDATA%\BloomLauncher`로 설치되고 시작 메뉴에 바로 가기가 생겨요. 지울 때는 Windows 설정 › 앱에서 지우면 되고, 설정은 `%APPDATA%\Bloom`에 남아요.
+- 내 계정에만 `%LOCALAPPDATA%\BloomLauncher`로 설치되고 시작 메뉴에 바로 가기가 생겨요. 지울 때는 Bloom 설정 › 정보 › **Bloom 삭제**를 누르면 돼요(`%APPDATA%\Bloom`의 대화 · 설정 · 즐겨찾기까지 지울지 물어봐요). Windows 설정 › 앱에서 지우면 그 데이터는 남아요.
 - 아직 코드 서명이 없어서 SmartScreen이 "Windows의 PC 보호"를 띄울 수 있어요. **추가 정보 › 실행**을 누르세요.
 - **업데이트**: 켜고 조금 뒤 한 번만 이 저장소의 최신 릴리즈를 확인해요. 새 버전은 뒤에서 받아 두었다가 다음에 켤 때 적용돼요. 설정 › 정보에 **업데이트 확인**(준비되면 **다시 시작해서 업데이트**)과 켤 때 확인 스위치가 있어요. 업데이트한 뒤에는 바뀐 점을 한 번 보여 줘요(설정 › 정보에서 언제든 다시 보기).
 

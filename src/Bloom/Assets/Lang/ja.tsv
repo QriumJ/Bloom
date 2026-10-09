@@ -143,6 +143,12 @@ Export your settings before deleting?	削除する前に設定をエクスポー
 Keep your settings and favorites in one file, and bring them back with 'Import settings' on the first-run screens.	設定とお気に入りを1つのファイルに残しておけば、最初の設定画面の「設定をインポート」で元に戻せます。
 Couldn't reset	リセットできませんでした
 Couldn't start a new Bloom. Nothing was deleted.	新しい Bloom を起動できませんでした。何も削除していません。
+Bloom is removed from this PC, with its Start-menu shortcut and its start with Windows.	Bloom をこの PC から削除します。スタート メニューのショートカットと Windows 起動時の自動実行もなくなります。
+Bloom quits and no longer starts with Windows. This copy wasn't installed with the setup, so delete the folder that opens afterwards.	Bloom を終了し、Windows 起動時の自動実行を解除します。この Bloom はセットアップでインストールされていないため、終了後に開くフォルダーを手動で削除してください。
+Really uninstall Bloom?	本当に Bloom を削除しますか？
+Delete your chats, settings and favorites too?	チャット・設定・お気に入りもすべて削除しますか？
+Yes: AI chats, settings, favorites, notes and clipboard history all go. This can't be undone.\nNo: they stay, and a new install picks up where you left off.	はい: AI チャット、設定、お気に入り、メモ、クリップボードの履歴まですべて削除します。元に戻せません。\nいいえ: 残しておくと、再インストールしたときにそのまま続きから使えます。
+Couldn't uninstall	削除できませんでした
 There are no notes for this version.	このバージョンの変更メモはありません。
 Couldn't end ‘{0}’ — it may run as administrator	‘{0}’ を終了できませんでした — 管理者として実行されている可能性があります
 {0} ended, {1} refused	{0} 個を終了、{1} 個は拒否されました
@@ -721,6 +727,9 @@ Copy: {0} → {1}	コピー: {0} → {1}
 To the Recycle Bin: {0}{1}	ごみ箱へ: {0}{1}
 Read the clipboard	クリップボードを読む
 Copy to the clipboard: {0}	クリップボードにコピー: {0}
+Log analysis	ログ分析
+Find when the errors piled up in yesterday's server log	昨日のサーバーログでエラーが集中した時間帯を探して
+62% of the errors fall between 3 and 4 am.	エラーの 62% が午前 3 時から 4 時に集中しています。
 heart	ハート
 star	星
 coffee	コーヒー
@@ -807,10 +816,7 @@ new york 3pm	new york 3pm
 tokyo time	tokyo time
 window layout	window layout
 install vlc	install vlc
-Log analysis	ログ分析
-Find when the errors piled up in yesterday's server log	昨日のサーバーログでエラーが集中した時間帯を探して
 Splitting the log by the hour…	ログを時間ごとに分けています…
-62% of the errors fall between 3 and 4 am.	エラーの 62% が午前 3 時から 4 時に集中しています。
 Also check what jobs ran in that hour	その時間に動いていたジョブも確認して
 Naver	Naver
 Default browser	既定のブラウザー
@@ -1021,6 +1027,8 @@ Bloom tour	Bloom ツアー
 See the first-run setup and the guide again	最初の設定とガイドをもう一度見る
 Export settings	設定をエクスポート
 Settings, favorites, app names and browser shortcuts in one file	設定、お気に入り、アプリ名、ブラウザーのショートカットを 1 つのファイルに
+Uninstall Bloom	Bloom を削除
+Remove Bloom from this PC · asks twice	この PC から Bloom を削除 · 2 回確認します
 Import settings	設定をインポート
 From an exported settings file	エクスポートした設定ファイルから
 Bloom settings	Bloom の設定
@@ -1724,6 +1732,7 @@ Settings, favorites, app names, browser shortcuts and recent colours in one file
 Reset Bloom	Bloom をリセット
 Deletes all settings and history and starts from the first-run screens · asks to export first	すべての設定と履歴を削除して最初の設定画面から始めます · 先にエクスポートするか確認します
 From an exported file · your current settings stay in the data folder's backups	エクスポートしたファイルから · 今の設定はデータ フォルダーの backups に残ります
+Removes Bloom from this PC · asks once more about your chats and settings	この PC から Bloom を削除します · チャットと設定も消すかもう一度確認します
 Version	バージョン
 A light native (WPF) launcher	軽量なネイティブ (WPF) ランチャー
 What's new in this version	このバージョンの新機能

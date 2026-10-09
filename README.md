@@ -27,7 +27,7 @@ irm https://raw.githubusercontent.com/hyeon1035298/Bloom/main/install.ps1 | iex
 ```
 
 - Windows 10/11, 64-bit. If the PC doesn't have the .NET 10 Desktop Runtime, the setup installs it (Windows asks for permission for that part).
-- Bloom installs for your account only, into `%LOCALAPPDATA%\BloomLauncher`, with a Start-menu shortcut. Remove it in Windows Settings › Apps; your settings stay in `%APPDATA%\Bloom`.
+- Bloom installs for your account only, into `%LOCALAPPDATA%\BloomLauncher`, with a Start-menu shortcut. To remove it, use Settings › About › **Uninstall Bloom** (it asks whether your chats, settings and favorites in `%APPDATA%\Bloom` go too), or Windows Settings › Apps, which keeps them.
 - Bloom isn't code-signed yet, so SmartScreen may say "Windows protected your PC". Choose **More info › Run anyway**.
 - **Updates**: once, a little after it starts, Bloom looks at this repository's latest release. A new version downloads in the background and goes in the next time Bloom starts. Settings › About has **Check for updates** (and **Restart to update** once one is ready) and a switch for the look at start. After an update Bloom shows what changed once (again any time in Settings › About).
 

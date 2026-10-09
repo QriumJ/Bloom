@@ -7,7 +7,8 @@ using Bloom.Ui;
 
 namespace Bloom.App;
 
-/// Settings out to a file and back in (설정 > 정보, the first-run screens, the 설정 내보내기 / 불러오기 commands).
+/// Settings out to a file and back in (설정 > 정보, the first-run screens, the 설정 내보내기 / 불러오기 commands), and the
+/// two ways to start over or go: 초기화 and 삭제.
 internal sealed partial class Host
 {
     /// Asks where, writes the file and shows it in Explorer. False when cancelled or it failed (the user was told).
@@ -89,7 +90,36 @@ internal sealed partial class Host
         return true;
     }
 
-    /// A new Bloom that waits for this one to end (`--reset-from` / `--restart-from`), with the same dev options.
+    /// 설정 > 정보 > Bloom 삭제 (also "Bloom 삭제" in the search): asked twice (sure? the chats, settings and favorites
+    /// too?), then a new Bloom waits for this one to end, deletes the data folders when asked and runs the setup's
+    /// uninstaller (the files, the Apps entry, the shortcuts). A copy not installed with the setup (the portable zip)
+    /// can't remove its own folder: it stops starting with Windows and its folder opens in Explorer to be deleted.
+    public bool UninstallBloom(Window? owner)
+    {
+        bool installed = Updates.Uninstaller() is not null;
+        string what = installed
+            ? Tr("Bloom이 PC에서 지워져요. 시작 메뉴 바로 가기와 Windows 시작 시 자동 실행도 함께 없어져요.", "Bloom is removed from this PC, with its Start-menu shortcut and its start with Windows.")
+            : Tr("Bloom을 끄고 Windows 시작 시 자동 실행을 풀어요. 이 Bloom은 설치 파일로 설치한 게 아니라서, 끈 뒤에 열리는 폴더를 직접 지워 주세요.", "Bloom quits and no longer starts with Windows. This copy wasn't installed with the setup, so delete the folder that opens afterwards.");
+        if (Ask(owner, Tr("정말 Bloom을 삭제할까요?", "Really uninstall Bloom?"), what, MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return false;
+        var data = Ask(owner, Tr("대화 · 설정 · 즐겨찾기까지 다 지울까요?", "Delete your chats, settings and favorites too?"),
+            Tr("예: AI 대화, 설정, 즐겨찾기, 메모, 클립보드 기록까지 모두 지워요. 되돌릴 수 없어요.\n아니요: 남겨 두면 다시 설치했을 때 그대로 이어서 써요.", "Yes: AI chats, settings, favorites, notes and clipboard history all go. This can't be undone.\nNo: they stay, and a new install picks up where you left off."),
+            MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        if (data == MessageBoxResult.Cancel) return false;
+        bool wipe = data == MessageBoxResult.Yes;
+        if (!StartSuccessor("--uninstall-from", wipe ? new[] { "--wipe" } : Array.Empty<string>()))
+        {
+            Tell(owner, Tr("삭제하지 못했어요", "Couldn't uninstall"), Tr("새 Bloom을 시작하지 못했어요. 아무것도 지우지 않았어요.", "Couldn't start a new Bloom. Nothing was deleted."));
+            return false;
+        }
+        Autostart.Set(false);
+        if (!installed) Launch.Open("explorer.exe", $"/select,\"{Environment.ProcessPath}\"");
+        Log.Write("uninstall: quitting" + (wipe ? ", the data goes too" : ""));
+        Quit(save: !wipe);
+        return true;
+    }
+
+    /// A new Bloom that waits for this one to end (`--reset-from` / `--restart-from` / `--uninstall-from`), with the same
+    /// dev options.
     private bool StartSuccessor(string flag, params string[] extra)
     {
         try

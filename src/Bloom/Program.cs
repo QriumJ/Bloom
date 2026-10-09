@@ -20,6 +20,8 @@ internal static class Program
     ///       views to PNG files and exit), --autostart (started from the Run key).
     ///       --export <file> (the settings into a file, the same as 설정 > 정보 > 설정 내보내기; Bloom must not be running).
     ///       --restart-from <pid> / --reset-from <pid> (started by a Bloom that is quitting: wait for it, then start).
+    ///       --uninstall-from <pid> [--wipe] (설정 > 정보 > Bloom 삭제: wait for it, delete the data when asked, run the
+    ///       setup's uninstaller; nothing starts).
     ///       --mcp <pipe> [<conversation>] (started by Claude Code or Codex: the "bloom" MCP server, carried to the
     ///       running Bloom; Codex's runs name their conversation, whose chat then asks the user for each action).
     ///       --mcp-proxy <pipe> <conversation> <source> <name> (started by Codex: another MCP server the user switched on,
@@ -40,7 +42,8 @@ internal static class Program
         var opt = new Options();
         bool quit = false;
         string? export = null;
-        int resetFrom = -1, restartFrom = -1;
+        int resetFrom = -1, restartFrom = -1, uninstallFrom = -1;
+        bool wipe = false;
         for (int i = 0; i < args.Length; i++)
         {
             string a = args[i];
@@ -103,6 +106,12 @@ internal static class Program
                 case "--restart-from" when i + 1 < args.Length:
                     restartFrom = int.TryParse(args[++i], out int rpid) ? rpid : 0;
                     break;
+                case "--uninstall-from" when i + 1 < args.Length:
+                    uninstallFrom = int.TryParse(args[++i], out int upid) ? upid : 0;
+                    break;
+                case "--wipe":
+                    wipe = true;
+                    break;
                 case "--export" when i + 1 < args.Length:
                     export = args[++i];
                     break;
@@ -128,6 +137,7 @@ internal static class Program
         }
         if ((opt.CaptureDir is not null || opt.GlassFile is not null || opt.ChatFile is not null || opt.MeasureSeconds is not null || opt.Demo) && opt.Data is null) return 2; // QA and recording never touch the real data
         Paths.Init(opt.Data);
+        if (uninstallFrom >= 0) return Uninstall(uninstallFrom, wipe);
         // the setup's Start-menu shortcut starts Bloom without arguments: that opens the launcher (the Run entry has --autostart)
         if (args.Length == 0 && Updates.Installed) opt.Show = true;
         if (resetFrom >= 0) Reset(resetFrom);
@@ -185,6 +195,29 @@ internal static class Program
     private static void Reset(int oldPid)
     {
         WaitFor(oldPid);
+        DeleteData();
+        Paths.Init(Paths.IsDev ? Paths.Data : null);
+        Log.Write("reset: data deleted, starting fresh");
+    }
+
+    /// The uninstall (설정 > 정보 > Bloom 삭제): once the Bloom that asked for it has ended, the data folders go when
+    /// asked (nothing is logged after that, which would make them again), then the setup's uninstaller removes the app;
+    /// it ends this process too, which runs from the app's folder.
+    private static int Uninstall(int oldPid, bool wipe)
+    {
+        WaitFor(oldPid);
+        if (wipe) DeleteData();
+        if (Updates.Uninstaller() is not { } updater) return 0;
+        var psi = new System.Diagnostics.ProcessStartInfo(updater) { UseShellExecute = false };
+        psi.ArgumentList.Add("--silent");
+        psi.ArgumentList.Add("--uninstall");
+        System.Diagnostics.Process.Start(psi);
+        return 0;
+    }
+
+    /// Both data folders (settings, chats, favorites … and the local caches and logs), retried while a file still closes.
+    private static void DeleteData()
+    {
         foreach (string dir in new[] { Paths.Data, Paths.Local }.Distinct())
             for (int attempt = 0; attempt < 10 && Directory.Exists(dir); attempt++)
                 try
@@ -195,8 +228,6 @@ internal static class Program
                 {
                     Thread.Sleep(300); // a file still closing
                 }
-        Paths.Init(Paths.IsDev ? Paths.Data : null);
-        Log.Write("reset: data deleted, starting fresh");
     }
 
     /// The Bloom that started this one (restart, reset) has to end first: it holds the mutex and the data.
@@ -210,6 +241,10 @@ internal static class Program
         catch (ArgumentException)
         {
             // already gone
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            // the id now belongs to a process this one can't open: ours is gone
         }
     }
 

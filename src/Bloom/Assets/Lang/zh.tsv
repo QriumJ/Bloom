@@ -143,6 +143,12 @@ Export your settings before deleting?	删除前要导出设置吗？
 Keep your settings and favorites in one file, and bring them back with 'Import settings' on the first-run screens.	把设置和收藏保存成一个文件，之后可在首次使用界面用“导入设置”恢复。
 Couldn't reset	无法重置
 Couldn't start a new Bloom. Nothing was deleted.	无法启动新的 Bloom。没有删除任何内容。
+Bloom is removed from this PC, with its Start-menu shortcut and its start with Windows.	将从本机删除 Bloom，开始菜单快捷方式和随 Windows 启动也会一并移除。
+Bloom quits and no longer starts with Windows. This copy wasn't installed with the setup, so delete the folder that opens afterwards.	Bloom 会退出，并不再随 Windows 启动。这个 Bloom 不是用安装程序安装的，退出后请手动删除打开的文件夹。
+Really uninstall Bloom?	确定要删除 Bloom 吗？
+Delete your chats, settings and favorites too?	要把对话、设置和收藏也全部删除吗？
+Yes: AI chats, settings, favorites, notes and clipboard history all go. This can't be undone.\nNo: they stay, and a new install picks up where you left off.	是：AI 对话、设置、收藏、便笺和剪贴板历史将全部删除，无法撤销。\n否：保留这些数据，重新安装后可以接着使用。
+Couldn't uninstall	无法删除
 There are no notes for this version.	此版本没有更新说明。
 Couldn't end ‘{0}’ — it may run as administrator	无法结束‘{0}’ — 它可能以管理员身份运行
 {0} ended, {1} refused	已结束 {0} 个，{1} 个被拒绝
@@ -721,6 +727,9 @@ Copy: {0} → {1}	复制：{0} → {1}
 To the Recycle Bin: {0}{1}	移到回收站：{0}{1}
 Read the clipboard	读取剪贴板
 Copy to the clipboard: {0}	复制到剪贴板：{0}
+Log analysis	日志分析
+Find when the errors piled up in yesterday's server log	找出昨天服务器日志中错误集中的时间段
+62% of the errors fall between 3 and 4 am.	62% 的错误集中在凌晨 3 点到 4 点之间。
 heart	爱心
 star	星星
 coffee	咖啡
@@ -807,10 +816,7 @@ new york 3pm	new york 3pm
 tokyo time	tokyo time
 window layout	window layout
 install vlc	install vlc
-Log analysis	日志分析
-Find when the errors piled up in yesterday's server log	找出昨天服务器日志中错误集中的时间段
 Splitting the log by the hour…	正在按小时拆分日志…
-62% of the errors fall between 3 and 4 am.	62% 的错误集中在凌晨 3 点到 4 点之间。
 Also check what jobs ran in that hour	再看看那段时间运行了哪些任务
 Naver	Naver
 Default browser	默认浏览器
@@ -1021,6 +1027,8 @@ Bloom tour	Bloom 导览
 See the first-run setup and the guide again	再次查看首次设置和使用指南
 Export settings	导出设置
 Settings, favorites, app names and browser shortcuts in one file	把设置、收藏、应用名称和浏览器快捷方式存成一个文件
+Uninstall Bloom	删除 Bloom
+Remove Bloom from this PC · asks twice	从本机删除 Bloom · 会确认两次
 Import settings	导入设置
 From an exported settings file	从导出的设置文件导入
 Bloom settings	Bloom 设置
@@ -1724,6 +1732,7 @@ Settings, favorites, app names, browser shortcuts and recent colours in one file
 Reset Bloom	重置 Bloom
 Deletes all settings and history and starts from the first-run screens · asks to export first	删除所有设置和记录，从首次使用界面重新开始 · 会先询问是否导出
 From an exported file · your current settings stay in the data folder's backups	从导出的文件导入 · 当前设置会保留在数据文件夹的 backups 中
+Removes Bloom from this PC · asks once more about your chats and settings	从本机删除 Bloom · 会再确认一次是否删除对话和设置
 Version	版本
 A light native (WPF) launcher	轻量的原生 (WPF) 启动器
 What's new in this version	此版本的更新内容

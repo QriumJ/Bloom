@@ -46,6 +46,7 @@ internal static class SystemItems
         Cmd("cmd:quick", Tr("AI 빠른 동작", "AI actions"), Tr("선택하거나 복사한 글을 요약 · 번역 · 다듬기", "Summarize, translate or polish the selected or copied text"), G.Sparkle, "ai quick actions summarize translate rewrite fix grammar 빠른 동작 요약 번역 다듬기 맞춤법 교정");
         Cmd("cmd:welcome", Tr("Bloom 둘러보기", "Bloom tour"), Tr("처음 설정과 사용법 안내를 다시 보기", "See the first-run setup and the guide again"), G.Info, "welcome tutorial onboarding guide help 둘러보기 튜토리얼 안내 처음 사용법 도움말 시작하기");
         Cmd("cmd:export", Tr("설정 내보내기", "Export settings"), Tr("설정 · 즐겨찾기 · 앱 이름 · 브라우저 바로 가기를 파일 하나로", "Settings, favorites, app names and browser shortcuts in one file"), G.Send, "export settings backup 설정 내보내기 백업 저장 옮기기");
+        Cmd("cmd:uninstall", Tr("Bloom 삭제", "Uninstall Bloom"), Tr("PC에서 Bloom 지우기 · 두 번 물어봐요", "Remove Bloom from this PC · asks twice"), G.Delete, "uninstall remove delete bloom 블룸 삭제 제거 지우기 언인스톨");
         Cmd("cmd:import", Tr("설정 불러오기", "Import settings"), Tr("내보낸 설정 파일에서 가져오기", "From an exported settings file"), G.Import, "import settings restore 설정 불러오기 가져오기 복원 옮기기");
         Cmd("cmd:settings", Tr("Bloom 설정", "Bloom settings"), null, G.Settings, "settings preferences 설정 환경설정 options config bloom 블룸");
         Cmd("cmd:reindex", Tr("앱 목록 새로고침", "Refresh the app list"), null, G.Refresh, "reload refresh apps reindex 새로고침");
