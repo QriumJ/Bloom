@@ -54,8 +54,8 @@ internal sealed partial class Launcher
             if (!IsVisible || !IsActive)
             {
                 bool ok = t.Messages.LastOrDefault()?.Error != true;
-                Notices.Result(ok, Tr("Bloom · 빠른 AI", "Bloom · Quick AI"), ok ? Tr("답이 다 왔어요", "The answer is ready") : Tr("답을 받지 못했어요", "No answer came"),
-                    ClipText(t.Title, 40) + Tr(" · Bloom을 열고 Tab", " · open Bloom and press Tab"));
+                Notices.Result(ok, Tr("Bloom · 빠른 AI", "Bloom · Quick AI"), ok ? Tr("답변 완료", "Answer ready") : Tr("응답 없음 · 다시 보내세요", "No response. Send again."),
+                    ClipText(t.Title, 40), Tr("AI 채팅 열기", "Open AI chat"), () => host.OpenChat(t));
             }
         }
         if (Mode != App.Mode.Chat && IsVisible) UpdateChrome(); // the home's chip
@@ -103,7 +103,7 @@ internal sealed partial class Launcher
         {
             string now = thread is null ? Ai.AiModels.DefaultEffort(cur) : Chats.EffortOf(thread);
             foreach (string level in Ai.AiModels.Efforts(cur))
-                list.Add(new ActionItem { Title = Tr("생각 수준 · ", "Thinking · ") + Ai.AiModels.EffortName(level), Glyph = level == now ? G.Check : G.Bulb, StayOpen = true, Run = () => SetEffort(level) });
+                list.Add(new ActionItem { Title = Tr($"생각 수준 · {Ai.AiModels.EffortName(level)}", $"Thinking · {Ai.AiModels.EffortName(level)}"), Glyph = level == now ? G.Check : G.Bulb, StayOpen = true, Run = () => SetEffort(level) });
         }
         actions.Open(Tr("모델 · 생각 수준", "Model · thinking level"), list, ids.IndexOf(cur));
     }
@@ -137,7 +137,7 @@ internal sealed partial class Launcher
         string model = CurrentModel;
         if (!Ai.AiModels.HasEffort(model))
         {
-            ShowToast(Tr("Haiku는 생각 수준을 바꿀 수 없어요", "Haiku has no thinking levels"));
+            ShowToast(Tr("Haiku는 생각 수준을 지원하지 않습니다.", "Haiku has no thinking level setting."));
             return;
         }
         string now = thread is null ? Ai.AiModels.DefaultEffort(model) : Chats.EffortOf(thread);
@@ -147,7 +147,7 @@ internal sealed partial class Launcher
     private void SetEffort(string level)
     {
         Chats.SetEffort(thread, level);
-        ShowToast(Tr("생각 수준: ", "Thinking level: ") + Ai.AiModels.EffortName(level));
+        ShowToast(Tr($"생각 수준: {Ai.AiModels.EffortName(level)}", $"Thinking level: {Ai.AiModels.EffortName(level)}"));
         UpdateChrome();
     }
 }

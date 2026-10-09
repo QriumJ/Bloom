@@ -2,6 +2,28 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.12.0
+
+- Every screen's wording is rewritten to be short and factual: statuses and results are short labels ("Capture copied"), and an error says what happened and what to do next instead of showing the raw error text. Japanese and Chinese follow.
+- Where a message used to send you to another screen, it now has the button: a failed text recognition opens the recognition language, an update notice opens the update settings, a waiting approval opens its chat, a finished quick AI answer opens it in the AI chat.
+- Reset, uninstall and restart questions name their buttons by what they do (Reset · Export settings · Keep data · Delete data · Restart · Later) instead of Yes / No.
+- 'My commands' is now 'Custom commands'; the old words still find it.
+- A custom command's failure notice shows its exit code and last line, with a button to its actions (copy the last output, edit the command).
+- The home search line reads "Search, or ask AI".
+- The quick AI closes when you click elsewhere, like the other views. The Win key opens it again at the same chat.
+- 📌 keeps the launcher above other windows. In the quick AI, 📌 takes the place of the settings button.
+
+### 한국어
+
+- 모든 화면의 문구를 짧고 사실 위주로 바꿨습니다. 상태와 결과는 짧은 이름(‘캡처 복사 완료’)으로 표시하고, 오류는 원본 오류 대신 무슨 일이 있었고 무엇을 하면 되는지 표시합니다. 일본어 · 중국어도 함께 바뀌었습니다.
+- 다른 화면으로 가라고 안내하던 곳에 바로 가는 버튼이 생겼습니다. 글자 인식 실패는 인식 언어 설정, 업데이트 알림은 업데이트 설정, 승인 대기 알림은 해당 대화, 빠른 AI 답변 완료 알림은 AI 채팅을 엽니다.
+- 초기화 · 삭제 · 다시 시작 확인 창의 버튼이 예 / 아니요 대신 하는 일을 이름으로 표시합니다(초기화 · 설정 내보내기 · 데이터 유지 · 데이터 삭제 · 다시 시작 · 나중에).
+- ‘내 명령’의 이름이 ‘사용자 명령’으로 바뀌었습니다. 예전 이름으로도 검색할 수 있습니다.
+- 사용자 명령이 실패하면 알림에 종료 코드와 마지막 출력 줄이 표시되고, 명령 동작(마지막 출력 복사, 명령 편집)으로 가는 버튼이 함께 표시됩니다.
+- 홈 검색줄의 안내 문구가 ‘검색하거나 AI에게 묻기’로 바뀌었습니다.
+- 빠른 AI도 다른 화면처럼 바깥을 누르면 닫힙니다. Win 키를 누르면 보던 대화로 다시 열립니다.
+- 📌을 켜면 다른 창을 눌러도 런처가 맨 위에 유지됩니다. 빠른 AI에서는 설정 버튼 자리에 📌 버튼이 표시됩니다.
+
 ## 0.11.4
 
 - A **Shortcuts** tool beside the launcher, like the notes and the timers: every shortcut you gave an app, folder, command or window layout, with its keys. Find one by name or keys; a click runs it. Open it from the tools menu (Ctrl+J).

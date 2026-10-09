@@ -109,7 +109,7 @@ internal sealed class KeyRecorder : SmoothBorder
             Finish(combo);
             return;
         }
-        error = none ? Tr("Ctrl · Alt · Shift · Win과 함께", "With Ctrl, Alt, Shift or Win") : Tr("이 키는 못 써요", "Can't use this key");
+        error = none ? Tr("Ctrl · Alt · Shift · Win과 함께", "With Ctrl, Alt, Shift or Win") : Tr("다른 키 조합을 누르세요", "Press another key combination");
         Show("");
     }
 

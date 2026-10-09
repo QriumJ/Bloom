@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -29,7 +28,7 @@ internal static class OneShot
     private static async Task<(string? text, string? error)> Claude(string system, string text, string model, string? effort, CancellationToken ct)
     {
         string? cli = ClaudeSession.FindCli(Settings.Current.ClaudePath);
-        if (cli is null) return (null, Tr("Claude Code CLI를 찾지 못했어요", "Claude Code CLI not found"));
+        if (cli is null) return (null, AiErrors.ClaudeMissing);
         var psi = Psi(cli);
         bool fast = effort is null or "fast";
         foreach (string a in new[]
@@ -45,14 +44,14 @@ internal static class OneShot
         }
         var (code, output, error) = await RunCli(psi, text, ct);
         if (ct.IsCancellationRequested) return (null, null);
-        if (code != 0 || output.Trim().Length == 0) return (null, Tail(error, output, Tr("Claude가 답하지 않았어요", "Claude didn't answer")));
+        if (code != 0 || output.Trim().Length == 0) return (null, Tail(error, output, Tr("Claude 답변이 없습니다. 다시 시도하세요.", "No answer from Claude. Try again.")));
         return (output.Trim(), null);
     }
 
     private static async Task<(string? text, string? error)> Codex(string system, string text, string model, string? effort, string name, CancellationToken ct)
     {
         string? exe = CodexSession.FindCli(Settings.Current.CodexPath);
-        if (exe is null) return (null, Tr("Codex CLI를 찾지 못했어요", "Codex CLI not found"));
+        if (exe is null) return (null, AiErrors.CodexMissing);
         string cwd = WorkDir();
         string instructions = Path.Combine(cwd, name + ".md");
         await File.WriteAllTextAsync(instructions, system, ct);
@@ -99,8 +98,8 @@ internal static class OneShot
             }
         }
         if (answer is { Length: > 0 }) return (answer.Trim(), null);
-        return (null, failure is not null ? Tr("ChatGPT 실패: ", "ChatGPT failed: ") + Short(failure)
-            : Tail(error, "", code == 0 ? Tr("ChatGPT가 답하지 않았어요", "ChatGPT didn't answer") : Tr("Codex가 오류로 끝났어요", "Codex ended with an error")));
+        if (failure is not null) return (null, AiErrors.Friendly(failure, true));
+        return (null, Tail(error, "", code == 0 ? Tr("ChatGPT 답변이 없습니다. 다시 시도하세요.", "No answer from ChatGPT. Try again.") : Tr("Codex 답변 실패 · 다시 시도하세요", "Codex answer failed. Try again."), true));
     }
 
     /// The CLIs' working folder (Local\ai): no project files around, nothing to read by accident.
@@ -137,7 +136,7 @@ internal static class OneShot
         try
         {
             p = Process.Start(psi);
-            if (p is null) return (-1, "", Tr("시작하지 못했어요", "Couldn't start it"));
+            if (p is null) return (-1, "", AiErrors.StartFailed);
             var outTask = p.StandardOutput.ReadToEndAsync(ct);
             var errTask = p.StandardError.ReadToEndAsync(ct);
             await p.StandardInput.WriteAsync(input);
@@ -158,7 +157,7 @@ internal static class OneShot
                 {
                     /* gone */
                 }
-                return (-1, "", ct.IsCancellationRequested ? "" : Tr("90초 안에 답이 없었어요", "No answer within 90 s"));
+                return (-1, "", ct.IsCancellationRequested ? "" : AiErrors.TimedOut);
             }
             return (p.ExitCode, await outTask, await errTask);
         }
@@ -175,11 +174,10 @@ internal static class OneShot
 
     public static string Short(string s) => s.Length > 160 ? s[..160] + "…" : s;
 
-    private static string Tail(string error, string output, string fallback)
+    private static string Tail(string error, string output, string fallback, bool chatgpt = false)
     {
         string e = (error.Trim().Length > 0 ? error : output).Trim();
         if (e.Length == 0) return fallback;
-        string last = e.Split('\n').Last(l => l.Trim().Length > 0).Trim();
-        return Short(last);
+        return AiErrors.Friendly(e, chatgpt);
     }
 }

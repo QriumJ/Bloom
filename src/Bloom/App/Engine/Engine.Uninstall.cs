@@ -24,7 +24,7 @@ internal sealed partial class Engine
         return Ask(a.Name, Tr($"제거 · {Clip(p.Name, 30)}", $"Uninstall · {Clip(p.Name, 30)}"), () =>
         {
             if (!Uninstalls.Run(p))
-                Notices.Result(false, Tr("Bloom · 제거", "Bloom · Uninstall"), Tr($"‘{p.Name}’ 제거 프로그램을 열지 못했어요", $"Couldn't open the uninstaller of ‘{p.Name}’"), Tr("관리자 권한을 거절했거나 제거 파일이 없어요 — 설정 › 앱에서 지울 수 있어요", "Admin rights were declined or the uninstaller is gone — Settings › Apps can remove it"));
+                Notices.Result(false, Tr("Bloom · 제거", "Bloom · Uninstall"), Tr($"‘{p.Name}’ 제거 프로그램 실행 실패", $"Could not open the uninstaller for ‘{p.Name}’"), Tr("관리자 권한이 거절되었거나 제거 파일이 없습니다. Windows 앱 설정에서 제거하세요.", "Admin permission was declined or the uninstaller is missing. Remove the app in Windows app settings."), Tr("Windows 앱 설정", "Windows app settings"), () => Launch.Open("ms-settings:appsfeatures"));
         });
 
         ActionItem Ask(string title, string yes, Action remove) => new()
@@ -33,7 +33,7 @@ internal sealed partial class Engine
             Glyph = G.Delete,
             Danger = true,
             StayOpen = true,
-            Run = () => host.Window.Confirm(Tr($"‘{Clip(title, 22)}’ 정말 제거할까요?", $"Really uninstall ‘{Clip(title, 22)}’?"), new ActionItem
+            Run = () => host.Window.Confirm(Tr($"‘{Clip(title, 22)}’ 제거", $"Uninstall ‘{Clip(title, 22)}’"), new ActionItem
             {
                 Title = yes,
                 Keys = "Enter",
@@ -47,8 +47,9 @@ internal sealed partial class Engine
     private async Task RemoveStore(AppEntry a)
     {
         var (ok, error) = await Uninstalls.RemoveStore(a.Path);
-        Notices.Result(ok, Tr("Bloom · 제거", "Bloom · Uninstall"), ok ? Tr($"‘{Clip(a.Name, 30)}’ 제거했어요", $"Uninstalled ‘{Clip(a.Name, 30)}’") : Tr($"‘{Clip(a.Name, 30)}’ 제거하지 못했어요", $"Couldn't uninstall ‘{Clip(a.Name, 30)}’"),
-            ok ? null : error is "not removable" ? Tr("Windows에 딸린 앱이라 지울 수 없어요", "It comes with Windows and can't be removed") : Tr("설정 › 앱에서 지워 보세요", "Try Settings › Apps"));
+        Notices.Result(ok, Tr("Bloom · 제거", "Bloom · Uninstall"), ok ? Tr($"‘{Clip(a.Name, 30)}’ 제거 완료", $"Uninstalled ‘{Clip(a.Name, 30)}’") : Tr($"‘{Clip(a.Name, 30)}’ 제거 실패", $"Could not uninstall ‘{Clip(a.Name, 30)}’"),
+            ok ? null : error is "not removable" ? Tr("Windows에 딸린 앱이라 지울 수 없습니다", "It comes with Windows and can't be removed") : Tr("Windows 앱 설정에서 제거하세요", "Remove the app in Windows app settings."),
+            !ok && error != "not removable" ? Tr("Windows 앱 설정", "Windows app settings") : null, !ok && error != "not removable" ? () => Launch.Open("ms-settings:appsfeatures") : null);
         if (ok) _ = Task.Run(host.Apps.Rescan); // AppsFolder has no watcher
     }
 

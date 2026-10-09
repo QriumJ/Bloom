@@ -142,7 +142,7 @@ internal sealed class CodexSession : IChatSession
         exe = FindCli(Settings.Current.CodexPath);
         if (exe is null)
         {
-            error = Tr("Codex CLI를 찾지 못했어요. (npm i -g @openai/codex 후 codex login)", "Codex CLI not found. (npm i -g @openai/codex, then codex login)");
+            error = AiErrors.CodexMissing;
             return false;
         }
         cwd = Path.GetDirectoryName(Paths.InLocal(@"ai\.keep"))!;
@@ -306,7 +306,7 @@ internal sealed class CodexSession : IChatSession
             Busy = false;
             string tail;
             lock (stderr) tail = stderr.ToString().Trim();
-            TurnEnded?.Invoke(false, stopped ? Tr("답변을 멈췄어요.", "Stopped the answer.") : error is { Length: > 0 } ? error : tail.Length > 0 ? Trim(tail) : Tr("Codex가 응답 없이 끝났어요.", "Codex ended without an answer."));
+            TurnEnded?.Invoke(false, stopped ? AiErrors.Stopped : error is { Length: > 0 } ? error : tail.Length > 0 ? Trim(tail) : AiErrors.CodexNoAnswer);
         }
         p.Dispose();
     }

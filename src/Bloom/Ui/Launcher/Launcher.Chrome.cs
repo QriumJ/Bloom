@@ -5,7 +5,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Bloom.Ai;
 using Bloom.App;
-using Bloom.Core;
 using Bloom.Search;
 
 namespace Bloom.Ui;
@@ -24,7 +23,7 @@ internal sealed partial class Launcher
         {
             case Mode.Chat:
                 leadEl = Theme.Sparkle(17, Theme.P.Accent);
-                chipLabel = attachedImage is not null ? Tr("화면 · Bloom Lens", "Screen · Bloom Lens") : attachedFiles.Count > 0 ? Tr($"첨부 {attachedFiles.Count}개", $"{attachedFiles.Count} attached") : attachment is { } a ? (a.url.Length > 0 ? Tr("페이지 · ", "Page · ") : "") + ClipText(a.title, 16) : null;
+                chipLabel = attachedImage is not null ? Tr("화면 · Bloom Lens", "Screen · Bloom Lens") : attachedFiles.Count > 0 ? Tr($"첨부 {attachedFiles.Count}개", $"{attachedFiles.Count} attached") : attachment is { } a ? (a.url.Length > 0 ? Tr($"페이지 · {ClipText(a.title, 16)}", $"Page · {ClipText(a.title, 16)}") : ClipText(a.title, 16)) : null;
                 bool busy = thread?.Busy == true;
                 ph = attachedImage is not null ? Tr("이 화면에 대해 물어보세요 (비우고 Enter = 설명해 줘)", "Ask about this screen (empty + Enter = explain it)")
                     : attachedFiles.Count > 0 ? Tr("첨부한 파일에 대해 물어보세요", "Ask about the attached files")
@@ -33,8 +32,8 @@ internal sealed partial class Launcher
                 // then [세션 종료] while its CLI runs; 새 대화 is in the footer, 📎 at the bar's end
                 if (busy)
                 {
-                    var stop = HeadChip("■  " + Tr("정지", "Stop"), StopChat, true);
-                    stop.ToolTip = Tr("답을 멈춰요 (Ctrl+.) · Esc는 홈으로 가고 답은 계속 써요", "Stops the answer (Ctrl+.) · Esc goes home and the answer goes on");
+                    var stop = HeadChip("■  " + Tr("중지", "Stop"), StopChat, true);
+                    stop.ToolTip = Tr("답변 중지 (Ctrl+.) · Esc는 홈으로 이동하며 답변은 계속됩니다.", "Stops the answer (Ctrl+.) · Esc returns home while the answer continues.");
                     hint.Children.Add(stop);
                 }
                 else
@@ -52,14 +51,14 @@ internal sealed partial class Launcher
                     {
                         host.Chats.EndSession(t);
                         ShowChat(host.Chats.New());
-                        ShowToast(Tr("세션을 닫고 새 대화를 열었어요 — 지난 대화는 목록에 남아요", "Session closed, a new chat is open — the last one stays in the list"));
+                        ShowToast(Tr("세션 종료 · 새 대화 열림 · 지난 대화 기록 유지", "Session closed, a new chat is open — the last one stays in the list"));
                     });
                     endChip.Margin = new Thickness(6, 0, 0, 0);
-                    endChip.ToolTip = Tr("이 대화의 CLI를 닫아 메모리를 돌려주고 새 대화로 넘어가요 · 지난 대화는 남아요", "Closes this chat's CLI to free its memory and starts a new chat · the last one stays");
+                    endChip.ToolTip = Tr("대화 메모리를 해제하고 새 대화를 엽니다. 대화 기록은 유지됩니다.", "Frees chat memory and opens a new chat. History stays.");
                     hint.Children.Add(endChip);
                 }
                 quickUnseen = false;
-                if (busy) Foot(Tr("정지", "Stop"), "Ctrl+.", StopChat);
+                if (busy) Foot(Tr("중지", "Stop"), "Ctrl+.", StopChat);
                 else Foot(Tr("보내기", "Send"), "Enter");
                 Divider();
                 Foot(Tr("홈", "Home"), "Esc");
@@ -90,7 +89,7 @@ internal sealed partial class Launcher
                 if (Mode == Mode.Root && QuickPending)
                 {
                     var t = thread!;
-                    var back = HeadChip("✦  " + (t.Busy ? Tr("빠른 AI 답 쓰는 중 · Tab", "Quick AI answering · Tab") : Tr("빠른 AI 답 왔어요 · Tab", "Quick AI answer ready · Tab")), () => ShowChat(t), true);
+                    var back = HeadChip("✦  " + (t.Busy ? Tr("빠른 AI 답 쓰는 중 · Tab", "Quick AI answering · Tab") : Tr("빠른 AI 답변 완료 · Tab", "Quick AI answer ready · Tab")), () => ShowChat(t), true);
                     back.ToolTip = ClipText(t.Title, 60);
                     hint.Children.Add(back);
                 }
@@ -109,8 +108,7 @@ internal sealed partial class Launcher
                 footContext.Text = spec.Context();
                 break;
         }
-        attachButton.Visibility = Mode == Mode.Chat ? Visibility.Visible : Visibility.Collapsed;
-        toolsButton.Visibility = Mode != Mode.Chat && Features.On("notes") ? Visibility.Visible : Visibility.Collapsed;
+        CornerButtons();
         lead.Content = leadEl;
         placeholder.Text = ph;
         placeholder.Visibility = box.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;

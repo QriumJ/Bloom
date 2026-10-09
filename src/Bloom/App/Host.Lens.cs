@@ -38,7 +38,7 @@ internal sealed partial class Host
                 "text" => Tr("글자를 읽을 영역을 끌어서 고르세요", "Drag over the area to read"),
                 "pin" => Tr("화면에 고정할 영역을 끌어서 고르세요", "Drag over the area to pin"),
                 "capture" => Tr("캡처할 영역을 끌어서 고르세요", "Drag over the area to capture"),
-                _ => Tr("영역을 끌어서 고르세요 — 고른 뒤 할 일을 골라요", "Drag over an area — then pick what to do"),
+                _ => Tr("영역을 끌어서 고르세요 — 고른 뒤 할 일을 선택하세요", "Drag over an area — then pick what to do"),
             };
             var pick = await Ocr.ScreenGrab.Pick(hint);
             if (pick is not { } p) return;
@@ -90,7 +90,9 @@ internal sealed partial class Host
             if (r is null || r.Text.Trim().Length == 0)
             {
                 Summon();
-                Window.ShowToast(r is null ? Tr("OCR을 쓰지 못했어요 — 설정의 인식 언어를 확인해 주세요", "OCR didn't work — check the recognition language in Settings") : Tr("글자를 찾지 못했어요", "No text found"));
+                if (r is null)
+                    Notices.Result(false, "Bloom Lens", Tr("글자 인식 실패", "Text recognition failed"), Tr("설치된 인식 언어를 확인하세요", "Check installed recognition languages"), Tr("인식 언어 설정", "Recognition language settings"), () => OpenSettings("lens", Tr("인식 언어", "Recognition language")));
+                else Window.ShowToast(Tr("인식된 글자 없음", "No text found"));
                 return;
             }
             if (kind == "translate")
@@ -103,7 +105,7 @@ internal sealed partial class Host
             if (Settings.Current.OcrCopy) Launch.Copy(r.Text);
             if (!Window.IsVisible) Summon();
             OpenView(Mode.Ocr);
-            Window.ShowToast(Settings.Current.OcrCopy ? Tr($"{r.Lines.Count}줄을 읽어서 복사했어요", $"Read and copied {r.Lines.Count} lines") : Tr($"{r.Lines.Count}줄을 읽었어요", $"Read {r.Lines.Count} lines"));
+            Window.ShowToast(Settings.Current.OcrCopy ? Tr($"{r.Lines.Count}줄 인식·복사 완료", $"Read and copied {r.Lines.Count} lines") : Tr($"{r.Lines.Count}줄 인식 완료", $"Read {r.Lines.Count} lines"));
         }
         catch (Exception e)
         {
@@ -117,8 +119,8 @@ internal sealed partial class Host
         var picture = BitmapSource.Create(l.Rect.Width, l.Rect.Height, 96, 96, PixelFormats.Bgra32, null, l.Bgra, l.Rect.Width * 4);
         picture.Freeze();
         bool ok = Launch.CopyImage(picture, l.Png);
-        Notices.Result(ok, "Bloom Lens", ok ? Tr("캡처를 복사했어요", "Capture copied") : Tr("클립보드에 넣지 못했어요", "Couldn't put it on the clipboard"),
-            ok ? Tr($"{l.Rect.Width} × {l.Rect.Height} · Ctrl+V로 붙여넣으세요", $"{l.Rect.Width} × {l.Rect.Height} · paste it with Ctrl+V") : Tr("다른 앱이 클립보드를 쓰고 있어요 — 다시 해 주세요", "Another app holds the clipboard — try again"));
+        Notices.Result(ok, "Bloom Lens", ok ? Tr("캡처 복사 완료", "Capture copied") : Tr("클립보드에 복사하지 못했습니다. 다시 시도하세요.", "Could not copy to the clipboard. Try again."),
+            ok ? Tr($"{l.Rect.Width} × {l.Rect.Height} · Ctrl+V로 붙여넣으세요", $"{l.Rect.Width} × {l.Rect.Height} · paste it with Ctrl+V") : Tr("다른 앱이 클립보드를 쓰고 있습니다 — 다시 시도하세요", "Another app holds the clipboard — try again"));
     }
 
     /// The picked area as a PNG under Local\lens (the last 30 are kept; a chat that sent one shows it).

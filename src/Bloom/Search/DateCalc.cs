@@ -115,7 +115,7 @@ internal static partial class DateCalc
             Expr = expr,
             Value = value,
             Copy = Math.Abs(days).ToString(CultureInfo.InvariantCulture),
-            Detail = Long(d) + " · " + (days == 0 ? Tr("오늘이에요", "It's today") : days > 0 ? Tr($"{days:#,0}일 남았어요 · {Weeks(days)}", $"{days:#,0} days to go · {Weeks(days)}") : Tr($"{-days:#,0}일 지났어요", $"{-days:#,0} days ago")),
+            Detail = Long(d) + " · " + (days == 0 ? Tr("오늘", "Today") : days > 0 ? Tr($"{days:#,0}일 남음 · {Weeks(days)}", $"{days:#,0} days to go · {Weeks(days)}") : Tr($"{-days:#,0}일 경과", $"{-days:#,0} days ago")),
         };
     }
 
@@ -127,7 +127,7 @@ internal static partial class DateCalc
         {
             Caption = Caption,
             Expr = expr,
-            Value = Tr($"{days:#,0}일 지났어요", $"{days:#,0} days"),
+            Value = Tr($"{days:#,0}일 경과", $"{days:#,0} days"),
             Copy = days.ToString(CultureInfo.InvariantCulture),
             Detail = Tr($"오늘이 {days + 1:#,0}일째 · {Long(d)}부터", $"Today is day {days + 1:#,0} · since {Long(d)}"),
         };

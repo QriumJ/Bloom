@@ -42,7 +42,7 @@ internal sealed partial class Engine
         f.Fields.Add(new FormField
         {
             Label = Tr("그림", "Picture"),
-            Hint = Tr($"어떤 그림? 예) 고양이 발바닥, 번개 모양 — 비우면 ‘{(name.Length > 14 ? name[..14] + "…" : name)}’ 이름으로 알아서 (사용량 1회)", $"What picture? e.g. a cat paw, a lightning bolt — empty: from the name ‘{(name.Length > 14 ? name[..14] + "…" : name)}’ (1 use of your plan)"),
+            Hint = Tr($"예: 고양이 발바닥, 번개 · 비우면 ‘{(name.Length > 14 ? name[..14] + "…" : name)}’ 이름 사용 (사용량 1회)", $"E.g. a cat paw or lightning bolt · empty uses ‘{(name.Length > 14 ? name[..14] + "…" : name)}’ (1 use)"),
             Optional = true,
             Check = v => (v.Trim(), null),
         });

@@ -202,15 +202,15 @@ internal sealed partial class SettingsView : ScrollViewer
     {
         string sub = host.Shortcuts?.Status(name) switch
         {
-            "taken" => Tr("다른 앱이 이미 쓰고 있어요 — 다른 조합을 눌러 주세요", "Another app already uses it — press another combination"),
+            "taken" => Tr("다른 앱이 이미 쓰고 있습니다 — 다른 조합을 누르세요", "Another app already uses it — press another combination"),
             _ when value != "off" => what, // "ok", or set but not registered (its feature is off)
-            _ => Tr("꺼짐 — 눌러서 단축키를 정해요", "Off — click to set a shortcut"),
+            _ => Tr("꺼짐 · 클릭하여 단축키 지정", "Off — click to set a shortcut"),
         };
         var keys = new KeyRecorder(value)
         {
             Listening = on => host.Shortcuts?.Pause(on),
             Done = () => FocusFilter?.Invoke(),
-            Check = combo => host.Shortcuts?.Owner(combo) is { } owner && owner != name ? Tr("Bloom이 이미 쓰는 키예요", "Bloom already uses it") : null,
+            Check = combo => host.Shortcuts?.Owner(combo) is { } owner && owner != name ? Tr("Bloom에서 사용 중인 키", "Bloom already uses it") : null,
         };
         keys.Picked += v =>
         {
@@ -290,7 +290,7 @@ internal sealed partial class SettingsView : ScrollViewer
 
         if (filter.Length > 0 && rows.Count == 0)
         {
-            var none = Theme.T(Tr("찾은 설정이 없어요", "No settings found"), 13, Theme.P.TextFaint);
+            var none = Theme.T(Tr("검색된 설정 없음", "No settings found"), 13, Theme.P.TextFaint);
             none.Margin = new Thickness(32, 26, 28, 0);
             stack.Children.Add(none);
         }

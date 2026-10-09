@@ -14,7 +14,7 @@ internal sealed partial class Engine
         else if (PathInput.IsNetwork(p.Full)) s.Items.Add(OpenPathItem(p.Full, true));
         foreach (var (path, folder) in p.Children) s.Items.Add(FromPath(path, folder));
         if (s.Items.Count == 0)
-            s.Items.Add(new ResultItem { Id = "path:none", Kind = ItemKind.Info, Title = Tr("없는 경로예요", "No such path"), Subtitle = p.Full, Icon = IconSpec.Of(G.Info) });
+            s.Items.Add(new ResultItem { Id = "path:none", Kind = ItemKind.Info, Title = Tr("경로 없음 · 경로를 확인하세요", "Path not found. Check the path."), Subtitle = p.Full, Icon = IconSpec.Of(G.Info) });
         return s;
     }
 

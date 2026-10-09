@@ -50,7 +50,7 @@ internal sealed partial class Engine
                 Glyph = G.Delete,
                 Danger = true,
                 StayOpen = true,
-                Run = () => host.Window.Confirm(Tr($"‘{l.Name}’ 바로 가기를 지울까요?", $"Delete the shortcut ‘{l.Name}’?"), new ActionItem
+                Run = () => host.Window.Confirm(Tr($"‘{l.Name}’ 바로 가기를 삭제합니다.", $"Deletes the site shortcut ‘{l.Name}’."), new ActionItem
                 {
                     Title = Tr("지우기", "Delete"),
                     Keys = "Enter",
@@ -89,7 +89,7 @@ internal sealed partial class Engine
             Id = "ql:new",
             Kind = ItemKind.Command,
             Title = Tr("새 바로 가기", "New shortcut"),
-            Subtitle = Quicklinks.Normalize(text) is { } typed ? typed : Tr("주소 · 이름 · 단축어를 차례로 물어요", "Asks for the address, a name and a keyword"),
+            Subtitle = Quicklinks.Normalize(text) is { } typed ? typed : Tr("주소, 이름, 단축어 입력", "Enter an address, name and keyword"),
             Icon = IconSpec.Of(G.Add, true),
             PrimaryLabel = Tr("만들기", "Create"),
             StayOpen = true,
@@ -113,14 +113,14 @@ internal sealed partial class Engine
             Label = Tr("주소", "Address"),
             Hint = Tr("주소 — 검색어 자리는 {query}  예) youtube.com/results?search_query={query}", "Address — {query} marks the search words  e.g. youtube.com/results?search_query={query}"),
             Value = edit?.Url ?? url ?? "",
-            Check = v => Quicklinks.Normalize(v) is { } u ? (u, null) : (null, Tr("주소가 아니에요 — 예) naver.com 또는 https://…", "That's not an address — e.g. example.com or https://…")),
+            Check = v => Quicklinks.Normalize(v) is { } u ? (u, null) : (null, Tr("주소를 확인하세요 · 예: naver.com 또는 https://…", "Check the address · e.g. example.com or https://…")),
         });
         f.Fields.Add(new FormField
         {
             Label = Tr("이름", "Name"),
-            Hint = Tr("이름 — 검색할 때 이 이름으로 찾아요", "Name — what you search it by"),
+            Hint = Tr("검색에 사용할 이름", "Name used in search"),
             Value = edit?.Name ?? name ?? "",
-            Check = v => v.Trim().Length > 0 ? (v.Trim(), null) : (null, Tr("이름을 넣어 주세요", "Please enter a name")),
+            Check = v => v.Trim().Length > 0 ? (v.Trim(), null) : (null, Tr("이름을 입력하세요", "Enter a name")),
         });
         f.Fields.Add(new FormField
         {
@@ -132,10 +132,10 @@ internal sealed partial class Engine
             {
                 string k = v.Trim().ToLowerInvariant();
                 bool query = f[0].Contains("{query}", StringComparison.OrdinalIgnoreCase);
-                if (k.Length == 0) return query ? (null, Tr("검색어가 들어가는 주소는 단축어가 있어야 해요", "An address with search words needs a keyword")) : ("", null);
-                if (k.Contains(' ')) return (null, Tr("단축어에는 띄어쓰기를 넣을 수 없어요", "A keyword can't have spaces"));
+                if (k.Length == 0) return query ? (null, Tr("검색어가 포함된 주소에는 단축어를 입력하세요", "Enter a keyword for an address with search words")) : ("", null);
+                if (k.Contains(' ')) return (null, Tr("공백 없는 단축어를 입력하세요", "Enter a keyword without spaces"));
                 if (!UserCommands.KeywordFree(k, edit?.Id))
-                    return (null, Tr($"‘{k}’는 다른 바로 가기나 명령이 쓰고 있어요", $"‘{k}’ is taken by another shortcut or command"));
+                    return (null, Tr($"‘{k}’ 단축어 사용 중 · 다른 단축어를 입력하세요", $"‘{k}’ is in use. Enter another keyword."));
                 return (k, null);
             },
         });
@@ -151,7 +151,7 @@ internal sealed partial class Engine
             var l = edit is null ? Quicklinks.New(form[1], form[0], form[2].Length > 0 ? form[2] : null) : new Quicklink { Id = edit.Id, Name = form[1], Url = form[0], Keyword = form[2].Length > 0 ? form[2] : null };
             Quicklinks.Upsert(l);
             host.Window.Go(Mode.Quicklinks);
-            host.Window.ShowToast(edit is null ? Tr("바로 가기를 만들었어요", "Shortcut added") : Tr("바로 가기를 고쳤어요", "Shortcut saved"));
+            host.Window.ShowToast(edit is null ? Tr("바로 가기 추가 완료", "Shortcut added") : Tr("바로 가기 저장 완료", "Shortcut saved"));
         };
         return f;
     }

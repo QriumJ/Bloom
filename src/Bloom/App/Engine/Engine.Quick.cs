@@ -23,8 +23,8 @@ internal sealed partial class Engine
                     {
                         Id = "quick:none",
                         Kind = ItemKind.Info,
-                        Title = Tr("선택한 글도, 복사한 글도 없어요", "No selected or copied text"),
-                        Subtitle = Tr($"아무 앱에서 글을 선택하고 {Hotkeys.Label(Settings.Current.QuickHotkey)}, 또는 복사한 뒤 다시 열어 주세요", $"Select text in any app and press {Hotkeys.Label(Settings.Current.QuickHotkey)}, or copy it and come back"),
+                        Title = Tr("선택·복사된 글 없음", "No selected or copied text"),
+                        Subtitle = Tr($"앱에서 글을 선택하고 {Hotkeys.Label(Settings.Current.QuickHotkey)}를 누르세요. 또는 글을 복사한 뒤 다시 여세요.", $"Select text in any app and press {Hotkeys.Label(Settings.Current.QuickHotkey)}, or copy it and come back"),
                         Icon = IconSpec.Of(G.Info),
                     },
                 },
@@ -65,8 +65,8 @@ internal sealed partial class Engine
                     d.Add(Tr("길이", "Length"), Tr($"{st.Source.Length}자 → {result.Length}자", $"{st.Source.Length} → {result.Length} chars"));
                     return d;
                 }
-                done.Items.Add(QuickRow("quick:paste", st.FromSelection ? Tr("선택한 글을 이걸로 바꾸기", "Replace the selection") : Tr("앞의 창에 붙여넣기", "Paste into the window"), st.FromSelection ? Tr("원래 앱에 붙여 넣어요 (Ctrl+V)", "Pastes it back into the app (Ctrl+V)") : null, G.Paste, host.PasteQuick, Answer, false));
-                done.Items.Add(QuickRow("quick:copy", Tr("복사", "Copy"), null, G.Copy, () => { Launch.Copy(result); host.Window.ShowToast(Tr("복사했어요", "Copied")); }, Answer, true));
+                done.Items.Add(QuickRow("quick:paste", st.FromSelection ? Tr("선택한 글을 이걸로 바꾸기", "Replace the selection") : Tr("앞의 창에 붙여넣기", "Paste into the window"), st.FromSelection ? Tr("원래 앱에 붙여넣기 (Ctrl+V)", "Pastes back into the app (Ctrl+V)") : null, G.Paste, host.PasteQuick, Answer, false));
+                done.Items.Add(QuickRow("quick:copy", Tr("복사", "Copy"), null, G.Copy, () => { Launch.Copy(result); host.Window.ShowToast(Tr("복사 완료", "Copied")); }, Answer, true));
                 done.Items.Add(QuickRow("quick:chat", Tr("채팅으로 이어 가기", "Continue in a chat"), null, G.Chat, host.QuickToChat, Answer, true));
                 done.Items.Add(QuickRow("quick:again", Tr("다시 하기", "Try again"), null, G.Refresh, () => host.RunQuick(st.Action ?? "summarize", st.Custom), Answer, true));
                 done.Items.Add(QuickRow("quick:back", Tr("다른 동작 고르기", "Pick another action"), null, G.Back, host.CancelQuick, Answer, true));
@@ -88,7 +88,7 @@ internal sealed partial class Engine
             string ask = text.Trim();
             sections.Add(new Section(null)
             {
-                Items = { QuickRow("quick:custom", Tr($"“{ask}”", $"“{ask}”"), Tr("이렇게 해 달라고 AI에게 부탁해요", "Ask AI to do exactly this"), G.Sparkle, () => host.RunQuick("custom", ask), SourceDetail, true) },
+                Items = { QuickRow("quick:custom", Tr($"“{ask}”", $"“{ask}”"), Tr("AI 작업 지시 입력", "Enter an AI instruction"), G.Sparkle, () => host.RunQuick("custom", ask), SourceDetail, true) },
             });
         }
         foreach (var a in QuickActions.All)

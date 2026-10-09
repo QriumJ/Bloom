@@ -108,7 +108,7 @@ internal sealed class ReadText : RichTextBox
         string text = SelectedText;
         if (text.Length == 0) return;
         Launch.Copy(text);
-        Host()?.ShowToast(Tr("복사했어요", "Copied"));
+        Host()?.ShowToast(Tr("복사 완료", "Copied"));
         Back();
     }
 

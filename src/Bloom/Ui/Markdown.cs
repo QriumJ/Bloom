@@ -226,7 +226,7 @@ internal static class Markdown
         copy.MouseLeftButtonUp += (_, e) =>
         {
             Search.Launch.Copy(code);
-            copyText.Text = Tr("복사됨", "Copied");
+            copyText.Text = Tr("복사 완료", "Copied");
             var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1300) };
             t.Tick += (_, _) =>
             {

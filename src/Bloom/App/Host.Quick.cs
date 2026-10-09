@@ -102,7 +102,7 @@ internal sealed partial class Host
         if (cts.IsCancellationRequested) return;
         Quick.Busy = false;
         Quick.Result = text;
-        Quick.Error = text is null ? error ?? Tr("답을 받지 못했어요", "No answer came back") : null;
+        Quick.Error = text is null ? error ?? Tr("응답 없음 · 다시 시도하세요", "No response. Try again.") : null;
         Log.Write($"quick: {action} → {(text is null ? "error" : text.Length + " chars")}");
         // the answer comes back in front even if the launcher was closed while it worked
         if (!Window.IsVisible || Window.Mode != Mode.Quick) OpenView(Mode.Quick);

@@ -18,7 +18,7 @@ internal sealed partial class Engine
         var s = new Section(q.IsEmpty ? Tr("최근에 연 항목", "Opened lately") : Tr("결과", "Results"), Tr($"{list.Count}개", $"{list.Count}"));
         foreach (var f in list.Take(100)) s.Items.Add(FromRecent(f));
         if (s.Items.Count == 0)
-            s.Items.Add(new ResultItem { Id = "recent:none", Kind = ItemKind.Info, Title = Tr("최근 항목이 없어요", "No recent items"), Subtitle = Tr("Windows 설정 > 개인 설정 > 시작에서 ‘최근에 연 항목 표시’가 꺼져 있으면 비어 있어요", "Empty while Windows' ‘Show recently opened items’ is off (Settings > Personalization > Start)"), Icon = IconSpec.Of(G.Info) });
+            s.Items.Add(new ResultItem { Id = "recent:none", Kind = ItemKind.Info, Title = Tr("최근 항목 없음", "No recent items"), Subtitle = Tr("최근 파일을 표시하려면 Windows 시작 설정에서 최근 항목 표시를 켜세요", "Turn on recently opened items in Windows Start settings to show recent files."), Icon = IconSpec.Of(G.Info), MoreActions = () => new List<ActionItem> { new() { Title = Tr("Windows 시작 설정 열기", "Open Windows Start settings"), Glyph = G.Settings, Run = () => Launch.Open("ms-settings:personalization-start") } } });
         return new List<Section> { s };
     }
 

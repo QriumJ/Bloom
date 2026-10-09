@@ -1,3 +1,21 @@
+Answer stopped	回答已停止
+Claude Code not found. Install it and sign in.	未找到 Claude Code。请安装并登录。
+Codex not found. Install it and sign in.	未找到 Codex。请安装并登录。
+Could not start Claude Code. Check its installation and send again.	无法启动 Claude Code。请检查安装并重新发送。
+Could not start AI. Check its installation and try again.	无法启动 AI。请检查安装并重试。
+No answer from Claude. Send again.	Claude 未返回回答。请重新发送。
+No answer from Codex. Send again.	Codex 未返回回答。请重新发送。
+Answer failed. Send the message again.	回答失败。请重新发送消息。
+No response for 90 s. Try again.	90 秒内无响应。请重试。
+Sign in to ChatGPT. Run codex login in a terminal.	请登录 ChatGPT。在终端中运行 codex login。
+Sign in to Claude. Run claude in a terminal and sign in.	请登录 Claude。在终端中运行 claude 并登录。
+AI usage limit reached. Send again after the limit resets.	AI 用量已达上限。请在额度重置后重新发送。
+AI response timed out. Try again shortly.	AI 响应超时。请稍后重试。
+Could not connect to AI. Check your connection and send again.	无法连接 AI。请检查网络连接并重新发送。
+AI could not access a required file. Check file permissions and send again.	AI 无法访问所需文件。请检查文件权限并重新发送。
+AI model unavailable. Choose another model and send again.	AI 模型不可用。请选择其他模型并重新发送。
+Could not get an AI answer. Send again. If it persists, check sign-in and connection.	无法获取 AI 回答。请重新发送。如仍失败，请检查登录状态和网络连接。
+Details: {0}	错误详情：{0}
 Off	关闭
 Minimal	最低
 Low	低
@@ -9,32 +27,21 @@ Ultra	超高
 Fast	快速
 New group	新建分组
 New group {0}	新建分组 {0}
-Waiting for your OK	正在等待你的许可
+Approval pending	等待批准
 Working…	正在处理…
 New chat	新对话
-The session was ended, so the answer stopped	会话已结束，回答已停止
+Session ended · answer stopped	会话已结束 · 回答已停止
 Thinking…	思考中…
-Couldn't send the message to the CLI.	无法把消息发送到 CLI。
+Could not send the message. Send it again.	无法发送消息。请重新发送。
 \n\n<attachment name="{0}">(This format can't be opened here — tell the user its contents didn't come through)</attachment>	\n\n<attachment name="{0}">(此格式无法在这里打开 — 请告诉用户内容没有传过来)</attachment>
-📄 **{0}** — saved as the file below	📄 **{0}** — 已保存为下面的文件
-Unknown error	未知错误
-ChatGPT needs you to sign in. Run codex login once in a terminal.	需要登录 ChatGPT。请在终端中运行一次 codex login。
-Claude needs you to sign in. Run claude once in a terminal and log in.	需要登录 Claude。请在终端中运行一次 claude 并登录。
- usage limit reached. Send it again once the limit resets.\n\n	 已达到使用上限。额度恢复后请再发送一次。\n\n
-Claude Code CLI not found. (%USERPROFILE%\\.local\\bin\\claude.exe)	找不到 Claude Code CLI。(%USERPROFILE%\\.local\\bin\\claude.exe)
-Couldn't start the Claude CLI.	无法启动 Claude CLI。
-Claude CLI failed: 	Claude CLI 运行失败:
-The Claude CLI ended without an answer.	Claude CLI 未作回答就结束了。
+**{0}** — file saved	**{0}** — 已保存文件
 Searching the web…	正在搜索网页…
 Reading a page…	正在读取网页…
 Reading the attachments…	正在读取附件…
 Making a file…	正在生成文件…
- in use…	 使用中…
+Using {0}…	正在使用 {0}…
 5h	5小时
 Weekly	每周
-Codex CLI not found. (npm i -g @openai/codex, then codex login)	找不到 Codex CLI。(先 npm i -g @openai/codex，再 codex login)
-Stopped the answer.	已停止回答。
-Codex ended without an answer.	Codex 未作回答就结束了。
 Working with files…	正在处理文件…
 Working on the PC…	正在电脑上操作…
 Using a tool…	正在使用工具…
@@ -43,30 +50,25 @@ Codex error	Codex 错误
 {0}h	{0}小时
 {0} min	{0}分钟
 Limit	上限
-A sample answer from the recording mode. Claude or ChatGPT writes the real one.	这是录屏模式的示例回答。实际回答由 Claude 或 ChatGPT 撰写。
-The recording mode translates its sample sentences only.	录屏模式只翻译示例句子。
-Here's what to do before the talk.\n\n1. **Draft the slides** by Thursday\n2. **Rehearse** once with the team\n3. **List five questions** people may ask\n\nWant to go through them one by one?	这是演讲前要做的事。\n\n1. 周四前完成**幻灯片初稿**\n2. 和团队**彩排**一次\n3. 整理**五个**可能被问到的**问题**\n\n要一个一个来看吗？
-Here's a draft.\n\n> Hi all, sharing the notes from our last meeting. Send me your thoughts by Friday and I'll circulate a summary early next week. Thanks!\n\nWant it shorter?	这是一份草稿。\n\n> 大家好，分享一下上次会议的纪要。请在周五前把意见发给我，下周初我会整理后再发给大家。谢谢！\n\n要再短一点吗？
-Here are the key points.\n\n- **Goal**: 45% repeat buyers next quarter\n- **How**: a follow-up email within 7 days of the first order\n- **Next**: pick an owner, write the email\n\nWant it as a table?	要点如下。\n\n- **目标**：下季度复购率达到 45%\n- **方法**：首单后 7 天内发送跟进邮件\n- **下一步**：确定负责人，撰写邮件\n\n要做成表格吗？
-Here's an easy weekend plan.\n\n1. **Saturday morning** a market and brunch\n2. **Afternoon** a walk by the sea\n3. **Sunday** a slow café stop, then home\n\nShall we look for a place to stay too?	一个轻松的周末计划。\n\n1. **周六上午** 逛市场、吃早午餐\n2. **下午** 海边散步\n3. **周日** 悠闲地去趟咖啡馆再回家\n\n要不要也找找住的地方？
-Sure, here's a way to go about it.\n\n1. **Split** it into small tasks\n2. **Order** them by what's most urgent\n3. **Check** each one off as you go\n\nWant more detail?	好的，可以这样做。\n\n1. 先把事情**拆分**成小任务\n2. 按紧急程度**排序**\n3. 完成一项就**勾掉**一项\n\n需要更详细的说明吗？
-Latest workhorse · coding and everyday work	最新主力模型 · 编程和日常工作
-The smartest model · hard tasks	最聪明的模型 · 复杂任务
-Previous generation workhorse	上一代主力模型
-Fast and light · easy tasks	快速轻量 · 简单任务
-Older workhorse	旧款主力模型
+Sample answer in recording mode. Actual answers come from Claude or ChatGPT.	录制模式的示例回答。实际回答由 Claude 或 ChatGPT 生成。
+Only sample sentences can be translated in recording mode.	录制模式下只能翻译示例句子。
+Presentation preparation\n\n1. **Draft slides** by Thursday\n2. **Rehearse** once with the team\n3. **List five likely questions**	演讲准备\n\n1. 周四前完成**幻灯片初稿**\n2. 与团队**彩排**一次\n3. 整理**五个可能的问题**
+Email draft\n\n> Attached are the notes from the last meeting. Send feedback by Friday. A summary will follow early next week.	邮件草稿\n\n> 附件为上次会议记录。请在周五前发送反馈。汇总内容将在下周初发送。
+Summary\n\n- **Goal**: 45% repeat buyers next quarter\n- **Method**: a follow-up email within 7 days of the first order\n- **Next steps**: assign an owner and write the email	摘要\n\n- **目标**：下季度复购率 45%\n- **方法**：首次购买后 7 天内发送后续邮件\n- **后续步骤**：指定负责人并撰写邮件
+Weekend plan\n\n1. **Saturday morning**: market and brunch\n2. **Afternoon**: walk by the sea\n3. **Sunday**: café, then home	周末安排\n\n1. **周六上午**：逛市场并吃早午餐\n2. **下午**：海边散步\n3. **周日**：去咖啡馆后回家
+Task steps\n\n1. **Split** the work into small tasks.\n2. **Order** tasks by urgency.\n3. **Mark** completed tasks.	操作步骤\n\n1. 将工作**拆分**为小任务。\n2. 按紧急程度**排序**。\n3. **标记**已完成的任务。
+Model for coding and everyday tasks	适合编程和日常任务的模型
+Model for complex tasks	适合复杂任务的模型
+Previous generation model	上一代模型
+Model for simple tasks	适合简单任务的模型
+Older model	旧款模型
 Older balanced model	旧款均衡模型
 Older fast model	旧款快速模型
-The recording mode draws no icons	录屏模式不绘制图标
-Claude Code CLI not found	找不到 Claude Code CLI
-Claude didn't answer	Claude 没有回答
-The answer wasn't a drawing — try again	回答不是图形 — 请再试一次
-Codex CLI not found	找不到 Codex CLI
-ChatGPT failed: 	ChatGPT 运行失败:
-ChatGPT didn't answer	ChatGPT 没有回答
-Codex ended with an error	Codex 因错误结束
-Couldn't start it	无法启动
-No answer within 90 s	90 秒内没有回答
+Icon creation unavailable in recording mode	录制模式下无法生成图标
+No answer from Claude. Try again.	Claude 未返回回答。请重试。
+Could not read the icon. Draw it again.	无法读取图标。请重新生成。
+No answer from ChatGPT. Try again.	ChatGPT 未返回回答。请重试。
+Codex answer failed. Try again.	Codex 回答失败。请重试。
 Summarize	总结
 Translate	翻译
 Fix spelling & grammar	修正拼写和语法
@@ -84,14 +86,14 @@ English	英语
 Japanese	日语
 Chinese	中文
 Shortcut · Error	快捷键 · 错误
-Not found — it may have been deleted or moved	未找到 — 可能已被删除或移动
+Item not found. Check its location or reassign the shortcut.	未找到项目。请检查位置或重新分配快捷键。
 Reading the app list again…	正在重新读取应用列表…
-Restart the PC?	要重启电脑吗？
-Shut down the PC?	要关闭电脑吗？
+Restarting the PC may discard unsaved work.	重新启动电脑可能会丢失未保存的内容。
+Shutting down the PC may discard unsaved work.	关闭电脑可能会丢失未保存的内容。
 Restart	重启
 Shut down	关机
-Couldn't restart	无法重启
-Couldn't shut down	无法关机
+Restart failed. Save your work and restart from the Windows Start menu.	重新启动失败。请保存工作并从 Windows 开始菜单重新启动。
+Shutdown failed. Save your work and shut down from the Windows Start menu.	关机失败。请保存工作并从 Windows 开始菜单关机。
 Meeting notes: next Tuesday at 2 PM, room 3	会议记录：下周二下午 2 点，3 楼会议室
 Notepad	记事本
 See you at 7 tonight. Text me if you're running late.	今晚 7 点见。要是晚到了就发消息给我。
@@ -102,87 +104,104 @@ Drag over the area to read	拖动选择要识别文字的区域
 Drag over the area to pin	拖动选择要固定在屏幕上的区域
 Drag over the area to capture	拖动选择要截图的区域
 Drag over an area — then pick what to do	拖动选择区域，再选择要做的事
-OCR didn't work — check the recognition language in Settings	OCR 无法使用 — 请检查设置中的识别语言
-No text found	没有找到文字
+Text recognition failed	文字识别失败
+Check installed recognition languages	检查已安装的识别语言
+Recognition language settings	识别语言设置
+Recognition language	识别语言
+No text found	未识别到文字
 Read and copied {0} lines	已识别并复制 {0} 行
 Read {0} lines	已识别 {0} 行
 Capture copied	已复制截图
-Couldn't put it on the clipboard	无法放入剪贴板
+Could not copy to the clipboard. Try again.	无法复制到剪贴板。请重试。
 {0} × {1} · paste it with Ctrl+V	{0} × {1} · 用 Ctrl+V 粘贴
 Another app holds the clipboard — try again	另一个应用正在占用剪贴板 — 请再试一次
-My command · Done	我的命令 · 完成
-My command · Error	我的命令 · 错误
-‘{0}’ is still running	‘{0}’ 仍在运行
-Couldn't start it — 	无法运行 —
-Took {0}	用时 {0}
-Code {0}	代码 {0}
-Chains go at most three deep	组合最多嵌套三层
+Custom command · Done	自定义命令 · 完成
+Custom command · Failed	自定义命令 · 失败
+‘{0}’ is still running	“{0}”仍在运行
+Could not run the command. Check the file path and permissions, then retry.	无法运行命令。请检查文件路径和权限后重试。
+Open command actions	打开命令操作
+Elapsed: {0}	用时：{0}
+Exit code {0}	退出代码 {0}
+Exit code {0} · {1}	退出代码 {0} · {1}
+Chains can be nested up to three levels. Remove a level.	操作链最多嵌套三层。请减少一层。
 Skipped: {0}	已跳过：{0}
-Move to which folder?	要移动到哪个文件夹？
-Copy to which folder?	要复制到哪个文件夹？
+Choose destination folder	选择目标文件夹
+Choose copy destination	选择复制目标
 File · Moved	文件 · 已移动
 File · Copied	文件 · 已复制
 File · Unchanged	文件 · 未更改
-Not moved, or cancelled	未能移动或已取消
-Not copied, or cancelled	未能复制或已取消
-No answer came back	没有收到回答
+Move failed or cancelled. Check the destination and permissions, then retry.	移动失败或已取消。请检查目标文件夹和权限后重试。
+Copy failed or cancelled. Check the destination and permissions, then retry.	复制失败或已取消。请检查目标文件夹和权限后重试。
+No response. Try again.	无响应。请重试。
 I ran ‘{0}’ on the text below; this was the result. Let's continue.\n\n[Text]\n{1}\n\n[Result]\n{2}	我对下面的文字执行了“{0}”，结果如下。我们继续吧。\n\n[原文]\n{1}\n\n[结果]\n{2}
 Copied {0}	已复制 {0}
 Export Bloom settings	导出 Bloom 设置
 Bloom settings (*.zip)|*.zip	Bloom 设置 (*.zip)|*.zip
-Couldn't export	无法导出
+Settings export failed	设置导出失败
+Could not save the file. Check the destination and permissions, then retry.	无法保存文件。请检查保存位置和权限后重试。
 Import Bloom settings	导入 Bloom 设置
 Settings imported	已导入设置
-The settings you had are kept in the data folder's backups.	原来的设置保留在数据文件夹的 backups 中。
-The imported settings use another language. Restart Bloom now to switch?	导入的设置使用另一种语言。要现在重启 Bloom 切换吗？
-Couldn't import	无法导入
-Couldn't read the file — check that it is a settings file exported from Bloom.	无法读取文件 — 请确认这是从 Bloom 导出的设置文件。
-Settings, favorites, app names, browser shortcuts, timers and reminders, clipboard history, AI chats and usage history are all deleted, and Bloom starts again from the first-run screens.\n\nThis can't be undone.	设置、收藏、应用名称、浏览器快捷方式、计时器和提醒、剪贴板历史、AI 对话和使用记录都会被删除，Bloom 将从首次使用的设置界面重新开始。\n\n此操作无法撤销。
-Reset Bloom to how it was first installed?	要把 Bloom 恢复到刚安装时的状态吗？
-Export your settings before deleting?	删除前要导出设置吗？
-Keep your settings and favorites in one file, and bring them back with 'Import settings' on the first-run screens.	把设置和收藏保存成一个文件，之后可在首次使用界面用“导入设置”恢复。
-Couldn't reset	无法重置
-Couldn't start a new Bloom. Nothing was deleted.	无法启动新的 Bloom。没有删除任何内容。
-Bloom is removed from this PC, with its Start-menu shortcut and its start with Windows.	将从本机删除 Bloom，开始菜单快捷方式和随 Windows 启动也会一并移除。
-Bloom quits and no longer starts with Windows. This copy wasn't installed with the setup, so delete the folder that opens afterwards.	Bloom 会退出，并不再随 Windows 启动。这个 Bloom 不是用安装程序安装的，退出后请手动删除打开的文件夹。
-Really uninstall Bloom?	确定要删除 Bloom 吗？
-Delete your chats, settings and favorites too?	要把对话、设置和收藏也全部删除吗？
-Yes: AI chats, settings, favorites, notes and clipboard history all go. This can't be undone.\nNo: they stay, and a new install picks up where you left off.	是：AI 对话、设置、收藏、便笺和剪贴板历史将全部删除，无法撤销。\n否：保留这些数据，重新安装后可以接着使用。
-Couldn't uninstall	无法删除
-There are no notes for this version.	此版本没有更新说明。
-Couldn't end ‘{0}’ — it may run as administrator	无法结束‘{0}’ — 它可能以管理员身份运行
-{0} ended, {1} refused	已结束 {0} 个，{1} 个被拒绝
-Force-quit ‘{0}’	已强制结束‘{0}’
-Asked ‘{0}’ to close	已请求‘{0}’关闭窗口
+Previous settings backed up in the data folder.	原设置已备份到数据文件夹。
+Restart Bloom	重启 Bloom
+Restart Bloom to apply the imported language.	重新启动 Bloom 以应用导入的语言。
+Later	稍后
+Could not access settings. Check permissions for the file and data folder, then retry.	无法访问设置。请检查文件和数据文件夹的权限后重试。
+Could not read settings. Choose a file exported from Bloom.	无法读取设置。请选择从 Bloom 导出的文件。
+Settings import failed	设置导入失败
+Permanently deletes settings, favorites, app names, browser shortcuts, timers and reminders, clipboard history, AI chats and usage history, then starts from the first-run screens.	将永久删除设置、收藏、应用名称、浏览器快捷方式、计时器和提醒、剪贴板历史、AI 聊天和使用记录，然后从首次设置界面开始。
+Reset Bloom	重置 Bloom
+Reset	重置
+Cancel	取消
+Back up settings before reset	重置前备份设置
+Export settings and favorites to a file to restore them with ‘Import settings’ on the first-run screens.	将设置和收藏导出到文件后，可在首次设置界面通过“导入设置”恢复。
+Export settings	导出设置
+Reset without backup	不备份直接重置
+Reset failed	重置失败
+Could not restart Bloom. No data was deleted. Reopen Bloom and try again.	无法重新启动 Bloom。未删除任何数据。请重新打开 Bloom 后重试。
+Removes Bloom and its Start menu shortcut from this PC and stops it starting with Windows.	从此电脑删除 Bloom 及其开始菜单快捷方式，并取消随 Windows 启动。
+This copy was not installed with the setup. Bloom quits and stops starting with Windows. Delete the folder that opens afterwards.	此 Bloom 不是通过安装程序安装的。Bloom 将退出并取消随 Windows 启动。请手动删除退出后打开的文件夹。
+Uninstall Bloom	卸载 Bloom
+Saved data	已保存的数据
+Deleting data permanently removes AI chats, settings, favorites, notes and clipboard history. Kept data is used again after reinstalling.	删除数据将永久移除 AI 聊天、设置、收藏、笔记和剪贴板历史。保留的数据在重新安装后可继续使用。
+Keep data	保留数据
+Delete data	删除数据
+Uninstall failed	卸载失败
+Update	更新
+No release notes for this version	此版本无更新说明
+Could not end ‘{0}’. If it runs as administrator, close it in Task Manager.	无法结束“{0}”。如以管理员身份运行，请在任务管理器中结束。
+{0} ended · {1} could not be ended	已结束 {0} 个 · {1} 个无法结束
+Force-quit ‘{0}’	已强制结束“{0}”
+Close requested for ‘{0}’	已请求关闭“{0}”
 Restarting Explorer…	正在重启资源管理器…
 Claude Code · Working	Claude Code · 进行中
 Notice preview	通知预览
-“This is what it is working on”	“这里会显示它正在做什么”
+Current task	当前任务
 Codex · Done	Codex · 已完成
-Took 3 min	用时 3 分钟
+Elapsed: 3 min	用时：3 分钟
 Claude Code · Needs approval	Claude Code · 等待批准
-Waiting for you · click to close	正在等你确认 · 点击关闭
+Approval pending · click to close	等待批准 · 点击关闭
 Claude · Limit near	Claude · 即将达到上限
-18% of the weekly limit left	每周额度还剩 18%
+18% of the weekly limit left	每周额度剩余 18%
 Resets in 2 d	2 天后重置
-ChatGPT · Limit back	ChatGPT · 额度已恢复
-The 5-hour limit is full again	5 小时额度已恢复满
+ChatGPT · Limit reset	ChatGPT · 额度重置
+5-hour limit reset	5 小时额度已重置
 Needs approval	等待批准
-Waiting for you	正在等你确认
 Working	进行中
 Done	已完成
-Limit back	额度已恢复
-The {0} limit is full again	{0}额度已恢复满
+Limit reset	额度重置
+{0} limit reset	{0} 额度已重置
 Resets in {0}	{0}后重置
 Limit used up	额度已用完
-The {0} limit is used up	{0}额度已用完
+{0} limit used up	{0} 额度已用完
 Limit near	即将达到上限
-{0}% of the {1} limit left	{1}额度还剩 {0}%
+{0} limit · {1}% left	{0} 额度 · 剩余 {1}%
 Bloom · Update	Bloom · 更新
-Version {0} is downloaded	已下载版本 {0}
-It goes in at the next start · Settings > About restarts into it now	下次启动时生效 · 可在 设置 > 关于 中立即重启
-Bloom AI · Needs your OK	Bloom AI · 等待你的许可
-Allow or decline it in Bloom's chat	请在 Bloom 的对话中允许或拒绝
+Version {0} downloaded	已下载版本 {0}
+Applies at next start	下次启动时应用
+Update settings	更新设置
+Bloom AI · Approval pending	Bloom AI · 等待批准
+Choose Allow or Decline	选择允许或拒绝
+Open AI chat	打开 AI 聊天
 {0} s	{0}秒
 {0} h {1} min	{0}小时{1}分钟
 {0} h	{0}小时
@@ -192,9 +211,9 @@ Bloom — press Win to open	Bloom — 按 Win 键打开
 Open\tWin	打开\tWin
 Settings	设置
 Quit Bloom	退出 Bloom
-No reminders found	没有找到提醒
+No reminders found	未找到提醒
 {0} reminders	{0} 个提醒
-No reminders on this day	这天没有提醒
+No reminders on this day	当天无提醒
 Type "remind me tomorrow 9am to upload" in the search line · ←→ day · PgUp/PgDn month	在搜索栏输入 "remind me tomorrow 9am to upload" 即可创建 · ←→ 日 · PgUp/PgDn 月
 Sunday	星期日
 Monday	星期一
@@ -204,12 +223,12 @@ Thursday	星期四
 Friday	星期五
 Saturday	星期六
 dddd, MMM d	M月d日 dddd
-Today · 	今天 ·
-Tomorrow · 	明天 ·
-In 2 days · 	后天 ·
+Today · {0}	今天 · {0}
+Tomorrow · {0}	明天 · {0}
+In 2 days · {0}	后天 · {0}
 {0} · {1} days ago	{0} · {1} 天前
 {0} · in {1} days	{0} · {1} 天后
-Clipboard history is off	剪贴板历史已关闭
+Clipboard history is off	剪贴板记录已关闭
 Enter turns it on · it keeps what you copy from then on	按 Enter 开启 · 从此之后复制的内容会被保存
 Turn on	开启
 Pinned	已固定
@@ -218,8 +237,8 @@ Yesterday	昨天
 This week	本周
 Earlier	更早
 {0}	{0} 项
-Nothing found	没有找到
-Nothing copied yet	还没有复制任何内容
+Nothing found	无搜索结果
+Nothing copied yet	尚无剪贴板记录
 Text, images and files you copy gather here (not what password managers hide)	复制的文字、图片和文件会集中在这里 (密码管理器隐藏的内容除外)
 Paste	粘贴
 Copy only	仅复制
@@ -232,7 +251,7 @@ Unpin	取消固定
 Pin to the top	置顶
 Delete this entry	删除此项
 Clear the history (not the pinned)	清除历史 (保留已固定的)
-Delete all clipboard entries that aren't pinned?	要删除所有未固定的剪贴板记录吗？
+Deletes all unpinned clipboard entries.	删除所有未固定的剪贴板记录。
 Delete all	全部删除
 Deleted {0}	已删除 {0} 项
 Kind	类型
@@ -249,7 +268,7 @@ From	来源
 Copied at	复制时间
 Yes	是
 Snippet	片段
-Chain	组合
+Chain	操作链
 Script	脚本
 Running… · stop it from Ctrl+K	运行中… · 可在 Ctrl+K 中停止
 {0} + input · {1}	{0} + 输入 · {1}
@@ -263,13 +282,13 @@ Stop	停止
 Copy the last output	复制最后的输出
 Always run without a window	总是无窗口运行
 Always run in a window	总是在窗口中运行
-Now runs in a window	现在会在窗口中运行
-Now runs without a window; the result comes as a notice	现在会无窗口运行，结果以通知显示
+Runs in a window	在窗口中运行
+Runs without a window · results appear as notifications	无窗口运行 · 通过通知显示结果
 Edit command	编辑命令
 Delete command	删除命令
-Delete the command ‘{0}’?	要删除命令“{0}”吗？
+Deletes the command ‘{0}’.	删除命令“{0}”。
 Delete	删除
-My commands	我的命令
+Custom commands	自定义命令
 New snippet	新建片段
 New chain	新建组合
 New script	新建脚本
@@ -279,32 +298,32 @@ Run a .ps1, .bat or program, or one PowerShell line	运行 .ps1、.bat、程序�
 Create	创建
 {0} · keyword + space + input	{0} 个 · 关键词 + 空格 + 输入
 The text to paste — \\n for a new line · {date} {time} {clipboard} {input}	要粘贴的文字 — 换行用 \\n · {date} {time} {clipboard} {input}
-Please type the text	请输入文字
+Enter the text to paste	输入要粘贴的文本
 Steps	步骤
 As you'd type them, split by ; — e.g. notepad ; volume 30 ; wait 2 ; yt lofi	像在搜索栏输入一样，用 ; 分隔 — 例如 notepad ; volume 30 ; wait 2 ; yt lofi
-Please type at least one step	请至少输入一个步骤
-Nothing to run for: {0}	找不到要运行的内容：{0}
+Enter at least one step	至少输入一个步骤
+No action for ‘{0}’. Check the app name or command.	“{0}”没有可运行的项目。请检查应用名称或命令。
 What to run	要运行的内容
 A file path or one PowerShell line — {input} marks the input  e.g. C:\\scripts\\backup.ps1 {input}	文件路径或一行 PowerShell — {input} 表示输入的位置  例如 C:\\scripts\\backup.ps1 {input}
-Please type a file or a command	请输入文件或命令
-That file isn't there — please check the path	文件不存在 — 请检查路径
+Enter a file or command to run	输入要运行的文件或命令
+File not found. Check the path.	未找到文件。请检查路径。
 Name	名称
-Name — what you search it by	名称 — 搜索时用这个名字
-Please enter a name	请输入名称
+Name used in search	用于搜索的名称
+Enter a name	输入名称
 Keyword	关键词
 Keyword (optional) — e.g. with bk, “bk D:\\photos” runs it with that input	关键词 (可选) — 例如设为 bk 后，“bk D:\\photos” 会带着这个输入运行
-A command with {input} needs a keyword	含 {input} 的命令需要关键词
-A keyword can't have spaces	关键词不能包含空格
-‘{0}’ is taken by another command or shortcut	“{0}”已被其他命令或快捷方式占用
+Enter a keyword to use {input}	输入关键词以使用 {input}
+Enter a keyword without spaces	输入不含空格的关键词
+‘{0}’ is in use. Enter another keyword.	“{0}”已被使用。请输入其他关键词。
 Added ‘{0}’	已添加“{0}”
 Command saved	已保存命令
 Results	结果
-No emoji or symbol found	没有找到表情或符号
+No emoji or symbol found	未找到表情符号或符号
 Try other words (heart, arrow, smile)	换个词试试 (heart, arrow, smile)
 Recent	最近
 Popular emoji	常用表情
 Symbols	符号
-Emoji · symbols	表情 · 符号
+Emoji · symbols	表情符号 · 符号
 Enter pastes	按 Enter 粘贴
 Emoji	表情
 Symbol	符号
@@ -313,25 +332,25 @@ Code	代码
 New favorites folder	新建收藏夹
 Draw an icon with AI	用 AI 画图标
 Picture	图案
-What picture? e.g. a cat paw, a lightning bolt — empty: from the name ‘{0}’ (1 use of your plan)	画什么？例如猫爪、闪电 — 留空则根据名称“{0}”来画 (消耗 1 次额度)
+E.g. a cat paw or lightning bolt · empty uses ‘{0}’ (1 use)	例如猫爪、闪电 · 留空则使用“{0}”（计入 1 次用量）
 Rename…	重命名…
 Move to another folder…	移动到其他文件夹…
 Copy to another folder…	复制到其他文件夹…
 Move to the Recycle Bin	移到回收站
-Move ‘{0}’ to the Recycle Bin?	要把“{0}”移到回收站吗？
+Moves ‘{0}’ to the Recycle Bin.	将“{0}”移到回收站。
 Move to bin	移到回收站
 Moved ‘{0}’ to the Recycle Bin — you can restore it from there	已把“{0}”移到回收站 — 可以从那里还原
-Couldn't move it to the Recycle Bin (in use, or no permission)	无法移到回收站 (正在使用或没有权限)
+Could not move to the Recycle Bin. Close apps using the file, check permissions and retry.	无法移到回收站。请关闭使用该文件的应用，检查权限后重试。
 Rename folder	重命名文件夹
 Rename file	重命名文件
 New name	新名称
 The folder's new name	文件夹的新名称
 The file's new name — the extension changes as typed too	文件的新名称 — 扩展名也会按输入的内容更改
 A name can't have \\ / : * ? " < > |	名称不能包含 \\ / : * ? " < > |
-That's the same name — Esc to leave it	名称没有变化 — 不改请按 Esc
-‘{0}’ is already in that folder	该文件夹中已有“{0}”
+Name unchanged. Enter another name or press Esc.	名称未变。请输入其他名称或按 Esc。
+‘{0}’ already exists. Enter another name.	“{0}”已存在。请输入其他名称。
 ‘{0}’ → ‘{1}’	‘{0}’ → ‘{1}’
-Couldn't rename it (in use, or no permission)	无法重命名 (正在使用或没有权限)
+Could not rename the file. Close apps using it, check permissions and retry.	无法重命名文件。请关闭使用它的应用，检查权限后重试。
 Empty	空
  and {0} more	 等 {0} 项
 Folder · {0}	文件夹 · {0}
@@ -342,7 +361,7 @@ Move left	左移
 Move right	右移
 Ungroup (the items go back to the favorites row)	取消分组 (其中的项目回到收藏栏)
 Delete folder (its items leave the favorites too)	删除文件夹 (其中的项目也会移出收藏)
-Remove the folder ‘{0}’ and its {1} items from the favorites? (The apps themselves stay.)	要从收藏中删除文件夹“{0}”及其中的 {1} 项吗？(应用本身不受影响)
+Removes ‘{0}’ and its {1} items from favorites. Apps stay installed.	从收藏中移除“{0}”及其 {1} 个项目。保留已安装的应用。
 Video	视频
 Camera	相机
 Photo	照片
@@ -358,13 +377,12 @@ Web	网页
 Chat	聊天
 Star	星星
 Heart	爱心
-The folder is gone	文件夹已不存在
+The folder is gone	文件夹不存在
 Up	上移
 Down	下移
 Take out to the favorites row	移到收藏栏
 Remove from this folder	从此文件夹移除
 {0} · from search results: Ctrl+K → add to a folder	{0} 项 · 在搜索结果中 Ctrl+K → 添加到文件夹
-Still empty	还是空的
 Search for an app, then Ctrl+K → ‘Add to a favorites folder’	搜索应用后按 Ctrl+K →“添加到收藏夹”
 Folder name — e.g. Video editing, Design	文件夹名称 — 例如 视频剪辑、设计
 Made the folder ‘{0}’	已创建文件夹“{0}”
@@ -380,7 +398,7 @@ No reminders	没有提醒
 Recent files	最近的文件
 Recently copied	最近复制
 Ctrl+Alt+V all	Ctrl+Alt+V 查看全部
-Recent AI chats	最近的 AI 对话
+Recent AI chats	最近的 AI 聊天
 Hidden blocks	已隐藏的区块
 Enter shows it again	按 Enter 重新显示
 Hidden	已隐藏
@@ -392,8 +410,8 @@ Removed the shortcut of ‘{0}’	已删除“{0}”的快捷键
 Shortcut · {0}	快捷键 · {0}
 Shortcut	快捷键
 Press the keys — e.g. Ctrl+Alt+M · runs it from anywhere	按下按键 — 例如 Ctrl+Alt+M · 在任何地方都能运行
-Already the shortcut of ‘{0}’	已经是“{0}”的快捷键
-One of Bloom's own shortcuts uses it (change it in Settings)	Bloom 的其他快捷键正在使用 (可在设置中更改)
+Shortcut assigned to ‘{0}’. Press another combination.	已分配给“{0}”。请按其他组合。
+Bloom uses this shortcut. Press another combination.	Bloom 已使用此快捷键。请按其他组合。
 Another app uses {0} — pick another combination	{0} 已被其他应用占用 — 请换一个组合
 {0} → ‘{1}’	{0} → ‘{1}’
 Press it with Ctrl, Alt, Shift or Win — keys that type nothing (F keys, PrintScreen, Pause) work alone too	请与 Ctrl、Alt、Shift 或 Win 一起按 — 不输入文字的键 (F 键、PrintScreen、Pause) 也可单独使用
@@ -411,7 +429,7 @@ Folder	文件夹
 File	文件
 Copy name	复制名称
 See this folder's size (Space Cleaner)	查看此文件夹大小 (Space Cleaner)
-Add to my commands…	添加到我的命令…
+Add to custom commands…	添加到自定义命令…
 Just now	刚刚
 {0} min ago	{0} 分钟前
 {0} h ago	{0} 小时前
@@ -429,17 +447,17 @@ Search in the browser	在浏览器中搜索
 Find files “{0}”	查找文件“{0}”
 Find	查找
 Window layout	窗口布局
-No window to place	没有可摆放的窗口
-No layout matches	没有匹配的布局
+No window to place	无可排列的窗口
+No layout matches	无匹配布局
 Moves the window in front	移动最前面的窗口
 Layout	布局
 Place	摆放
 There is only one screen	只有一个屏幕
-Notes	便笺
+Notes	笔记
 Keep as a note: {0}	记为便笺：{0}
 Enter keeps it · it goes into Notes	按 Enter 保存 · 会存入便笺
 Keep	保存
-Kept as a note	已存为便笺
+Kept as a note	已保存为笔记
 Note · {0}	便笺 · {0}
 Open	打开
 No area picked	未选择区域
@@ -449,24 +467,24 @@ Area	区域
 Picked at	选择时间
 1–6 right away	用 1–6 直接选
 1  Ask AI	1  问 AI
-Sends this part of the screen as a picture · 1 use	把这部分屏幕作为图片发送 · 消耗 1 次
+Ask AI about the selected screen area · 1 use	将所选屏幕区域发送给 AI 提问 · 计入 1 次用量
 2  Translate	2  翻译
 Reads the text and translates it · 1 use	识别文字并翻译 · 消耗 1 次
 3  Copy text	3  复制文字
-Read on this PC and copied · no usage	在本机识别并复制 · 不消耗额度
+Copies text recognized on this PC · no AI usage	复制在本机识别的文字 · 不消耗 AI 用量
 Copy	复制
 4  Live translation	4  实时翻译
 Keeps reading this area and translates when it changes · ongoing usage	持续读取此区域，内容变化时翻译 · 持续消耗额度
 Start	开始
 5  Pin to the screen	5  固定到屏幕
-Keeps this area on top as a picture · drag to move, wheel to size	把此区域作为图片置顶显示 · 拖动移动，滚轮调整大小
+Pins the area as a picture · drag to move, scroll to resize	将区域图片置顶 · 拖动以移动，滚轮调整大小
 Pin	固定
 6  Capture	6  截图
 Copies this area as a picture · paste it anywhere with Ctrl+V	把此区域复制为图片 · 用 Ctrl+V 随处粘贴
 Pick another area	选择其他区域
 Text read	识别的文字
 {0} lines · Windows OCR · read on this PC	{0} 行 · Windows OCR · 在本机识别
-No text read yet	还没有识别文字
+No text read yet	尚未识别文字
 Lines	行
 Recognized as	识别语言
 Copy the text	复制文字
@@ -479,7 +497,7 @@ Pick again	重新选择
 Path	路径
 Network	网络
 Tab goes in	按 Tab 进入
-No such path	路径不存在
+Path not found. Check the path.	路径不存在。请检查路径。
 Open in Explorer	在资源管理器中打开
 Open the file	打开文件
 Programs	程序
@@ -489,15 +507,14 @@ Bloom — this app	Bloom — 就是本应用
 {0} processes	{0} 个进程
 Force quit	强制结束
 ‘{0}’{1}	‘{0}’{1}
-: force quit — unsaved work is lost	：强制结束 — 未保存的内容会丢失
+{0}: force quit — unsaved work is lost	{0}：强制结束 — 未保存内容将丢失
 Close its windows (it may ask to save)	关闭窗口来结束 (可能会询问是否保存)
 Restart Explorer	重启资源管理器
 Sort by CPU	按 CPU 排序
 Sort by memory	按内存排序
-No selected or copied text	没有选中或复制的文字
+No selected or copied text	无已选中或复制的文本
 Select text in any app and press {0}, or copy it and come back	在任意应用中选中文字后按 {0}，或复制后再回来
 ‘{0}’ in progress…	正在“{0}”…
-Cancel	取消
 ‘{0}’ result	“{0}”的结果
 Failed	失败
 Action	操作
@@ -505,16 +522,16 @@ Length	长度
 {0} → {1} chars	{0} → {1} 字
 Replace the selection	替换选中的文字
 Paste into the window	粘贴到窗口
-Pastes it back into the app (Ctrl+V)	粘贴回原来的应用 (Ctrl+V)
+Pastes back into the app (Ctrl+V)	粘贴回原应用（Ctrl+V）
 Copied	已复制
 Continue in a chat	在对话中继续
-Try again	再试一次
+Try again	请重试
 Pick another action	选择其他操作
 Enter tries again	按 Enter 再试一次
 Actions	操作
 The answer shows on the right	结果显示在右侧
 “{0}”	“{0}”
-Ask AI to do exactly this	让 AI 照这样做
+Enter an AI instruction	输入 AI 指令
 into {0}	译成{0}
 The selection	选中的文字
 The clipboard	剪贴板
@@ -525,18 +542,17 @@ Browser	浏览器
 Type search words	输入搜索词
 Edit shortcut	编辑快捷方式
 Delete shortcut	删除快捷方式
-Delete the shortcut ‘{0}’?	要删除快捷方式“{0}”吗？
+Deletes the site shortcut ‘{0}’.	删除网站快捷方式“{0}”。
 New shortcut	新建快捷方式
-Asks for the address, a name and a keyword	依次询问网址、名称和关键词
+Enter an address, name and keyword	输入地址、名称和关键词
 {0} · keyword + space + search words	{0} 个 · 关键词 + 空格 + 搜索词
 Address	网址
 Address — {query} marks the search words  e.g. youtube.com/results?search_query={query}	网址 — {query} 表示搜索词的位置  例如 youtube.com/results?search_query={query}
-That's not an address — e.g. example.com or https://…	这不是网址 — 例如 example.com 或 https://…
+Check the address · e.g. example.com or https://…	请检查地址 · 例如 example.com 或 https://…
 Keyword (optional) — e.g. with yt, “yt cats” searches right away	关键词 (可选) — 例如设为 yt 后，“yt cats” 会直接搜索
-An address with search words needs a keyword	含搜索词的网址需要关键词
-‘{0}’ is taken by another shortcut or command	“{0}”已被其他快捷方式或命令占用
-Shortcut added	已添加快捷方式
-Shortcut saved	已保存快捷方式
+Enter a keyword for an address with search words	为含搜索词的地址输入关键词
+Shortcut added	已添加网站快捷方式
+Shortcut saved	已保存网站快捷方式
 {0} / {1} · Enter next · Esc cancel	{0} / {1} · Enter 下一步 · Esc 取消
 (optional)	(可选)
 Press keys	按键
@@ -544,20 +560,21 @@ Typing	输入中
 Save	保存
 Next	下一步
 Opened lately	最近打开
-No recent items	没有最近的项目
-Empty while Windows' ‘Show recently opened items’ is off (Settings > Personalization > Start)	Windows 的“显示最近打开的项目”关闭时这里为空 (设置 > 个性化 > 开始)
+No recent items	无最近项目
+Turn on recently opened items in Windows Start settings to show recent files.	要显示最近文件，请在 Windows 开始设置中启用最近打开的项目。
+Open Windows Start settings	打开 Windows 开始设置
 Calculator	计算器
 Dates · time	日期 · 时间
 Search elsewhere	在其他地方查找
-Not finding it?	没找到？
+No results · search elsewhere	无结果 · 在其他位置搜索
 Copy result	复制结果
 Copy as shown	按显示格式复制
 Copy with the expression	连同算式复制
 System	系统
-Nothing matches	没有匹配项
+Nothing matches	无匹配项
 Set volume to {0}%	把音量设为 {0}%
 Now {0}%	当前 {0}%
-No output device	没有输出设备
+No output device	无输出设备
 Set	设置
 Volume {0}%	音量 {0}%
 None	无
@@ -578,7 +595,7 @@ Volume 50%	音量 50%
 Switch	切换
 Output: {0}	输出：{0}
 Checking…	检查中…
-Not on this PC	本机没有
+Not on this PC	此电脑不可用
 Turn off	关闭
 Explorer · press F5 in open windows	资源管理器 · 已打开的窗口按 F5 刷新
 Show	显示
@@ -586,12 +603,11 @@ Hide	隐藏
 Put the PC to sleep	让电脑睡眠
 Sleep	睡眠
 A key or the mouse wakes it	按键或移动鼠标即可唤醒
-It is empty	是空的
 {0} items · {1}	{0} 项 · {1}
-Delete the {0} items ({1}) in the recycle bin for good?	要永久删除回收站中的 {0} 项 ({1}) 吗？
 Empty recycle bin	清空回收站
+Permanently deletes {0} items ({1}) from the Recycle Bin.	永久删除回收站中的 {0} 个项目（{1}）。
 Recycle bin emptied	已清空回收站
-Couldn't change it	无法更改
+Could not change the setting. Try again.	无法更改设置。请重试。
 {0} on	{0} 已开启
 {0} off	{0} 已关闭
 Dark mode	深色模式
@@ -610,15 +626,15 @@ Remind in {0} · {1}	{0}后提醒 · {1}
 Remind {0} · {1}	{0} 提醒 · {1}
 Ends {0}	{0} 结束
 {0} left	还剩 {0}
-Reminds you {0}	将在 {0} 提醒你
-Timer started · ends {0}	计时器已开始 · {0} 结束
-I'll remind you {0}	我会在 {0} 提醒你
-Timer · 	计时器 ·
-Reminder · 	提醒 ·
+Reminds you {0}	{0} 提醒
+Timer started · ends {0}	计时器已启动 · {0} 结束
+Reminder set for {0}	已设置 {0} 的提醒
+Timer · {0}	计时器 · {0}
+Reminder · {0}	提醒 · {0}
 5 more min	再加 5 分钟
 1 more min	再加 1 分钟
 Start new	重新开始
-Couldn't read a time	无法识别时间
+Time not recognized. Enter ‘10 min’ or ‘3pm meeting’.	无法识别时间。请输入“10 min”或“3pm meeting”。
 e.g. 10 min · 1h 30m · 15:30 meeting · tomorrow 9am upload	例如 10 min · 1h 30m · 15:30 meeting · tomorrow 9am upload
 Quick start	快速开始
 or type "25 min focus", "remind me at 6pm to leave"	或输入 "25 min focus"、"remind me at 6pm to leave"
@@ -654,16 +670,17 @@ Show colour	查看颜色
 Uninstall · Store app, for this user	卸载 · Store 应用，仅当前用户
 Uninstall · {0}	卸载 · {0}
 Bloom · Uninstall	Bloom · 卸载
-Couldn't open the uninstaller of ‘{0}’	无法打开“{0}”的卸载程序
-Admin rights were declined or the uninstaller is gone — Settings › Apps can remove it	管理员权限被拒绝或卸载程序已不存在 — 可在 设置 › 应用 中删除
+Could not open the uninstaller for ‘{0}’	无法打开“{0}”的卸载程序
+Admin permission was declined or the uninstaller is missing. Remove the app in Windows app settings.	管理员权限被拒绝或卸载文件不存在。请在 Windows 应用设置中卸载。
+Windows app settings	Windows 应用设置
 Uninstall…	卸载…
-Really uninstall ‘{0}’?	确定要卸载“{0}”吗？
+Uninstall ‘{0}’	卸载“{0}”
 Uninstalled ‘{0}’	已卸载“{0}”
-Couldn't uninstall ‘{0}’	无法卸载“{0}”
+Could not uninstall ‘{0}’	无法卸载“{0}”
 It comes with Windows and can't be removed	这是 Windows 自带的应用，无法删除
-Try Settings › Apps	请到 设置 › 应用 中尝试
+Remove the app in Windows app settings.	请在 Windows 应用设置中卸载。
 Open windows	打开的窗口
-No window matches	没有匹配的窗口
+No window matches	无匹配窗口
 Minimized	已最小化
 Window	窗口
 Close window	关闭窗口
@@ -678,19 +695,19 @@ Type the name of an app to install	输入要安装的应用名称
 Searched in winget and the Microsoft Store · Enter installs	在 winget 和 Microsoft Store 中搜索 · 按 Enter 安装
 Looking for ‘{0}’…	正在查找“{0}”…
 winget is reading its catalogue · a few seconds	winget 正在读取目录 · 需要几秒钟
-winget didn't answer	winget 没有响应
+No response from winget. Search again shortly.	winget 无响应。请稍后重新搜索。
 Try again in a moment	请稍后再试
-No app found	没有找到应用
+No app found	未找到应用
 Try its English name or the maker's name	试试英文名或厂商名
 {0} · winget	{0} 个 · winget
 Install	安装
-Install ‘{0}’? This accepts the package's terms	要安装“{0}”吗？这表示你同意该软件包的条款
+Installing ‘{0}’ accepts the package's terms.	安装“{0}”即接受软件包的使用条款。
 Install in a terminal (watch it)	在终端中安装 (查看进度)
 Copy the ID	复制 ID
 Copy the install command	复制安装命令
 See it in the Microsoft Store	在 Microsoft Store 中查看
-‘{0}’ is already being installed	“{0}”已在安装中
-Installing ‘{0}’ · you'll hear when it's done	正在安装“{0}” · 完成后会通知你
+‘{0}’ is already being installed	“{0}”正在安装
+Installing ‘{0}’ · notification on completion	正在安装“{0}” · 完成时通知
 Install · Done	安装 · 完成
 Install · Failed	安装 · 失败
 Find ‘{0}’ in winget to install	在 winget 中查找并安装“{0}”
@@ -705,7 +722,7 @@ Enter starts Everything	按 Enter 启动 Everything
 Recently changed	最近修改
 {0}{1}	{0}{1} 项
 Everything's syntax works too: ext:pdf, size:>10mb, dm:today	也支持 Everything 的语法：ext:pdf, size:>10mb, dm:today
-AI chats	AI 对话
+AI chats	AI 聊天
 Delete chat	删除对话
 Read a file: {0}	读取文件：{0}
 Write a file: {0}	写入文件：{0}
@@ -716,7 +733,7 @@ Timers	计时器
 Find notes: {0}	查找便笺：{0}
 Open: {0}	打开：{0}
 Run in Bloom: {0}	在 Bloom 中运行：{0}
-Run my command: {0} {1}	运行我的命令：{0} {1}
+Run custom command: {0} {1}	运行自定义命令：{0} {1}
 Add to the note ‘{0}’: {1}	添加到便笺“{0}”：{1}
 New note: {0}	新便笺：{0}
 Timer: {0} {1}	计时器：{0} {1}
@@ -768,6 +785,7 @@ D:\\my photos	D:\\my photos
 Tidy downloads	整理下载文件
 Find yesterday's quote PDF, move it to Documents, and set a 10 min timer	找到昨天的报价单 PDF，移到“文档”，再设一个 10 分钟计时器
 Found `quote_1007.pdf`. Moving it to Documents.	找到了 `quote_1007.pdf`。正在移到“文档”。
+Waiting for your OK	正在等待你的许可
 Run in Bloom: 10 min timer	在 Bloom 中运行：10 min timer
 Move: quote_1007.pdf → C:\\Users\\me\\Documents	移动：quote_1007.pdf → C:\\Users\\me\\Documents
 end process	end process
@@ -776,7 +794,9 @@ end process 	end process
 laundry in 30 min	laundry in 30 min
 :heart	:heart
 List what to prep for next week's talk	列出下周演讲要准备的事
+Here's what to do before the talk.\n\n1. **Draft the slides** by Thursday\n2. **Rehearse** once with the team\n3. **List five questions** people may ask\n\nWant to go through them one by one?	这是演讲前要做的事。\n\n1. 周四前完成**幻灯片初稿**\n2. 和团队**彩排**一次\n3. 整理**五个**可能被问到的**问题**\n\n要一个一个来看吗？
 Move yesterday's quote PDF to Documents	把昨天的报价单 PDF 移到“文档”
+Waiting for you	正在等你确认
 \n\nDone. It's in Documents now.	\n\n好了，已经在“文档”里了。
 Groceries\n- milk\n- eggs\n- bread	购物\n- 牛奶\n- 鸡蛋\n- 面包
 会議は金曜日の午後3時に変更になりました。\n修正したスライドを持ってきてください。	会議は金曜日の午後3時に変更になりました。\n修正したスライドを持ってきてください。
@@ -807,6 +827,7 @@ Allow the command to run	请允许运行命令
 Claude Max 20x · Limit near	Claude Max 20x · 即将达到上限
 Resets in 2 d 4 h	2 天 4 小时后重置
 ChatGPT Plus · Limit back	ChatGPT Plus · 额度已恢复
+The 5-hour limit is full again	5 小时额度已恢复满
 limit	limit
 Design review	设计评审
 10 min timer	10 min timer
@@ -845,8 +866,8 @@ Indigo	靛蓝色
 Purple	紫色
 Magenta	品红色
 Pink	粉色
-Dark 	深
-Light 	浅
+Dark {0}	深{0}
+Light {0}	浅{0}
 Light and shade	明暗
 The same grey, lighter and darker	同一种灰色的亮部和暗部
 Cool grey	冷灰色
@@ -887,10 +908,10 @@ Grape	葡萄
 Sand dune	沙丘
 Charcoal and ash	木炭与灰烬
 Aurora	极光
-AI chat	AI 对话
+AI chat	AI 聊天
 Tab, the chat window and ‘Ask AI’ at the end of a search	Tab、对话窗口和搜索结果末尾的“问 AI”
 Pick a screen area to ask AI, translate or copy text · its 5 shortcuts	选择屏幕区域来问 AI、翻译或复制文字 · 5 个快捷键
-AI actions	AI 快捷操作
+AI actions	AI 操作
 Summarize, translate or polish selected text, and its shortcut	对选中文字进行总结、翻译、润色及其快捷键
 Calculator, units and currency	计算器、单位和汇率
 Typing a sum answers at once (12*3, 5km to mi, 100 usd)	输入算式立即得出结果 (12*3, 5km to mi, 100 usd)
@@ -900,7 +921,6 @@ Answers ‘in 100 days’, ‘days until christmas’, ‘new york time’, ‘t
 Calendar	日历
 The month calendar and the home's ‘This week’ block	月历和主页的“本周”区块
 Pick screen colours, look up colour codes, gradient ideas, and its shortcut	屏幕取色、查询颜色代码、渐变推荐及其快捷键
-Emoji & symbols	表情和符号
 Find ‘heart’ or ‘arrow’ and paste it, and its shortcut	用 “heart”“arrow” 查找并粘贴，及其快捷键
 Volume & system	音量和系统
 ‘volume 30’, dark mode, Bluetooth and other switches	“volume 30”、深色模式、蓝牙等开关
@@ -929,10 +949,10 @@ Commands	命令
 Bloom's features	Bloom 的功能
 Empty note	空便笺
 Bloom settings {0:yyyy-MM-dd}.zip	Bloom 设置 {0:yyyy-MM-dd}.zip
-Not a Bloom settings file	这不是 Bloom 设置文件
-{0} is too large	{0} 太大了
-Couldn't read {0}	无法读取 {0}
-There are no settings in it to import	其中没有可导入的设置
+Not a Bloom settings file. Choose a file exported from Bloom.	不是 Bloom 设置文件。请选择从 Bloom 导出的文件。
+Settings file too large. Choose a smaller Bloom settings file.	设置文件过大。请选择较小的 Bloom 设置文件。
+Invalid settings format. Choose a file exported from Bloom.	设置格式无效。请选择从 Bloom 导出的文件。
+No settings in this file. Choose a file exported from Bloom.	文件中没有设置。请选择从 Bloom 导出的文件。
 Reminder	提醒
 {0}d {1}h	{0}天{1}小时
 0 s	0 秒
@@ -946,7 +966,7 @@ Save the picture…	保存图片…
 Read and copy the text	识别文字并复制
 Back to its size	恢复原大小
 Close	关闭
-  ·  Esc cancels	  ·  Esc 取消
+{0}  ·  Esc cancels	{0}  ·  Esc 取消
 Bloom live translation	Bloom 实时翻译
 Bloom translation	Bloom 翻译
 Live translation	实时翻译
@@ -955,7 +975,7 @@ Reading the screen…	正在读取屏幕…
 Claude ↔ ChatGPT (saved in Settings too)	Claude ↔ ChatGPT (也会保存到设置)
 → Auto	→ 自动
 Translate into (Auto: English text into Korean, everything else into English)	翻译成 (自动：中文译成英文，其他译成中文)
-Thinking 	思考
+Thinking {0}	思考 {0}
 Thinking level (higher is slower and uses more · saved in Settings too)	思考级别 (越高越慢、用量越多 · 也会保存到设置)
 Resume	继续
 Pause	暂停
@@ -964,7 +984,6 @@ Translate again	重新翻译
  · paused	 · 已暂停
  · reading every {0:0.#} s	 · 每 {0:0.#} 秒读取一次
 Translating…	翻译中…
-Couldn't translate — 	无法翻译 —
 Undefined	未定义
 {0} · decimal {1:#,0}	{0} · 十进制 {1:#,0}
 Loading exchange rates…	正在加载汇率…
@@ -974,9 +993,8 @@ Date	日期
 {0:#,0} counting the first day · {1}	含首日共 {0:#,0} 天 · {1}
 {0:#,0} days before today	{0:#,0} 天前
 {0:#,0} days from today · D-{1}	{0:#,0} 天后 · D-{1}
-It's today	就是今天
-{0:#,0} days to go · {1}	还有 {0:#,0} 天 · {1}
-{0:#,0} days ago	{0:#,0} 天前
+{0:#,0} days to go · {1}	剩余 {0:#,0} 天 · {1}
+{0:#,0} days ago	已过 {0:#,0} 天
 Today is day {0:#,0} · since {1}	今天是第 {0:#,0} 天 · 从 {1} 起
 MMM d, yyyy	yyyy年M月d日
 ddd, MMM d, yyyy	yyyy年M月d日 (ddd)
@@ -984,7 +1002,7 @@ ddd, MMM d, yyyy	yyyy年M月d日 (ddd)
 {0} weeks	{0} 周
 {0} weeks {1} days	{0} 周 {1} 天
 Location	位置
- file	 文件
+{0} file	{0} 文件
 Modified	修改日期
 Google search	Google 搜索
 Naver search	Naver 搜索
@@ -1000,10 +1018,10 @@ Rates from {0} days ago	{0} 天前的汇率
 A window for Claude and ChatGPT chats, past ones too	Claude 和 ChatGPT 的对话窗口，也可查看以前的对话
 Pick up a past chat	继续以前的对话
 Search files	文件搜索
-Clipboard history	剪贴板历史
+Clipboard history	剪贴板记录
 Paste text, images and files you copied	粘贴复制过的文字、图片和文件
 Reminders on a calendar	在日历中查看提醒
-Kill process	结束进程
+End apps	结束应用
 See CPU and memory, end programs	查看 CPU 和内存，结束程序
 A map of disk space · find and clear big files	磁盘空间地图 · 查找并清理大文件
 Make and run scripts, snippets and chains of actions	创建并运行脚本、片段和操作组合
@@ -1027,7 +1045,6 @@ Dark mode · sound · Bluetooth · Wi-Fi · sleep …	深色模式 · 声音 · 
 Summarize, translate or polish the selected or copied text	对选中或复制的文字进行总结、翻译、润色
 Bloom tour	Bloom 导览
 See the first-run setup and the guide again	再次查看首次设置和使用指南
-Export settings	导出设置
 Settings, favorites, app names and browser shortcuts in one file	把设置、收藏、应用名称和浏览器快捷方式存成一个文件
 Import settings	导入设置
 From an exported settings file	从导出的设置文件导入
@@ -1125,6 +1142,7 @@ Center	居中
 Next screen	移到下一个屏幕
 Restore	还原
 The latest version is already installed	已安装最新版本
+Code {0}	代码 {0}
 World clock	世界时钟
 Now in {0}	{0} 现在
 Here, {0}{1}	此地 {0}{1}
@@ -1137,17 +1155,17 @@ ddd, MMM d	M月d日 (ddd)
  · a day ahead of here	 · 比这里早一天
  · a day behind here	 · 比这里晚一天
 Same time as here	与这里时间相同
-{0} ahead of here	比这里快 {0}
-{0} behind here	比这里慢 {0}
+{0} ahead of here	比当前位置快 {0}
+{0} behind here	比当前位置慢 {0}
 Up (Backspace)	向上 (Backspace)
 Pick a folder…	选择文件夹…
 Scan again (F5)	重新扫描 (F5)
 Big files	大文件
   ·  {0:#,0} files	  ·  {0:#,0} 个文件
-Scanning · 	扫描中 ·
-Done · 	完成 ·
-{0} · {1:#,0} folders · {2:0.0} s	{0} · {1:#,0} 个文件夹 · {2:0.0} 秒
- · {0:#,0} folders unreadable	 · {0:#,0} 个文件夹无法读取
+Scanning	正在扫描
+Scan complete	扫描完成
+{0} · {1} · {2:#,0} folders · {3:0.0} s · {4:#,0} folders unreadable	{0} · {1} · {2:#,0} 个文件夹 · {3:0.0} 秒 · {4:#,0} 个文件夹无法读取
+{0} · {1} · {2:#,0} folders · {3:0.0} s	{0} · {1} · {2:#,0} 个文件夹 · {3:0.0} 秒
 {0}  {1}free {2} / {3}	{0}  {1}可用 {2} / {3}
 A folder to see the size of	要查看大小的文件夹
 Big files · in {0}	大文件 · 在 {0} 中
@@ -1155,9 +1173,8 @@ Go into this folder	进入此文件夹
 Show in Explorer	在资源管理器中显示
 Move to the recycle bin…	移到回收站…
 The folder ‘{0}’ ({1:#,0} files, {2})	文件夹“{0}”({1:#,0} 个文件，{2})
- — move to the recycle bin?	 — 要移到回收站吗？
-You can bring it back from the recycle bin. If it is too big for the bin, Windows asks once more.	可以从回收站还原。如果太大放不进回收站，Windows 会再确认一次。
-Couldn't move it to the recycle bin (in use, or no permission)	无法移到回收站 (正在使用或没有权限)
+{0} — move to the Recycle Bin	{0} — 移到回收站
+Items can be restored from the Recycle Bin. Windows shows another confirmation if they are too large for it.	项目可从回收站恢复。如果项目过大而无法移入回收站，Windows 将显示额外的确认窗口。
 Moved to the recycle bin: {0}	已移到回收站：{0}
 {0:#,0} small files	{0:#,0} 个小文件
 Scanning…	扫描中…
@@ -1166,25 +1183,24 @@ Bloom reminder	Bloom 提醒
 Timer done	计时结束
 Again in 5 min	5 分钟后再提醒
 Dismiss	关闭
-Couldn't add {0} — no folders or files over 50 MB, at most {1} at a time	{0} 个未能添加 — 不支持文件夹和超过 50 MB 的文件，一次最多 {1} 个
+Could not attach {0}. Choose up to {1} files of 50 MB or less; folders cannot be attached.	无法添加 {0} 个附件。请一次选择最多 {1} 个不超过 50 MB 的文件。无法添加文件夹。
 ai\\paste\\Pasted picture {0:HHmmss}.png	ai\\paste\\粘贴的图片 {0:HHmmss}.png
 Files to send to AI	要发给 AI 的文件
 Explain what is on this screen	解释一下这个屏幕上有什么
 Look at the attached files and tell me what they are	看看附件里的文件，告诉我它们是什么
 Remove	移除
- · made by AI	 · 由 AI 生成
-The file is gone	文件已不存在
+{0} · made by AI	{0} · AI 生成的文件
+File not found. Create it again or check its location.	未找到文件。请重新生成或检查位置。
 Save…	保存…
 Save file	保存文件
-Couldn't save: 	无法保存：
 Ask about this screen	就这个屏幕提问
 Empty + Enter explains the screen · each question is 1 use	留空按 Enter 解释屏幕 · 每次提问消耗 1 次
 Ask anything	想问什么都可以
 Looks up recent things on the web · drop files or press Ctrl+O	最新信息会上网查找 · 拖入文件或按 Ctrl+O
 Bloom Lens picture	Bloom Lens 图片
-Page · 	网页 ·
+Page · {0}	页面 · {0}
 Writing…	正在撰写…
-May it do this on your PC?	可以在你的电脑上执行这个吗？
+Approve PC action	批准电脑操作
 Allow	允许
 Always allow ‘{0}’ in this chat	在此对话中始终允许“{0}”
 Always in this chat	在此对话中始终允许
@@ -1193,20 +1209,21 @@ Copy the whole answer · Ctrl+Shift+C copies the last one	复制完整回答 · 
 Send	发送
 Attach files or pictures	附加文件或图片
 Chats	对话
-Pick the model and thinking level	选择模型和思考级别
+Choose model and thinking level	选择模型和思考级别
 Switch to Claude	切换到 Claude
 Switch to ChatGPT	切换到 ChatGPT
 Change thinking level	更改思考级别
 Copy the last answer	复制最后的回答
 Answer copied	已复制回答
 Stop the answer	停止回答
-Decline: 	拒绝：
-Allow: 	允许：
-End session — on to a new chat	结束会话 — 开始新对话
+Decline: {0}	拒绝：{0}
+Allow: {0}	允许：{0}
+End session · open a new chat	结束会话 · 打开新聊天
 Delete this chat	删除此对话
-Asking Claude Code and Codex for the usage…	正在向 Claude Code 和 Codex 查询用量…
-Couldn't get the usage — check the CLIs are signed in, then try ↻	无法获取用量 — 请确认 CLI 已登录，然后点 ↻ 重试
- ago	 前
+OK	确定
+Checking AI usage…	正在查询 AI 用量…
+Could not get usage. Check the Claude Code or Codex sign-in, then press ↻.	无法获取用量。请检查 Claude Code 或 Codex 的登录状态，再按 ↻。
+{0} ago	{0}前
 Last fetched	上次获取
  left	 剩余
  · resets {0:M/d HH:mm}	 · {0:M/d HH:mm} 重置
@@ -1218,8 +1235,8 @@ We	三
 Th	四
 Fr	五
 Sa	六
-Due · 	截止 ·
-To do · 	待办 ·
+Due · {0}	截止 · {0}
+To do · {0}	待办 · {0}
 AI sparkle	AI 闪光
 Search	搜索
 Notes · editing	便笺 · 编辑
@@ -1248,68 +1265,67 @@ Pick colours · copy HEX · gradient ideas	取色 · 复制 HEX · 渐变推荐
 Ask Claude or ChatGPT right away	立即问 Claude 或 ChatGPT
 End stuck programs by CPU and memory	根据 CPU 和内存结束卡住的程序
 Run scripts, saved texts and chains of actions by keyword	用关键词运行脚本、常用文字和操作组合
-Welcome to Bloom	欢迎使用 Bloom
+Bloom setup	Bloom 设置
 Skip	跳过
 Back	上一步
 Open Bloom	打开 Bloom
 Get started	开始使用
-Everything in one line	一行搞定一切
-Press Win and type: open apps, do maths, find files, ask AI and set timers, all in one place.\nLet's settle a few things first. It takes a minute.	按下 Win 键输入即可：打开应用、计算、查找文件、问 AI、设置计时器，全在一处。\n先简单设置几项，一分钟就好。
-Have settings from another PC?	有其他电脑上的设置吗？
-How do you want to open it?	想用什么方式打开？
-Both can stay on. You can change this later in Settings > General.	两个都开着也可以。之后可在 设置 > 常规 中更改。
+Search and launch	搜索与启动
+Press Win and type to open apps, calculate, find files, chat with AI or set timers.\nChoose how to open Bloom and which features to use.	按 Win 键并输入，即可打开应用、计算、查找文件、与 AI 聊天或设置计时器。\n选择 Bloom 的打开方式和要使用的功能。
+Settings from another PC	其他电脑的设置
+Both shortcuts can be on.	可同时启用两个快捷键。
 Open with the Win key	用 Win 键打开
 Tap Win alone and Bloom opens. Combinations like Win+E still work.	只按一下 Win 键就会打开 Bloom。Win+E 等组合键照常可用。
 Open with Alt+Space	用 Alt+Space 打开
-Handy if the Win key feels odd.	不习惯用 Win 键时很方便。
+Press Alt+Space to open Bloom.	按 Alt+Space 打开 Bloom。
 Start with Windows	随 Windows 启动
-Waits quietly in the tray until you call it.	安静地待在托盘里，需要时再出现。
-Which browser for searches?	用哪个浏览器搜索？
+Runs in the tray when you sign in to Windows.	登录 Windows 时在托盘中运行。
+Browser for searches and links	打开搜索和链接的浏览器
 Web searches, shortcuts and links open in this browser.	网页搜索、快捷方式和链接都会在这个浏览器中打开。
 The browser set in Windows	Windows 中设置的浏览器
 Search engine	搜索引擎
 Features on the home	放在主页的功能
-They go into the favorites row under the empty search line. Ctrl+K removes or moves them later.	它们会放在空搜索栏下方的收藏栏中。之后可用 Ctrl+K 移除或移动。
-Only the ones switched on go into the favorites row — {0} now	只有开启的功能才会放进收藏栏 — 当前 {0} 个
-Which look do you like?	喜欢哪种外观？
-This window changes as soon as you pick.	选择后这个窗口会立即变化。
+Adds selected features to favorites. Ctrl+K removes or moves them.	将所选功能添加到收藏。Ctrl+K 可移除或移动。
+Enabled features added to favorites · {0} selected	将已启用的功能添加到收藏 · 已选 {0} 个
+Appearance	外观
+Applies immediately	立即生效
 Light	浅色
 Dark	深色
 Theme	主题
-GPU · smooth	GPU · 流畅
-CPU · light	CPU · 轻量
-The GPU keeps motion smooth. The CPU uses about 30 MB less memory, but motion may stutter on a slow CPU. It applies from Bloom's next start; change it any time in Settings › Performance.	GPU 让动画更流畅。CPU 能少用约 30 MB 内存，但在较慢的 CPU 上动画可能卡顿。下次启动 Bloom 时生效，可随时在 设置 › 性能 中更改。
+Smooth motion	流畅动画
+Lower memory use	节省内存
+Smooth motion uses the GPU. Lower memory use saves about 30 MB, but may stutter on a slow CPU. Applies at next start.	流畅动画使用 GPU。节省内存可减少约 30 MB，但在较慢的 CPU 上可能卡顿。下次启动时应用。
 Programs Bloom works with	Bloom 配合使用的程序
 Bloom works without them; each one turns its feature on. Install them from their official pages.	没有它们 Bloom 也能运行；装上后会开启对应功能。请从各自的官方页面安装。
 Find any file on the PC by name	按名称即时查找电脑上的任意文件
 AI chat · Bloom Lens · translation (with your own login)	AI 对话 · Bloom Lens · 翻译 (使用你自己的账号登录)
 Chat and translate with ChatGPT (with your own login)	用 ChatGPT 对话和翻译 (使用你自己的账号登录)
-Which AI should do what?	让哪个 AI 做什么？
-Only the AIs found on this PC are shown. Change it any time in Settings.	只显示在本机找到的 AI。可随时在设置中更改。
-Close an idle CLI after	闲置多久后关闭 CLI
-A chat unused this long closes its CLI to free memory · 0 = never	对话闲置这么久后会关闭 CLI 释放内存 · 0 = 从不
-Answers through Codex — quick answers, broad knowledge, can work on your PC	通过 Codex 回答 — 回答快、知识面广，也能在电脑上操作
-Answers through Claude Code — strong at long text and code, can work on your PC	通过 Claude Code 回答 — 擅长长文本和代码，也能在电脑上操作
+Choose AI by feature	各功能使用的 AI
+Choose from AI found on this PC.	可选择本机已找到的 AI。
+Release idle chat memory after	闲置聊天内存释放时间
+Releases idle chat memory · 0 = keep it	释放闲置聊天内存 · 0 表示保留
+Answers through Codex and runs approved PC actions.	通过 Codex 回答并执行已批准的电脑操作。
+Answers through Claude Code and runs approved PC actions.	通过 Claude Code 回答并执行已批准的电脑操作。
 Bloom Lens · translation	Bloom Lens · 翻译
-ChatGPT reads and translates the screen's text	ChatGPT 读取并翻译屏幕上的文字
-Claude Haiku reads and translates the screen's text — quick and light	Claude Haiku 读取并翻译屏幕上的文字 — 快速轻巧
-All you need to know	只需知道这些
+Reads and translates screen text with ChatGPT.	使用 ChatGPT 读取并翻译屏幕文字。
+Reads and translates screen text with Claude Haiku.	使用 Claude Haiku 读取并翻译屏幕文字。
+Basic shortcuts	基本快捷键
 Open and type — apps, settings, maths (12*3), files, web search	打开后输入 — 应用、设置、计算 (12*3)、文件、网页搜索
 Ask AI what you typed	把输入的内容问 AI
 More — everything you can do with the selected item	更多 — 选中项目可执行的所有操作
 Bloom Lens — ask AI about a screen area, translate, copy text	Bloom Lens — 就屏幕区域问 AI、翻译、复制文字
 Sentences work too:  "10 min timer"  "remind me at 3:30pm meeting"  "#ff5a8a"	也可以输入句子：  "10 min timer"  "remind me at 3:30pm meeting"  "#ff5a8a"
-You're all set	一切就绪
-Press the Win key. Change anything in 'Bloom settings', and see this guide again with 'Bloom tour'.	按一下 Win 键试试。可在“Bloom 设置”中更改任何选项，在“Bloom 导览”中再次查看本指南。
-Found	已找到
+Setup complete	设置完成
+Open Bloom with the shortcut you chose. Settings and the tour are available from the launcher.	使用所选快捷键打开 Bloom。可从启动器打开设置和使用指南。
+Open Bloom settings	打开 Bloom 设置
+Installed	已安装
 How to install  ↗	安装说明  ↗
 Details	详情
 Muted preview · click to pause	静音预览 · 点击暂停
 Bloom {0} · What's new	Bloom {0} · 新功能
-Bloom is now {0}	Bloom 已更新到 {0}
-Here's what changed	以下是更新内容
+Bloom {0} update complete	Bloom {0} 更新完成
+Changes in this version	此版本的更改
 See it on GitHub	在 GitHub 上查看
-OK	确定
 Groups	分组
 New chat in this group	在此分组中新建对话
 Group menu	分组菜单
@@ -1325,42 +1341,44 @@ Take out of the group	移出分组
 End session — the chat stays	结束会话 — 对话会保留
 Delete ‘{0}’	删除“{0}”
 Click again to delete — this can't be undone	再点一次即删除 — 无法撤销
-deleted	已删除
-{0} chat{1}	{0} 个对话
-{0} group{1}	{0} 个分组
-Nothing picked	未选择任何项
-picked	已选
+Deleted chats: {0} · groups: {1}	已删除聊天：{0} · 群组：{1}
+Selected chats: {0} · groups: {1}	已选聊天：{0} · 群组：{1}
+Deleted chats: {0}	已删除聊天：{0}
+Selected chats: {0}	已选聊天：{0}
+Deleted groups: {0}	已删除群组：{0}
+Selected groups: {0}	已选群组：{0}
+Nothing picked	未选择项目
 Pick every chat shown · again to pick none (Ctrl+A)	选择显示的全部对话 · 再点一次取消 (Ctrl+A)
 Really delete	确认删除
 Find a chat	查找对话
 Pick several to delete (Ctrl+click)	选择多个后删除 (Ctrl+单击)
-No chat matches	没有匹配的对话
+No chat matches	无匹配聊天
 Chats you ask with Tab gather here too	用 Tab 提问的对话也会集中在这里
 Previous 7 days	过去 7 天
 Older	更早
-Session open — it answers right away	会话已打开 — 会立即回答
+Session running · ready to answer	会话运行中 · 可立即回答
 Answering…	回答中…
 Move to a group · more	移到分组 · 更多
 Click again to delete	再点一次即删除
 Click again to delete this chat	再点一次即删除此对话
 {0} session{1} open	{0} 个会话已打开
 End all	全部结束
-Closes every open CLI to free its memory — the chats stay	关闭所有打开的 CLI 以释放内存 — 对话会保留
+Frees memory for all chats. Chat history stays.	释放所有聊天的内存。保留聊天记录。
 Bloom AI chat	Bloom AI 对话
 Message — Enter sends, Shift+Enter adds a line	消息 — Enter 发送，Shift+Enter 换行
 Attach files or pictures (Ctrl+O)	附加文件或图片 (Ctrl+O)
 Send (Enter)	发送 (Enter)
 Attach	附件
-Thinking level: 	思考级别：
+Thinking level: {0}	思考等级：{0}
 Model (Ctrl+M)	模型 (Ctrl+M)
 Thinking level (Ctrl+E)	思考级别 (Ctrl+E)
 End session	结束会话
-Closes this chat's CLI now and starts a new chat — the last one stays in the list	立即关闭此对话的 CLI 并开始新对话 — 上一个对话会留在列表中
+Frees chat memory and opens a new chat. History stays.	释放聊天内存并打开新聊天。保留聊天记录。
 min	分钟
 h	小时
 d	天
 With Ctrl, Alt, Shift or Win	需配合 Ctrl、Alt、Shift 或 Win
-Can't use this key	无法使用此键
+Press another key combination	请按其他按键组合
 Esc cancels · Backspace turns it off	Esc 取消 · Backspace 关闭
 Click to change	点击更改
 Select all	全选
@@ -1382,45 +1400,43 @@ Customize the home…	自定义主页…
 Draw with AI… (describe the picture)	用 AI 画… (用文字描述图案)
 Picture icon for ‘{0}’	“{0}”的图案图标
 Editing home · ▲ ▼ ✕ at each block's top right · Esc or ‘Done’ to finish	正在编辑主页 · 各区块右上角的 ▲ ▼ ✕ · 按 Esc 或“完成”结束
-AI is drawing an icon for ‘{0}’… (1 use)	AI 正在为“{0}”画图标… (消耗 1 次)
-Couldn't draw it	未能画出
-Changed the icon of ‘{0}’ · not happy? Ctrl+K → draw again	已更换“{0}”的图标 · 不满意可按 Ctrl+K → 重新画
-Hide from home (turn it back on in Settings > Home)	在主页隐藏 (可在 设置 > 主页 中重新开启)
-Hid ‘{0}’ · turn it back on in Settings > Home	已隐藏“{0}” · 可在 设置 > 主页 中重新开启
+Creating icon for ‘{0}’… (1 use)	正在生成“{0}”图标…（计入 1 次用量）
+Icon creation failed. Try again.	图标生成失败。请重试。
+Icon changed for ‘{0}’ · Ctrl+K to draw again	已更改“{0}”图标 · Ctrl+K 重新生成
+Hide from home	从主页隐藏
+‘{0}’ hidden · restore in Edit home	已隐藏“{0}” · 在编辑主页中恢复
   (here now)	  (当前所在)
   · {0}	  · {0} 项
 Added to ‘{0}’	已添加到“{0}”
 New folder…	新建文件夹…
-Add to a favorites folder · 	添加到收藏夹 ·
-Removed from favorites	已从收藏中移除
+Add to a favorites folder · {0}	加入收藏文件夹 · {0}
+Removed from favorites	已从收藏移除
 Added to favorites	已添加到收藏
 Open in the chat window	在对话窗口中打开
 Bloom · Quick AI	Bloom · 快速 AI
-The answer is ready	回答已完成
-No answer came	没有收到回答
- · open Bloom and press Tab	 · 打开 Bloom 后按 Tab
-Thinking · 	思考 ·
+Answer ready	回答完成
+No response. Send again.	无响应。请重新发送。
+Thinking · {0}	思考 · {0}
 Model · thinking level	模型 · 思考级别
-Haiku has no thinking levels	Haiku 没有思考级别
+Haiku has no thinking level setting.	Haiku 不支持思考级别设置。
 Screen · Bloom Lens	屏幕 · Bloom Lens
 {0} attached	已附加 {0} 个
 Ask about this screen (empty + Enter = explain it)	就这个屏幕提问 (留空按 Enter = 解释)
 Ask about the attached files	就附件提问
 Ask a follow-up…	继续追问…
 Ask anything…	想问什么都可以…
-Stops the answer (Ctrl+.) · Esc goes home and the answer goes on	停止回答 (Ctrl+.) · 按 Esc 回到主页，回答会继续
+Stops the answer (Ctrl+.) · Esc returns home while the answer continues.	停止回答（Ctrl+.）· Esc 返回主页，回答继续。
 Model and thinking level (Ctrl+M · Ctrl+E · Ctrl+Shift+M Claude ↔ ChatGPT)	模型和思考级别 (Ctrl+M · Ctrl+E · Ctrl+Shift+M Claude ↔ ChatGPT)
 Session closed, a new chat is open — the last one stays in the list	已关闭会话并打开新对话 — 上一个对话会留在列表中
-Closes this chat's CLI to free its memory and starts a new chat · the last one stays	关闭此对话的 CLI 以释放内存，并开始新对话 · 上一个对话会保留
 Home	主页
 More	更多
 Quick AI answering · Tab	快速 AI 回答中 · Tab
-Quick AI answer ready · Tab	快速 AI 回答已完成 · Tab
+Quick AI answer ready · Tab	快速 AI 回答完成 · Tab
 Edit home	编辑主页
 Done (Esc · Ctrl+E)	完成 (Esc · Ctrl+E)
 Order or hide the home blocks (Ctrl+E)	排列或隐藏主页区块 (Ctrl+E)
 Type to search	输入以搜索
-Apps, files, maths, web search · Tab asks AI	应用、文件、计算、网页搜索 · 按 Tab 问 AI
+Search, or ask AI	搜索，或问 AI
 Files	文件
 File name · Everything syntax (ext:pdf, dm:today)	文件名 · Everything 语法 (ext:pdf, dm:today)
 File search · Everything	文件搜索 · Everything
@@ -1435,10 +1451,10 @@ Calendar · reminders	日历 · 提醒
 Find a shortcut · type an address and Enter to add one	查找快捷方式 · 输入网址后按 Enter 添加
 Browser · {0} · keyword + space + search	浏览器 · {0} · 关键词 + 空格 + 搜索词
 Find a command · scripts, snippets, chains	查找命令 · 脚本、片段、组合
-My commands · {0} · keyword + space + input	我的命令 · {0} 个 · 关键词 + 空格 + 输入
-Processes	进程
+Custom commands · {0} · keyword + space + input	自定义命令 · {0} 个 · 关键词 + 空格 + 输入
+Apps	应用
 Find a program · Enter quits it · Ctrl+Enter closes its windows	查找程序 · Enter 强制结束 · Ctrl+Enter 关闭其窗口
-Kill process · {0} programs	结束进程 · {0} 个程序
+End apps · {0}	结束应用 · {0} 个
 Pick what to do with the text	选择要对文字做的事
 Screen text · {0} lines · {1}	屏幕文字 · {0} 行 · {1}
 What to do with this area · 1 ask 2 translate 3 text 4 live 5 pin 6 capture	对此区域要做的事 · 1 提问 2 翻译 3 文字 4 实时 5 固定 6 截图
@@ -1463,32 +1479,32 @@ dark mode, mute, volume 30, bluetooth …	dark mode, mute, volume 30, bluetooth 
 System · toggles	系统 · 开关
 Pick what to do with the result	选择要对结果做的事
 Pick an action · or type your own and Enter	选择操作 · 或自己输入后按 Enter
-AI actions · {0} text, {1} chars	AI 快捷操作 · {0}的文字，{1} 字
+AI actions · selected text, {0} chars	AI 操作 · 所选文字 {0} 字
+AI actions · copied text, {0} chars	AI 操作 · 已复制文字 {0} 字
 File kind · Ctrl+Tab steps	文件类型 · Ctrl+Tab 切换
 From a file… (image, icon or program)	从文件选择… (图片、图标或程序)
 Default (the icons inside)	默认 (内部的图标)
 Icon for ‘{0}’	“{0}”的图标
 A file for the folder icon	用作文件夹图标的文件
 Images, icons, programs|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp;*.ico;*.exe;*.lnk|All files|*.*	图片、图标、程序|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp;*.ico;*.exe;*.lnk|所有文件|*.*
-Please try again	请再试一次
 Size {0:0}%	大小 {0:0}%
 Attach tools (Ctrl+J)	附加工具 (Ctrl+J)
 Attach files or pictures — Ctrl+O, pasting or dropping works too	附加文件或图片 — 也可按 Ctrl+O、粘贴或拖放
 Settings (Ctrl+,)	设置 (Ctrl+,)
-Keep on screen (Ctrl+P) — stays when you click elsewhere · drag the search line or the bottom bar to move it	保持显示 (Ctrl+P) — 点击别处也不会消失 · 拖动搜索栏或底栏即可移动
+Keep on top (Ctrl+P) — stays above other windows when you click elsewhere · drag the search line or the bottom bar to move it	置顶 (Ctrl+P) — 点击其他窗口也保持在最上层 · 拖动搜索栏或底栏即可移动
 Tools	工具
 Close {0}	关闭 {0}
 Attach {0}	附加 {0}
 General	常规
 How Bloom opens and looks	Bloom 的打开方式和外观
 Language	语言
-Bloom restarts to switch · Auto follows Windows' display language	切换后 Bloom 会重启 · “自动”跟随 Windows 显示语言
-Restart Bloom now to switch the language?	要现在重启 Bloom 切换语言吗？
+Restarts Bloom to apply · Auto uses the Windows display language	应用时重新启动 Bloom · 自动使用 Windows 显示语言
+Restart Bloom to apply the language.	重新启动 Bloom 以应用语言。
 Tap Win alone to open (combinations like Win+E still work)	只按 Win 键即可打开 (Win+E 等组合键照常可用)
 Another app uses it	已被其他应用占用
 Open with Alt + Space	用 Alt + Space 打开
-Not registered for a dev run	开发模式运行时不注册
-Waits in the tray after sign-in	登录后在托盘中待命
+Autostart unavailable in development runs	开发运行时无法设置自动启动
+Runs in the tray at sign-in	登录时在托盘中运行
 Not registered	未注册
 Look	外观
 Glass on (Windows transparency effects)	玻璃效果已开启 (Windows 透明效果)
@@ -1497,18 +1513,18 @@ Windows transparency effects are off, so it is solid	Windows 透明效果已关�
 The launcher, tool windows, chat and settings together · Ctrl+= / Ctrl+- / Ctrl+0 in the launcher	启动器、工具窗口、对话和设置一起调整 · 在启动器中按 Ctrl+= / Ctrl+- / Ctrl+0
 Favorite icons	收藏图标
 Icon style	图标样式
-The tile behind picture icons — the same material as Bloom	图案图标的底板 — 与 Bloom 相同的材质
-Soft rose	柔和玫瑰
-Neutral	中性
+Picture icon background	图片图标的背景
+Soft rose	柔和玫瑰色
+Neutral	中性色
 Card	卡片
 Make picture icons	生成图案图标
-Gives your {0} favorites (folders included) a picture that fits the name, on a black tile in the accent · one at a time: Ctrl+K → pick an icon picture	为 {0} 个收藏 (含文件夹内) 配上符合名称的图案，黑色底板加强调色 · 单个设置：Ctrl+K → 选择图标图片
+Applies matching pictures, black tiles and the accent color to {0} favorites, including folder items.	为 {0} 个收藏应用匹配的图片、黑色底色和强调色，包括文件夹内的项目。
 Draw them all with AI	用 AI 全部画出
-Claude draws your {0} favorites one by one — {1} uses · one only: Ctrl+K → draw an icon with AI	Claude 会逐个画出 {0} 个收藏 — 消耗 {1} 次 · 只画一个：Ctrl+K → 用 AI 画图标
+Creates AI icons for {0} favorites · {1} uses.	为 {0} 个收藏生成 AI 图标 · 计入 {1} 次用量。
 Drawing…	正在画…
 Drawing… {0}/{1}	正在画… {0}/{1}
  · {0} failed	 · {0} 个失败
-Puts the app icons back on {0} picture icons	把 {0} 个图案图标恢复为应用图标
+Restores original app icons for {0} picture icons.	将 {0} 个图片图标恢复为原应用图标。
 The blocks under an empty search line — switch them, drag or ▲▼ / Ctrl+↑↓ to order (also ‘Edit home’ in the launcher)	空搜索栏下方的区块 — 开关，拖动或 ▲▼ / Ctrl+↑↓ 排序 (也可用启动器中的“编辑主页”)
 Blocks	区块
 Drag to reorder	拖动排序
@@ -1532,20 +1548,19 @@ Not running — Enter starts it	未运行 — 按 Enter 启动
 Open windows too	也搜索打开的窗口
 Up to 3 windows whose title matches, under the results · Enter switches to it	在结果下方列出最多 3 个标题匹配的窗口 · 按 Enter 切换过去
 Learning	学习
-Remember what I pick	记住我的选择
+Prioritize selected results	优先显示选过的结果
 Typing the same again puts your last pick first (“c” → Chrome) · kept on this PC only	再次输入相同内容时，上次的选择会排在最前 (“c” → Chrome) · 只保存在本机
-Forget what was learned	清除学习记录
-Nothing yet	暂无
+Clear search learning history	清除搜索学习记录
+Nothing yet	尚无记录
 {0} typed lines · Enter clears them	{0} 条输入 · 按 Enter 清除
 Web search	网页搜索
-Browser for searches and links	用于搜索和链接的浏览器
 From the browsers on this PC · web searches and links open in it	从本机的浏览器中选择 · 网页搜索和链接都会在其中打开
 Keyword + space + words (e.g. yt cats) · {0} · Enter manages them in the launcher	关键词 + 空格 + 搜索词 (例如 yt cats) · {0} 个 · 按 Enter 在启动器中管理
 Names	名称
 App names changed in Bloom	在 Bloom 中更改的应用名称
 On an app: Ctrl+K → Rename (in Bloom only; the original name still finds it)	在应用上按 Ctrl+K → 重命名 (仅在 Bloom 中，原名仍可搜到)
 {0} · Enter puts all the original names back	{0} 个 · 按 Enter 全部恢复原名
-The chat Tab opens · Claude and ChatGPT answer with their own CLI logins	按 Tab 打开的对话 · Claude 和 ChatGPT 各自使用 CLI 的登录来回答
+Tab opens AI chat · uses Claude or ChatGPT signed in on this PC	Tab 打开 AI 聊天 · 使用本机已登录的 Claude 或 ChatGPT
 Default	默认
 New chats use	新对话使用
 Ctrl+Shift+M switches during a chat · Ctrl+M picks the model	对话中按 Ctrl+Shift+M 切换 · Ctrl+M 选择模型
@@ -1553,29 +1568,25 @@ AI chat window shortcut	AI 对话窗口快捷键
 Opens the chat window anywhere · down again when it's in front	随时打开对话窗口 · 已在最前时再按会收起
 Tab continues the last chat	按 Tab 继续上次对话
 Picks up a chat used in the last 30 min · Shift+Tab always starts a new one	继续 30 分钟内用过的对话 · Shift+Tab 总是新建对话
-Close idle chats after	闲置对话关闭时间
-AI names the chat	由 AI 为对话命名
+Generate chat titles with AI	用 AI 生成聊天标题
 Model, field and task, like [◆ Opus • Code ] Fix the login · changes only when a new task starts	如 [◆ Opus • Code ] 修复登录，包含模型、领域和任务 · 仅在开始新任务时更改
 Claude model	Claude 模型
 For new chats · Ctrl+M during a chat	新对话的默认值 · 对话中按 Ctrl+M
 Claude thinking level	Claude 思考级别
 Fast = thinking off · not for Haiku · Ctrl+E during a chat	快速 = 关闭思考 · Haiku 不支持 · 对话中按 Ctrl+E
-Installed	已安装
-Not found — install Claude Code and sign in	未找到 — 请安装 Claude Code 并登录
+Installation guide	安装指南
 ChatGPT model	ChatGPT 模型
 Codex's default model	Codex 默认模型
  · Ctrl+M during a chat	 · 对话中按 Ctrl+M
 No Codex model list yet — run Codex once to get it	还没有 Codex 的模型列表 — 运行一次 Codex 即可获取
 ChatGPT thinking level	ChatGPT 思考级别
 The levels depend on the model · Ctrl+E during a chat	级别因模型而异 · 对话中按 Ctrl+E
-Not found — npm i -g @openai/codex, then codex login	未找到 — 先 npm i -g @openai/codex，再 codex login
- · answers with your ChatGPT login	 · 使用你的 ChatGPT 登录来回答
+{0} · uses your ChatGPT login	{0} · 使用已登录的 ChatGPT 账号
 PC actions · MCP	电脑操作 · MCP
-While you chat, the AI opens apps, finds and moves files and sets timers on this PC — through one Bloom MCP tool, connected inside this PC only	对话时 AI 可以在本机打开应用、查找和移动文件、设置计时器 — 通过一个 Bloom MCP 工具，仅在本机内连接
+Use AI chat to open apps, find and move files, and set timers on this PC.	可在 AI 聊天中打开本机应用、查找和移动文件、设置计时器。
 In Claude chats	在 Claude 对话中
-Claude Code asks first, Bloom shows the card in the chat · from the next message	Claude Code 会先询问，Bloom 在对话中显示确认卡片 · 从下一条消息开始
+Approval card in AI chat before actions · applies from the next message	操作前在 AI 聊天中显示批准卡片 · 从下一条消息起生效
 In ChatGPT chats	在 ChatGPT 对话中
-Codex doesn't ask on its own, so Bloom asks in the chat right before acting · from the next message	Codex 不会自己询问，所以 Bloom 会在执行前在对话中询问 · 从下一条消息开始
 What it may do	可以做的事
 Look up	查询
 Apps, files, recent files, open windows, timers, your commands — looked up without asking	应用、文件、最近的文件、打开的窗口、计时器、我的命令 — 无需询问直接查询
@@ -1586,7 +1597,7 @@ Write in Bloom's notes, start its timers, put events on its calendar — asks fi
 Rename, move, copy, recycle — asks first · the Recycle Bin brings things back	重命名、移动、复制、移到回收站 — 会先询问 · 可从回收站还原
 Read and write the clipboard — asks first	读取和写入剪贴板 — 会先询问
 Other MCP servers on this PC	本机的其他 MCP 服务器
-No servers found	没有找到服务器
+No servers found	未找到服务器
 MCP servers set up in Claude Code, Claude Desktop, Cursor, VS Code, Windsurf or Codex show here	在 Claude Code、Claude Desktop、Cursor、VS Code、Windsurf 或 Codex 中设置的 MCP 服务器会显示在这里
  · runs on this PC	 · 在本机运行
  · a web address · not in ChatGPT	 · 网址 · ChatGPT 中不可用
@@ -1597,7 +1608,7 @@ Before you switch one on	开启之前
 It starts with each chat (a slower first answer) and its tool list adds usage · every tool call asks in the chat	每个对话都会启动它 (首次回答会慢一些)，工具列表也会增加用量 · 每次调用工具都会在对话中询问
 Connection	连接
 How it connects	连接方式
-Not registered in Claude Code · only Bloom's chats get it, inside this PC only	不会注册到 Claude Code · 只有 Bloom 的对话能使用，仅在本机内连接
+Used in Bloom AI chat on this PC	在本机 Bloom AI 聊天中使用
 What it costs	开销
 Per request: Claude about +500, ChatGPT about +250 tokens (less with fewer kinds on) · about 10 MB of memory while in use	每次请求 Claude 约 +500、ChatGPT 约 +250 个 token (开启的种类越少越省) · 使用时内存约 10 MB
 Features	功能
@@ -1607,7 +1618,7 @@ Windows · tools	窗口 · 工具
 Keeps the text, pictures and files you copy, to paste again	保存复制过的文字、图片和文件，以便再次粘贴
 History	历史
 On · {0} · from about +2 MB of memory, more with pictures · copies that password managers hide are never kept	已开启 · {0} 项 · 内存约 +2 MB 起，图片越多越大 · 不会保存密码管理器隐藏的内容
-Off — nothing you copy is kept · on: from about +2 MB	已关闭 — 不保存复制的内容 · 开启后内存约 +2 MB 起
+Off · no history saved · on: from about +2 MB	已关闭 · 不保存记录 · 开启后：内存约增加 2 MB 起
 Keep for	保留时间
 Kept for good	永久保留
 Kept for {0}	保留 {0}
@@ -1631,20 +1642,19 @@ After the area: copies it as a picture — paste with Ctrl+V	选择区域后：�
 Reading text	文字识别
 Copy the text at once	立即复制文字
 Off: copy it from the launcher	关闭：在启动器中复制
-Recognition language	识别语言
-No OCR languages on this PC — add one in Windows Settings > Language	本机没有 OCR 语言 — 请在 Windows 设置 > 语言 中添加
+No recognition languages installed. Add one in Windows language settings.	未安装识别语言。请在 Windows 语言设置中添加。
 Installed: {0}	已安装：{0}
+Open Windows language settings	打开 Windows 语言设置
 Translation · AI actions	翻译 · AI 快捷操作
 Translation engine	翻译引擎
 AI actions use this engine too · also switchable in the translation window	AI 快捷操作也使用此引擎 · 也可在翻译窗口中切换
 Claude model for translation	翻译用 Claude 模型
-Haiku is the fastest and lightest (it has no thinking levels)	Haiku 最快最轻 (没有思考级别)
 ChatGPT model for translation	翻译用 ChatGPT 模型
 Lighter models are faster and use less	模型越轻越快，用量也越少
 Thinking level for translation	翻译思考级别
 Lower is faster and uses less · also a chip in the translation window	越低越快、用量越少 · 也可通过翻译窗口中的标签更改
 Translate into	翻译成
-Auto: English text into Korean, everything else into English	自动：中文译成英文，其他译成中文
+Auto: Korean text to English, other text to Korean	自动：韩语译为英语，其他文字译为韩语
 Live translation interval	实时翻译间隔
 How often the screen is read again (reading uses nothing · it translates only when the text changed and settled)	重新读取屏幕的间隔 (读取不消耗额度 · 仅在文字变化并稳定后翻译)
 1 s	1 秒
@@ -1656,11 +1666,11 @@ Windows · emoji · AI actions	窗口 · 表情 · AI 快捷操作
 Switch windows shortcut	切换窗口快捷键
 Opens the list of open windows	打开已打开窗口的列表
 Emoji & symbols shortcut	表情和符号快捷键
-Find one, Enter pastes it into the window in front	找到后按 Enter 粘贴到最前面的窗口
+Choose a symbol and press Enter to paste into the active window.	选择符号并按 Enter，粘贴到当前窗口。
 AI actions shortcut	AI 快捷操作快捷键
 Select text in any app and press it: summarize, translate, polish (1 use per action · engine: Bloom Lens > Translation)	在任意应用中选中文字后按下：总结、翻译、润色 (每次操作消耗 1 次 · 引擎：Bloom Lens > 翻译)
 Item shortcuts	项目快捷键
-None yet	暂无
+None yet	尚无项目
 Pick an app, folder, command or layout in the launcher, then Ctrl+K › Set a shortcut	在启动器中选择应用、文件夹、命令或布局，然后 Ctrl+K › 设置快捷键
 Click to change · Backspace removes it	点击更改 · Backspace 删除
 Tool windows	工具窗口
@@ -1675,7 +1685,7 @@ Pick a colour anywhere	随处取色
 Copy the colour at once	立即复制取到的颜色
 Copies it as HEX (#ff5a8a)	以 HEX (#ff5a8a) 复制
 Clear recent colours	清除最近颜色
-Claude Code and Codex work and AI limits as cards in a screen corner — it only reads their session logs, and stays quiet over full-screen games and presentations	在屏幕角落以卡片显示 Claude Code 和 Codex 的工作及 AI 额度 — 只读取会话日志，全屏游戏和演示时不会显示
+Shows Claude Code and Codex tasks and AI usage limits in a screen corner. Hidden during full-screen games and presentations.	在屏幕角落显示 Claude Code、Codex 的任务和 AI 用量上限。全屏游戏或演示期间隐藏通知。
 Work notifications	工作通知
 On · about +1 MB of memory · pick what to tell below	已开启 · 内存约 +1 MB · 在下方选择要通知的内容
 Off — no cards, no sounds · on: about +1 MB	已关闭 — 没有卡片和声音 · 开启后内存约 +1 MB
@@ -1691,7 +1701,7 @@ Small	小
 Large	大
 X-large	特大
 Shown for	显示时长
-Waits while the mouse is on it · Needs approval stays until it ends	鼠标悬停时会等待 · “等待批准”会一直显示到结束
+Stays while hovered · approval cards stay until work resumes	鼠标悬停时保留 · 批准卡片保留到操作继续
 4 s	4 秒
 6 s	6 秒
 10 s	10 秒
@@ -1699,15 +1709,15 @@ Waits while the mouse is on it · Needs approval stays until it ends	鼠标悬�
 A short sound of its own for each kind	每种通知都有自己的短提示音
 Loud	响亮
 Preview	预览
-Shows the kinds that are on, now	立即显示已开启的通知类型
-What to tell	通知内容
+Preview enabled notifications	预览已启用的通知
+Notification types	通知类型
 What a turn works on once it runs past 4 s	任务运行超过 4 秒时显示它在做什么
 When it ends, with how long it took (past 10 s)	结束时连同所用时间一起显示 (超过 10 秒)
-When it waits for you; stays until it goes on	等你回应时显示 · 直到继续为止
+Shown when approval or an answer is needed · stays until work resumes	需要批准或回复时显示 · 保留到操作继续
 At 20% left of the 5-hour or weekly limit, and when used up	5 小时或每周额度剩余 20% 时，以及用完时
 When a low limit is full again after its reset	不足的额度在重置后恢复满时
 Performance	性能
-Less motion and glass for a lighter Bloom	减少动画和玻璃效果，让 Bloom 更轻量
+Motion and transparency	动画和透明效果
 Animation	动画
 Reduced: fades only · Off: nothing moves	减少：仅淡入淡出 · 关闭：完全静止
 Reduced	减少
@@ -1717,9 +1727,9 @@ Lower uses less GPU and CPU	越低越省 GPU 和 CPU
 60	60
 Glass effect	玻璃效果
 Off: a solid background, lighter on the GPU	关闭：纯色背景，减轻 GPU 负担
-Restart Bloom now to switch how it draws?	要现在重启 Bloom 切换绘制方式吗？
-Draw with the GPU	使用 GPU 绘制
-Off: no graphics driver, about 30 MB less memory · busy, moving screens use a little more CPU	关闭：不使用显卡驱动，内存约少 30 MB · 动画较多的画面会多用一些 CPU
+Restart Bloom to apply screen motion settings.	重新启动 Bloom 以应用界面动画设置。
+Smooth screen motion	流畅的界面动画
+Uses GPU for smooth motion. Turning it off saves about 30 MB; busy screens use more CPU.	使用 GPU 显示流畅动画。关闭后节省约 30 MB；动画较多时 CPU 用量增加。
 Changes when Bloom restarts	重启 Bloom 后生效
 Memory	内存
 Memory Bloom uses now	Bloom 当前使用的内存
@@ -1729,33 +1739,31 @@ Data	数据
 Open the data folder	打开数据文件夹
 The recording's data folder	录屏用数据文件夹
 Settings, favorites, app names, browser shortcuts and recent colours in one file	把设置、收藏、应用名称、浏览器快捷方式和最近颜色存成一个文件
-Reset Bloom	重置 Bloom
 Deletes all settings and history and starts from the first-run screens · asks to export first	删除所有设置和记录，从首次使用界面重新开始 · 会先询问是否导出
-From an exported file · your current settings stay in the data folder's backups	从导出的文件导入 · 当前设置会保留在数据文件夹的 backups 中
-Uninstall Bloom	删除 Bloom
+Imports exported settings · backs up current settings in the data folder	导入设置 · 将当前设置备份到数据文件夹
 Removes Bloom from this PC · asks once more about your chats and settings	从本机删除 Bloom · 会再确认一次是否删除对话和设置
 Version	版本
-A light native (WPF) launcher	轻量的原生 (WPF) 启动器
+Windows launcher	Windows 启动器
 What's new in this version	此版本的更新内容
 Also shown once at the first start after an update · Enter shows it	更新后首次启动时也会显示一次 · 按 Enter 查看
-Never — each chat's CLI stays open (150–300 MB each)	从不 — 每个对话的 CLI 一直开着 (每个 150–300 MB)
-A chat unused for {0} closes its CLI to free memory · the chat stays, the next first answer takes a few seconds longer · 0 = never	闲置 {0} 的对话会关闭 CLI 释放内存 · 对话会保留，下一次首个回答会慢几秒 · 0 = 从不
-Only a Bloom installed with the setup file updates itself · click for the releases page	只有用安装程序安装的 Bloom 才会自动更新 · 点击打开发布页面
-This is the latest version	已是最新版本
+Never release · 150–300 MB per chat	不释放 · 每个聊天占用 150–300 MB
+Frees a chat's memory after {0} unused · history stays · the next first answer starts a few seconds later · 0 = never	{0} 未使用的聊天释放内存 · 保留记录 · 下一次首个回答会晚几秒 · 0 表示不释放
+Automatic updates require a setup installation · open releases	自动更新需通过安装程序安装 Bloom · 打开发布页面
+Up to date	已是最新版本
 Downloading {0}…	正在下载 {0}…
-{0} is ready · click to restart into it	{0} 已准备好 · 点击重启即可应用
-Couldn't check · check the connection and click again	无法检查 · 请检查网络连接后再点一次
+Version {0} ready · click to restart	版本 {0} 已就绪 · 点击重新启动
+Could not check for updates. Check your connection and retry.	无法检查更新。请检查网络连接后重试。
 Looks for a new version on GitHub Releases	在 GitHub Releases 上查找新版本
 Restart to update	重启以更新
 Check for updates	检查更新
 Check when Bloom starts	启动 Bloom 时检查
-Once, a little after it starts · a new version is downloaded and goes in at the next start	启动后稍等片刻检查一次 · 新版本会先下载，下次启动时生效
+Checks once after launch · downloads new versions for the next start	启动后检查一次 · 下载新版本并在下次启动时应用
 Another app already uses it — press another combination	已被其他应用占用 — 请按其他组合
 Off — click to set a shortcut	已关闭 — 点击设置快捷键
 Bloom already uses it	Bloom 已在使用此键
 Basics	基本
 Launcher	启动器
-No settings found	没有找到设置
+No settings found	未找到设置
 Find a setting	查找设置
 Section	分类
 Change	更改
@@ -1766,39 +1774,40 @@ Tangerine	橘子
 Lemon	柠檬
 Gray	灰色
 12*3 · 5km to mi · 100 usd	12*3 · 5km to mi · 100 usd
-History cleared	已清除历史
+History cleared	已清除记录
 Keep typing the sum	请继续输入算式
-Enter copies the answer and keeps it here	按 Enter 复制答案并保留在这里
+Enter copies the result and saves it in history	Enter 复制结果并保存到记录
 Copied · {0}	已复制 · {0}
 Click to copy	点击复制
-Find in what you copied	在复制的内容中查找
+Find clipboard entries	查找剪贴板历史
 Click one to copy it again	点击即可再次复制
-Copied — paste it anywhere	已复制 — 可随处粘贴
-Couldn't copy it	无法复制
+Copied · ready to paste	已复制 · 可粘贴
+Copy failed. Try again.	复制失败。请重试。
 Picture {0}×{1}	图片 {0}×{1}
-Files: 	文件：
+Files: {0}	文件：{0}
 Shortcuts	快捷键
-Find by name or keys	按名称或按键查找
-The shortcuts you set · click one to run it	你设置的快捷键 · 点击即可运行
+Find by app name or shortcut	按应用名称或快捷键查找
+Assigned shortcuts · click to run	已分配的快捷键 · 点击运行
 Change or remove shortcuts	更改或删除快捷键
-No shortcuts yet — pick an app, folder or command in the launcher, then Ctrl+K › Set a shortcut	还没有快捷键 — 在启动器中选择应用、文件夹或命令，然后 Ctrl+K › 设置快捷键
+No assigned shortcuts. Choose an item in the launcher and press Ctrl+K to assign one.	尚无已分配的快捷键。请在启动器中选择项目并按 Ctrl+K 分配。
+Choose an item in the launcher	在启动器中选择项目
 Another app uses these keys	其他应用正在使用这组按键
-Find a note · Enter for a new one	查找便笺 · 按 Enter 新建
+Find a note · Enter for a new one	查找笔记 · 按 Enter 新建笔记
 Saved	已保存
 All notes	全部便笺
 Delete this note (to the Recycle Bin)	删除此便笺 (移到回收站)
 New note	新便笺
 Saved as you type · {0}	边写边保存 · {0}
-No notes yet — type above and press Enter	还没有便笺 — 在上方输入后按 Enter
-No note matches — Enter makes a new one	没有匹配的便笺 — 按 Enter 新建
+No saved notes. Type above and press Enter.	尚无已保存的笔记。请在上方输入并按 Enter。
+No note matches · Enter saves a new note	无匹配笔记 · Enter 保存新笔记
 Delete (to the Recycle Bin)	删除 (移到回收站)
 s	秒
 What for (or ‘3pm meeting’)	内容 (或 ‘3pm meeting’)
-Started · ends {0}	已开始 · {0} 结束
+Started · ends {0}	已启动 · {0} 结束
 Set a time, or write ‘10 min’ or ‘3pm meeting’	设置时间，或输入 ‘10 min’、‘3pm meeting’
  min	 分钟
-Couldn't read a time — set it above, or write ‘10 min’ or ‘3pm meeting’	无法识别时间 — 请在上方设置，或输入 ‘10 min’、‘3pm meeting’
-No timers or reminders running	没有进行中的计时器或提醒
+Time not recognized. Set it above or enter ‘10 min’ or ‘3pm meeting’.	无法识别时间。请在上方设置或输入“10 min”“3pm meeting”。
+No timers or reminders running	无运行中的计时器或提醒
 just now	刚刚
 Detach from the launcher	从启动器分离
 Always on top	始终置顶

@@ -19,13 +19,13 @@ internal static class Home
     public static readonly (string key, string name, string about, char glyph, bool on)[] Kinds =
     {
         ("usage", Tr("AI 사용량", "AI usage"), Tr("Claude Code · Codex에 물어본 5시간 · 주간 사용량", "5-hour and weekly usage, asked of Claude Code and Codex"), G.Model, true),
-        ("timers", Tr("타이머 · 알림", "Timers · reminders"), Tr("진행 중인 타이머와 알림 (있을 때만 보여요)", "Running timers and reminders (only while there are some)"), G.Stopwatch, true),
+        ("timers", Tr("타이머 · 알림", "Timers · reminders"), Tr("진행 중인 타이머와 알림 (있을 때만 표시)", "Running timers and reminders (only while there are some)"), G.Stopwatch, true),
         ("week", Tr("이번 주", "This week"), Tr("오늘부터 7일의 알림 — 날짜를 누르면 캘린더", "Reminders for the next 7 days — click a day for the calendar"), G.Calendar, true),
         ("favorites", Tr("즐겨찾기", "Favorites"), Tr("아이콘 줄 · Ctrl+1…9", "A row of icons · Ctrl+1…9"), G.Star, true),
         ("recent", Tr("최근 사용", "Recent"), Tr("최근에 연 앱 · 파일 5개", "The last 5 apps and files you opened"), G.History, true),
         ("recentfiles", Tr("최근 파일", "Recent files"), Tr("Windows가 기억하는 최근에 연 파일 3개", "3 files Windows remembers you opened"), G.Document, false),
         ("clipboard", Tr("최근 복사", "Recently copied"), Tr("클립보드 기록의 최근 3개", "The last 3 clipboard entries"), G.Paste, false),
-        ("threads", Tr("최근 AI 대화", "Recent AI chats"), Tr("이어 가기 좋은 대화 3개", "3 chats to pick up again"), G.Chat, false),
+        ("threads", Tr("최근 AI 채팅", "Recent AI chats"), Tr("이어 가기 좋은 대화 3개", "3 chats to pick up again"), G.Chat, false),
         ("commands", Tr("명령", "Commands"), Tr("Bloom의 기능 목록", "Bloom's features"), G.Settings, true),
     };
 

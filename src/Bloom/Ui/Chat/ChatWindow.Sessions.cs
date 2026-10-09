@@ -211,7 +211,7 @@ internal sealed partial class ChatWindow
         }
         if (filtering ? shown == 0 : host.Chats.Threads.Count == 0)
         {
-            var none = Theme.T(Core.Hangul.KeepAll(filtering ? Tr("찾은 대화가 없어요", "No chat matches") : Tr("Tab으로 물어본 대화도 여기에 모여요", "Chats you ask with Tab gather here too")), 12.5, Theme.P.TextFaint, null, false);
+            var none = Theme.T(Core.Hangul.KeepAll(filtering ? Tr("검색된 대화 없음", "No chat matches") : Tr("Tab으로 물어본 대화도 여기에 저장됩니다", "Chats you ask with Tab gather here too")), 12.5, Theme.P.TextFaint, null, false);
             none.TextWrapping = TextWrapping.Wrap;
             none.Margin = new Thickness(22, 14, 18, 0);
             list.Children.Add(none);
@@ -247,7 +247,7 @@ internal sealed partial class ChatWindow
         head.Children.Add(Theme.T(NameOf(t), 13.5, on ? Theme.P.AccentText : Theme.P.Text, on ? Theme.Semi : Theme.Medium));
         if (live)
         {
-            var dot = new Ellipse { Width = 6, Height = 6, Fill = Theme.P.Accent, Margin = new Thickness(8, 1, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = Tr("세션이 열려 있어요 — 바로 이어서 답해요", "Session open — it answers right away") };
+            var dot = new Ellipse { Width = 6, Height = 6, Fill = Theme.P.Accent, Margin = new Thickness(8, 1, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = Tr("세션 실행 중 · 바로 답변 가능", "Session running · ready to answer") };
             Grid.SetColumn(dot, 1);
             head.Children.Add(dot);
         }
@@ -260,7 +260,7 @@ internal sealed partial class ChatWindow
         g.Children.Add(words);
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0), Visibility = Visibility.Collapsed };
-        if (live) buttons.Children.Add(SmallButton(G.Stop, Tr("세션 종료 — 대화는 남아요", "End session — the chat stays"), b => EndSession(t)));
+        if (live) buttons.Children.Add(SmallButton(G.Stop, Tr("세션 종료 — 대화는 유지됩니다", "End session — the chat stays"), b => EndSession(t)));
         buttons.Children.Add(SmallButton(More, Tr("그룹으로 옮기기 · 더보기", "Move to a group · more"), b => menu.Open(ThreadActions(t, b), b)));
         if (host.Chats.Threads.Contains(t))
         {
@@ -271,8 +271,8 @@ internal sealed partial class ChatWindow
                 {
                     armed = true;
                     ((TextBlock)b.Child).Foreground = Theme.P.Danger;
-                    b.ToolTip = Tr("한 번 더 누르면 삭제해요", "Click again to delete");
-                    ShowToast(Tr("한 번 더 누르면 이 대화를 지워요", "Click again to delete this chat"));
+                    b.ToolTip = Tr("한 번 더 누르면 삭제됩니다.", "Click again to delete");
+                    ShowToast(Tr("한 번 더 누르면 대화가 삭제됩니다.", "Click again to delete this chat"));
                     return;
                 }
                 host.DeleteThread(t);
@@ -386,7 +386,7 @@ internal sealed partial class ChatWindow
         {
             foreach (var x in live) host.Chats.EndSession(x);
         });
-        all.ToolTip = Tr("열린 CLI를 모두 닫아 메모리를 돌려줘요 — 대화는 남아요", "Closes every open CLI to free its memory — the chats stay");
+        all.ToolTip = Tr("모든 대화의 메모리를 해제합니다. 대화 기록은 유지됩니다.", "Frees memory for all chats. Chat history stays.");
         Grid.SetColumn(all, 2);
         g.Children.Add(all);
         running.Content = new StackPanel { Children = { new SmoothBorder { Height = 1, Background = Theme.P.Line }, g } };

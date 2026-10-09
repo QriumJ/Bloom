@@ -450,7 +450,7 @@ internal sealed class ToolDock
         foreach (var w in windows.Where(w => w.Edge is not null)) w.Hide();
     }
 
-    /// The group in front (one of it has the focus) or behind other windows (the pinned launcher let go of it).
+    /// The group in front (one of it has the focus).
     public void SetTopmost(bool on)
     {
         foreach (var w in windows.Where(w => w.Edge is not null)) w.Topmost = on;

@@ -92,7 +92,7 @@ internal sealed partial class Chats
     {
         if (!sessions.Remove(t.Id, out var s)) return;
         s.Dispose();
-        if (t.Busy) Finish(t, t.Messages[^1], false, Tr("세션을 종료해서 답변을 멈췄어요", "The session was ended, so the answer stopped"));
+        if (t.Busy) Finish(t, t.Messages[^1], false, Tr("세션 종료 · 답변 중지됨", "Session ended · answer stopped"));
         SessionsChanged?.Invoke();
     }
 
@@ -177,7 +177,7 @@ internal sealed partial class Chats
         else leads.Remove(t.Id);
         if (s is null || !s.Send(prompt, images))
         {
-            Finish(t, answer, false, error ?? Tr("CLI에 메시지를 보내지 못했어요.", "Couldn't send the message to the CLI."));
+            Finish(t, answer, false, error ?? Tr("메시지를 보내지 못했습니다. 다시 보내세요.", "Could not send the message. Send it again."));
             return;
         }
         idle.Start();
@@ -290,7 +290,7 @@ internal sealed partial class Chats
             {
                 Directory.CreateDirectory(into);
                 File.WriteAllText(Path.Combine(into, name), match.Groups[2].Value, new UTF8Encoding(false));
-                return Tr($"📄 **{name}** — 아래 파일로 저장했어요", $"📄 **{name}** — saved as the file below");
+                return Tr($"**{name}** — 파일 저장 완료", $"**{name}** — file saved");
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
@@ -410,21 +410,11 @@ internal sealed partial class Chats
         if (!ok)
         {
             m.Error = true;
-            string e = Friendly(error ?? Tr("알 수 없는 오류", "Unknown error"), AiModels.IsChatGpt(t.Model));
+            string e = error is null ? AiErrors.Failed : AiErrors.Friendly(error, AiModels.IsChatGpt(t.Model), details: true);
             m.Text = m.Text.Length > 0 ? m.Text + "\n\n" + e : e;
         }
         Touch(t);
         Updated?.Invoke(t);
-    }
-
-    private static string Friendly(string e, bool chatgpt)
-    {
-        string l = e.ToLowerInvariant();
-        if (l.Contains("login") || l.Contains("log in") || l.Contains("oauth") || l.Contains("authenticat") || l.Contains("401") || l.Contains("unauthorized"))
-            return (chatgpt ? Tr("ChatGPT 로그인이 필요해요. 터미널에서 codex login을 한 번 실행해 주세요.", "ChatGPT needs you to sign in. Run codex login once in a terminal.") : Tr("Claude 로그인이 필요해요. 터미널에서 claude를 한 번 실행해 로그인해 주세요.", "Claude needs you to sign in. Run claude once in a terminal and log in.")) + "\n\n" + e;
-        if (l.Contains("rate limit") || l.Contains("usage limit") || l.Contains("limit reached") || l.Contains("quota") || l.Contains("429"))
-            return (chatgpt ? "ChatGPT" : "Claude") + Tr(" 사용 한도에 걸렸어요. 한도가 풀리면 다시 보내 주세요.\n\n", " usage limit reached. Send it again once the limit resets.\n\n") + e;
-        return e;
     }
 
     public void Stop(ChatThread t)

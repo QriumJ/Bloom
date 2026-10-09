@@ -19,7 +19,7 @@ internal static class HomeViews
     {
         if (accounts.Count == 0)
         {
-            var none = Theme.T(AiUsage.Busy ? Tr("Claude Code · Codex에 사용량을 묻는 중이에요…", "Asking Claude Code and Codex for the usage…") : Tr("사용량을 받지 못했어요 — CLI에 로그인돼 있는지 확인하고 ↻로 다시 받아 보세요", "Couldn't get the usage — check the CLIs are signed in, then try ↻"), 12.5, Theme.P.TextFaint);
+            var none = Theme.T(AiUsage.Busy ? Tr("AI 사용량 조회 중…", "Checking AI usage…") : Tr("사용량 조회 실패 · Claude Code 또는 Codex 로그인 상태를 확인하고 ↻로 다시 조회하세요", "Could not get usage. Check the Claude Code or Codex sign-in, then press ↻."), 12.5, Theme.P.TextFaint);
             none.Margin = new Thickness(22, 2, 22, 8);
             return none;
         }
@@ -49,7 +49,7 @@ internal static class HomeViews
         head.Children.Add(name);
         if (DateTime.Now - a.Fetched > TimeSpan.FromMinutes(15)) // this side failed since: its numbers are old
         {
-            var age = Theme.T(Ago(DateTime.Now - a.Fetched) + Tr(" 전", " ago"), 11, Theme.P.TextFaint, Theme.Regular, false);
+            var age = Theme.T(Tr($"{Ago(DateTime.Now - a.Fetched)} 전", $"{Ago(DateTime.Now - a.Fetched)} ago"), 11, Theme.P.TextFaint, Theme.Regular, false);
             age.ToolTip = Tr("마지막으로 받은 때", "Last fetched");
             Grid.SetColumn(age, 1);
             head.Children.Add(age);
@@ -172,7 +172,7 @@ internal static class HomeViews
                 Margin = new Thickness(2, 0, 2, 0),
                 Background = i == 0 ? Theme.P.Card : Brushes.Transparent,
                 Cursor = Cursors.Hand,
-                ToolTip = list is { Count: > 0 } ? string.Join("\n", list.Select(x => (x.Deadline ? Tr("마감 · ", "Due · ") : Tr("할 일 · ", "To do · ")) + x.Label)) : null,
+                ToolTip = list is { Count: > 0 } ? string.Join("\n", list.Select(x => (x.Deadline ? Tr($"마감 · {x.Label}", $"Due · {x.Label}") : Tr($"할 일 · {x.Label}", $"To do · {x.Label}")))) : null,
             };
             var bg = cell.Background;
             cell.MouseEnter += (_, _) => cell.Background = Theme.P.Hover;

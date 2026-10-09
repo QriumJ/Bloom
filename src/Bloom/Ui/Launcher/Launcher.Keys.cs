@@ -234,7 +234,7 @@ internal sealed partial class Launcher
                     var act = ActionsFor(c).FirstOrDefault(a => a.Keys == "Ctrl+Shift+C");
                     act?.Run();
                 }
-                if (c.Kind == ItemKind.Calc || ActionsFor(c).Any(a => a.Keys == "Ctrl+Shift+C")) ShowToast(Tr("복사했어요", "Copied"));
+                if (c.Kind == ItemKind.Calc || ActionsFor(c).Any(a => a.Keys == "Ctrl+Shift+C")) ShowToast(Tr("복사 완료", "Copied"));
                 e.Handled = true;
                 break;
         }
@@ -312,7 +312,7 @@ internal sealed partial class Launcher
                 if (thread?.Messages.LastOrDefault(m => m.Role == "assistant" && m.Text.Length > 0) is { } last)
                 {
                     Launch.Copy(last.Text);
-                    ShowToast(Tr("답변을 복사했어요", "Answer copied"));
+                    ShowToast(Tr("답변 복사 완료", "Answer copied"));
                 }
                 e.Handled = true;
                 break;

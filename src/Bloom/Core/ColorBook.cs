@@ -159,7 +159,7 @@ internal sealed partial class ColorBook
             _ => Tr("분홍", "Pink"),
         };
         if (h is >= 330 and < 345 || (hue == Tr("빨강", "Red") && l > 0.7)) hue = Tr("분홍", "Pink");
-        return l < 0.28 ? Tr("짙은 ", "Dark ") + hue : l > 0.78 ? Tr("연한 ", "Light ") + hue : hue;
+        return l < 0.28 ? Tr($"짙은 {hue}", $"Dark {hue}") : l > 0.78 ? Tr($"연한 {hue}", $"Light {hue}") : hue;
     }
 
     // ── gradients ───────────────────────────────────────────────────────────────────────────────

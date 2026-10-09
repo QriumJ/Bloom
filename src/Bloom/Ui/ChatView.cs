@@ -131,7 +131,7 @@ internal sealed class ChatView : Grid, IComposerHost
         g.Children.Add(icon);
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         text.Children.Add(Theme.T(Path.GetFileName(path), 13, Theme.P.Text, Theme.Medium));
-        text.Children.Add(Theme.T(File.Exists(path) ? Engine.Size(new FileInfo(path).Length) + Tr(" · AI가 만든 파일", " · made by AI") : Tr("파일이 없어요", "The file is gone"), 11.5, Theme.P.TextFaint));
+        text.Children.Add(Theme.T(File.Exists(path) ? Tr($"{Engine.Size(new FileInfo(path).Length)} · AI 생성 파일", $"{Engine.Size(new FileInfo(path).Length)} · made by AI") : Tr("파일이 없습니다. 다시 생성하거나 위치를 확인하세요.", "File not found. Create it again or check its location."), 11.5, Theme.P.TextFaint));
         Grid.SetColumn(text, 1);
         g.Children.Add(text);
         var acts = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
@@ -190,7 +190,7 @@ internal sealed class ChatView : Grid, IComposerHost
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             Log.Error("save made file", e);
-            MessageBox.Show(Tr("저장하지 못했어요: ", "Couldn't save: ") + e.Message, "Bloom", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Tr("파일을 저장하지 못했습니다. 저장 위치와 권한을 확인하고 다시 시도하세요.", "Could not save the file. Check the destination and permissions, then retry."), "Bloom", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -323,7 +323,7 @@ internal sealed class ChatView : Grid, IComposerHost
             lt.HorizontalAlignment = HorizontalAlignment.Center;
             lt.Margin = new Thickness(0, 16, 0, 6);
             lens.Children.Add(lt);
-            var ls = Theme.T(Tr("비우고 Enter면 화면을 설명해 줘요 · 묻기마다 사용량 1회", "Empty + Enter explains the screen · each question is 1 use"), 12.5, Theme.P.TextFaint, Theme.Regular, false);
+            var ls = Theme.T(Tr("빈 입력에서 Enter로 화면 설명 · 질문마다 사용량 1회", "Empty + Enter explains the screen · each question is 1 use"), 12.5, Theme.P.TextFaint, Theme.Regular, false);
             ls.HorizontalAlignment = HorizontalAlignment.Center;
             lens.Children.Add(ls);
             return lens;
@@ -335,7 +335,7 @@ internal sealed class ChatView : Grid, IComposerHost
         t.HorizontalAlignment = HorizontalAlignment.Center;
         t.Margin = new Thickness(0, 16, 0, 6);
         sp.Children.Add(t);
-        var s = Theme.T(Tr("최신 정보는 웹에서 찾아 답해요 · 파일은 끌어다 놓거나 Ctrl+O", "Looks up recent things on the web · drop files or press Ctrl+O"), 12.5, Theme.P.TextFaint, Theme.Regular, false);
+        var s = Theme.T(Tr("최신 정보는 웹에서 찾아 답합니다 · 파일은 끌어다 놓거나 Ctrl+O", "Looks up recent things on the web · drop files or press Ctrl+O"), 12.5, Theme.P.TextFaint, Theme.Regular, false);
         s.HorizontalAlignment = HorizontalAlignment.Center;
         sp.Children.Add(s);
         return sp;
@@ -391,7 +391,7 @@ internal sealed class ChatView : Grid, IComposerHost
                     Padding = new Thickness(8, 2, 8, 3),
                     HorizontalAlignment = HorizontalAlignment.Right,
                     Margin = new Thickness(0, 0, 0, 5),
-                    Child = Theme.T(Tr("페이지 · ", "Page · ") + (page.Length > 40 ? page[..40] + "…" : page), 11.5, Theme.P.TextDim, Theme.Medium),
+                    Child = Theme.T(Tr($"페이지 · {(page.Length > 40 ? page[..40] + "…" : page)}", $"Page · {(page.Length > 40 ? page[..40] + "…" : page)}"), 11.5, Theme.P.TextDim, Theme.Medium),
                 };
                 col.Children.Add(chip);
             }
@@ -458,7 +458,7 @@ internal sealed class ChatView : Grid, IComposerHost
         shield.VerticalAlignment = VerticalAlignment.Center;
         shield.Margin = new Thickness(0, 1, 7, 0);
         top.Children.Add(shield);
-        top.Children.Add(Theme.T(Tr("PC에서 이 일을 해도 될까요?", "May it do this on your PC?"), 12, Theme.P.TextDim, Theme.Medium, false));
+        top.Children.Add(Theme.T(Tr("PC 작업 승인", "Approve PC action"), 12, Theme.P.TextDim, Theme.Medium, false));
         col.Children.Add(top);
         var what = Markdown.Para(14, Theme.Medium);
         what.Margin = new Thickness(0, 6, 0, 10);
@@ -534,7 +534,7 @@ internal sealed class ChatView : Grid, IComposerHost
         b.MouseLeftButtonUp += (_, e) =>
         {
             Launch.Copy(text);
-            label.Text = Tr("복사됨", "Copied");
+            label.Text = Tr("복사 완료", "Copied");
             var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1300) };
             t.Tick += (_, _) =>
             {
@@ -555,20 +555,20 @@ internal sealed class ChatView : Grid, IComposerHost
             new() { Title = Tr("파일 · 사진 첨부", "Attach files or pictures"), Keys = "Ctrl+O", Glyph = G.Paste, StayOpen = true, Run = owner.PickFiles },
             new() { Title = Tr("새 대화", "New chat"), Keys = "Ctrl+N", Glyph = G.Add, StayOpen = true, Run = () => owner.ShowChat(host.Chats.New()) },
             new() { Title = Tr("대화 목록", "Chats"), Keys = "Ctrl+L", Glyph = G.History, StayOpen = true, Run = owner.ShowThreads },
-            new() { Title = Tr("모델 · 생각 수준 고르기", "Pick the model and thinking level"), Keys = "Ctrl+M", Glyph = G.Model, StayOpen = true, Run = owner.PickModel },
+            new() { Title = Tr("모델과 생각 수준 선택", "Choose model and thinking level"), Keys = "Ctrl+M", Glyph = G.Model, StayOpen = true, Run = owner.PickModel },
             new() { Title = AiModels.IsChatGpt(t?.Model ?? AiModels.DefaultModel()) ? Tr("Claude로 바꾸기", "Switch to Claude") : Tr("ChatGPT로 바꾸기", "Switch to ChatGPT"), Keys = "Ctrl+Shift+M", Glyph = G.Chat, StayOpen = true, Run = owner.SwitchProvider },
             new() { Title = Tr("생각 수준 바꾸기", "Change thinking level"), Keys = "Ctrl+E", Glyph = G.Bulb, StayOpen = true, Run = owner.CycleEffort },
         };
         if (t?.Messages.LastOrDefault(x => x.Role == "assistant" && x.Text.Length > 0) is { } last)
-            list.Add(new ActionItem { Title = Tr("마지막 답변 복사", "Copy the last answer"), Keys = "Ctrl+Shift+C", Glyph = G.Copy, StayOpen = true, Run = () => { Launch.Copy(last.Text); owner.ShowToast(Tr("답변을 복사했어요", "Answer copied")); } });
+            list.Add(new ActionItem { Title = Tr("마지막 답변 복사", "Copy the last answer"), Keys = "Ctrl+Shift+C", Glyph = G.Copy, StayOpen = true, Run = () => { Launch.Copy(last.Text); owner.ShowToast(Tr("답변 복사 완료", "Answer copied")); } });
         if (t?.Busy == true) list.Insert(0, new ActionItem { Title = Tr("답변 멈추기", "Stop the answer"), Keys = "Ctrl+.", Glyph = G.Stop, StayOpen = true, Run = () => host.Chats.Stop(t) });
         if (t?.Messages.LastOrDefault()?.Asks.FirstOrDefault() is { } ask)
         {
-            list.Insert(0, new ActionItem { Title = Tr("거절: ", "Decline: ") + ask.Says, Glyph = G.Close, StayOpen = true, Run = () => host.Chats.Answer(t, ask, false) });
-            list.Insert(0, new ActionItem { Title = Tr("허용: ", "Allow: ") + ask.Says, Glyph = G.Shield, StayOpen = true, Run = () => host.Chats.Answer(t, ask, true) });
+            list.Insert(0, new ActionItem { Title = Tr($"거절: {ask.Says}", $"Decline: {ask.Says}"), Glyph = G.Close, StayOpen = true, Run = () => host.Chats.Answer(t, ask, false) });
+            list.Insert(0, new ActionItem { Title = Tr($"허용: {ask.Says}", $"Allow: {ask.Says}"), Glyph = G.Shield, StayOpen = true, Run = () => host.Chats.Answer(t, ask, true) });
         }
         if (t is not null && host.Chats.IsLive(t))
-            list.Add(new ActionItem { Title = Tr("세션 종료 — 새 대화로 넘어가요", "End session — on to a new chat"), Glyph = G.Stop, StayOpen = true, Run = () => { host.Chats.EndSession(t); owner.ShowChat(host.Chats.New()); } });
+            list.Add(new ActionItem { Title = Tr("세션 종료 · 새 대화 열기", "End session · open a new chat"), Glyph = G.Stop, StayOpen = true, Run = () => { host.Chats.EndSession(t); owner.ShowChat(host.Chats.New()); } });
         if (t is { Messages.Count: > 0 })
             list.Add(new ActionItem { Title = Tr("이 대화 삭제", "Delete this chat"), Glyph = G.Delete, Danger = true, StayOpen = true, Run = () => { host.DeleteThread(t); owner.ShowChat(host.Chats.New()); } });
         return list;

@@ -66,7 +66,7 @@ internal sealed partial class Engine
                 list.Add(new ActionItem { Title = c.ShowWindow ? Tr("창 없이 실행", "Run without a window") : Tr("창에서 실행", "Run in a window"), Keys = "Ctrl+Enter", Glyph = G.NewWindow, Run = () => host.RunMine(c, input ?? "", show: !c.ShowWindow) });
                 list.Add(new ActionItem { Title = Tr("관리자 권한으로 실행", "Run as administrator"), Keys = "Ctrl+Shift+Enter", Glyph = G.Shield, Run = () => host.RunMine(c, input ?? "", admin: true) });
             }
-            if (running) list.Insert(0, new ActionItem { Title = Tr("멈추기", "Stop"), Glyph = G.Stop, Danger = true, StayOpen = true, Run = () => host.StopMine(c) });
+            if (running) list.Insert(0, new ActionItem { Title = Tr("중지", "Stop"), Glyph = G.Stop, Danger = true, StayOpen = true, Run = () => host.StopMine(c) });
             if (host.LastOutput(c) is { Length: > 0 } output) list.Add(new ActionItem { Title = Tr("마지막 출력 복사", "Copy the last output"), Glyph = G.Copy, Run = () => Launch.Copy(output) });
             if (!needsInput && c.Kind == "snippet") list.Add(new ActionItem { Title = Tr("복사만 하기", "Copy only"), Keys = "Ctrl+Enter", Glyph = G.Copy, Run = () => Launch.Copy(UserCommands.Expand(UserCommands.SnippetText(c.Body), input ?? "", host.ClipText)) });
             if (c.Kind == "script")
@@ -79,7 +79,7 @@ internal sealed partial class Engine
                     {
                         c.ShowWindow = !c.ShowWindow;
                         UserCommands.Upsert(c);
-                        host.Window.ShowToast(c.ShowWindow ? Tr("이제 창에서 실행해요", "Now runs in a window") : Tr("이제 창 없이 실행하고 결과는 알림으로 알려요", "Now runs without a window; the result comes as a notice"));
+                        host.Window.ShowToast(c.ShowWindow ? Tr("창에서 실행", "Runs in a window") : Tr("창 없이 실행 · 결과는 알림으로 표시", "Runs without a window · results appear as notifications"));
                     },
                 });
             list.Add(new ActionItem { Title = Tr("명령 고치기", "Edit command"), Glyph = G.Settings, StayOpen = true, Run = () => host.Window.StartForm(CommandForm(c.Kind, c, null)) });
@@ -89,7 +89,7 @@ internal sealed partial class Engine
                 Glyph = G.Delete,
                 Danger = true,
                 StayOpen = true,
-                Run = () => host.Window.Confirm(Tr($"‘{c.Name}’ 명령을 지울까요?", $"Delete the command ‘{c.Name}’?"), new ActionItem
+                Run = () => host.Window.Confirm(Tr($"‘{c.Name}’ 명령을 삭제합니다.", $"Deletes the command ‘{c.Name}’."), new ActionItem
                 {
                     Title = Tr("지우기", "Delete"),
                     Keys = "Enter",
@@ -112,7 +112,7 @@ internal sealed partial class Engine
     private Section? TypedCommand(string text)
     {
         if (UserCommands.Typed(text) is not { } t) return null;
-        var s = new Section(Tr("내 명령", "My commands"));
+        var s = new Section(Tr("사용자 명령", "Custom commands"));
         s.Items.Add(FromCommand(t.command, t.input));
         return s;
     }
@@ -143,7 +143,7 @@ internal sealed partial class Engine
             });
         }
         sections.Add(top);
-        var mine = new Section(Tr("내 명령", "My commands"), Tr($"{UserCommands.Current.Items.Count}개 · 단축어 + 스페이스 + 입력", $"{UserCommands.Current.Items.Count} · keyword + space + input"));
+        var mine = new Section(Tr("사용자 명령", "Custom commands"), Tr($"{UserCommands.Current.Items.Count}개 · 단축어 + 스페이스 + 입력", $"{UserCommands.Current.Items.Count} · keyword + space + input"));
         foreach (var c in UserCommands.Current.Items)
             if (q.IsEmpty || Matcher.Score(q, c.Match) > 0)
                 mine.Items.Add(FromCommand(c, null));
@@ -185,7 +185,7 @@ internal sealed partial class Engine
                 Label = Tr("내용", "Text"),
                 Hint = Tr("붙여넣을 글 — 줄바꿈은 \\n · {date} {time} {clipboard} {input}", "The text to paste — \\n for a new line · {date} {time} {clipboard} {input}"),
                 Value = edit?.Body ?? body ?? "",
-                Check = v => v.Length > 0 ? (v, null) : (null, Tr("붙여넣을 글을 적어 주세요", "Please type the text")),
+                Check = v => v.Length > 0 ? (v, null) : (null, Tr("붙여넣을 글을 입력하세요", "Enter the text to paste")),
             },
             "chain" => new FormField
             {
@@ -195,10 +195,10 @@ internal sealed partial class Engine
                 Check = v =>
                 {
                     var steps = UserCommands.Steps(v);
-                    if (steps.Count == 0) return (null, Tr("단계를 하나 이상 적어 주세요", "Please type at least one step"));
+                    if (steps.Count == 0) return (null, Tr("단계를 하나 이상 입력하세요", "Enter at least one step"));
                     var missing = steps.Where(s => UserCommands.Wait(s) is null && !s.Contains("{input}", StringComparison.OrdinalIgnoreCase) && StepAction(s, 0) is null).ToList();
                     return missing.Count == 0 ? (string.Join(" ; ", steps), null)
-                        : (null, Tr($"이 단계로 실행할 항목을 찾지 못했어요: {string.Join(", ", missing)}", $"Nothing to run for: {string.Join(", ", missing)}"));
+                        : (null, Tr($"‘{string.Join(", ", missing)}’ 실행 항목 없음 · 앱 이름이나 명령을 확인하세요", $"No action for ‘{string.Join(", ", missing)}’. Check the app name or command."));
                 },
             },
             _ => new FormField
@@ -209,11 +209,11 @@ internal sealed partial class Engine
                 Check = v =>
                 {
                     string line = v.Trim();
-                    if (line.Length == 0) return (null, Tr("실행할 파일이나 명령을 적어 주세요", "Please type a file or a command"));
+                    if (line.Length == 0) return (null, Tr("실행할 파일이나 명령을 입력하세요", "Enter a file or command to run"));
                     // a line that starts with a path must start with a file that is there (C:\…, "C:\…", \\server\…)
                     string head = line.TrimStart('"');
                     bool path = head.Length > 2 && (head[1] == ':' && head[2] == '\\' || head.StartsWith(@"\\", StringComparison.Ordinal));
-                    if (path && UserCommands.SplitFile(UserCommands.Expand(line, "").Trim()).file is null) return (null, Tr("그 파일이 없어요 — 경로를 확인해 주세요", "That file isn't there — please check the path"));
+                    if (path && UserCommands.SplitFile(UserCommands.Expand(line, "").Trim()).file is null) return (null, Tr("파일이 없습니다. 경로를 확인하세요.", "File not found. Check the path."));
                     return (line, null);
                 },
             },
@@ -221,9 +221,9 @@ internal sealed partial class Engine
         f.Fields.Add(new FormField
         {
             Label = Tr("이름", "Name"),
-            Hint = Tr("이름 — 검색할 때 이 이름으로 찾아요", "Name — what you search it by"),
+            Hint = Tr("검색에 사용할 이름", "Name used in search"),
             Value = edit?.Name ?? "",
-            Check = v => v.Trim().Length > 0 ? (v.Trim(), null) : (null, Tr("이름을 넣어 주세요", "Please enter a name")),
+            Check = v => v.Trim().Length > 0 ? (v.Trim(), null) : (null, Tr("이름을 입력하세요", "Enter a name")),
         });
         f.Fields.Add(new FormField
         {
@@ -235,9 +235,9 @@ internal sealed partial class Engine
             {
                 string k = v.Trim().ToLowerInvariant();
                 bool input = f[0].Contains("{input}", StringComparison.OrdinalIgnoreCase);
-                if (k.Length == 0) return input ? (null, Tr("{input}이 있는 명령은 단축어가 있어야 해요", "A command with {input} needs a keyword")) : ("", null);
-                if (k.Contains(' ')) return (null, Tr("단축어에는 띄어쓰기를 넣을 수 없어요", "A keyword can't have spaces"));
-                if (!UserCommands.KeywordFree(k, edit?.Id)) return (null, Tr($"‘{k}’는 다른 명령이나 바로 가기가 쓰고 있어요", $"‘{k}’ is taken by another command or shortcut"));
+                if (k.Length == 0) return input ? (null, Tr("{input}을 사용하려면 단축어를 입력하세요", "Enter a keyword to use {input}")) : ("", null);
+                if (k.Contains(' ')) return (null, Tr("공백 없는 단축어를 입력하세요", "Enter a keyword without spaces"));
+                if (!UserCommands.KeywordFree(k, edit?.Id)) return (null, Tr($"‘{k}’ 단축어 사용 중 · 다른 단축어를 입력하세요", $"‘{k}’ is in use. Enter another keyword."));
                 return (k, null);
             },
         });
@@ -253,7 +253,7 @@ internal sealed partial class Engine
                 : new UserCommand { Id = edit.Id, Kind = edit.Kind, Name = form[1], Body = form[0], Keyword = form[2].Length > 0 ? form[2] : null, ShowWindow = edit.ShowWindow };
             UserCommands.Upsert(c);
             host.Window.Go(Mode.Commands);
-            host.Window.ShowToast(edit is null ? Tr($"‘{c.Name}’ 명령을 만들었어요", $"Added ‘{c.Name}’") : Tr("명령을 고쳤어요", "Command saved"));
+            host.Window.ShowToast(edit is null ? Tr($"‘{c.Name}’ 명령 추가 완료", $"Added ‘{c.Name}’") : Tr("명령 저장 완료", "Command saved"));
         };
         return f;
     }

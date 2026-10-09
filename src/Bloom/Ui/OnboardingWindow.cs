@@ -51,7 +51,7 @@ internal sealed class OnboardingWindow : Window
     public OnboardingWindow(Host host)
     {
         this.host = host;
-        Title = Tr("Bloom 시작하기", "Welcome to Bloom");
+        Title = Tr("Bloom 시작", "Bloom setup");
         Width = 640;
         Height = 580;
         ResizeMode = ResizeMode.NoResize;
@@ -174,13 +174,13 @@ internal sealed class OnboardingWindow : Window
     // ── the screens ─────────────────────────────────────────────────────────────────────────────
     private FrameworkElement Welcome()
     {
-        var sp = Column(Tr("필요한 걸 한 줄로", "Everything in one line"), Tr("Win 키를 누르고 적기만 하면 앱 실행, 계산, 파일 찾기, AI에게 묻기, 타이머까지 한 곳에서 해요.\n처음 쓰기 전에 몇 가지만 정해 볼게요. 1분이면 끝나요.", "Press Win and type: open apps, do maths, find files, ask AI and set timers, all in one place.\nLet's settle a few things first. It takes a minute."));
+        var sp = Column(Tr("검색과 실행", "Search and launch"), Tr("Win 키를 누르고 입력하면 앱 실행, 계산, 파일 검색, AI 채팅, 타이머를 사용할 수 있습니다.\n실행 방법과 사용할 기능을 선택하세요.", "Press Win and type to open apps, calculate, find files, chat with AI or set timers.\nChoose how to open Bloom and which features to use."));
         var mark = Launcher.MarkImage(72);
         mark.HorizontalAlignment = HorizontalAlignment.Left;
         mark.Margin = new Thickness(0, 0, 0, 26);
         sp.Children.Insert(0, mark);
         var import = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 0) };
-        import.Children.Add(Theme.T(Tr("다른 PC에서 쓰던 설정이 있나요?", "Have settings from another PC?"), 13, Theme.P.TextFaint, Theme.Regular, false));
+        import.Children.Add(Theme.T(Tr("다른 PC의 설정 가져오기", "Settings from another PC"), 13, Theme.P.TextFaint, Theme.Regular, false));
         var link = Link(Tr("설정 불러오기", "Import settings"), () =>
         {
             if (!host.ImportSettings(this)) return;
@@ -208,18 +208,18 @@ internal sealed class OnboardingWindow : Window
     private FrameworkElement Opening()
     {
         var s = Settings.Current;
-        var sp = Column(Tr("어떻게 열까요?", "How do you want to open it?"), Tr("둘 다 켜 둬도 돼요. 나중에 설정 > 일반에서 바꿀 수 있어요.", "Both can stay on. You can change this later in Settings > General."));
-        sp.Children.Add(SwitchRow(Tr("Win 키로 열기", "Open with the Win key"), Tr("Win 키만 눌렀다 떼면 Bloom이 열려요. Win+E 같은 조합은 그대로예요.", "Tap Win alone and Bloom opens. Combinations like Win+E still work."), s.WinKey, v =>
+        var sp = Column(Tr("Bloom 실행 방법", "Open Bloom"), Tr("두 단축키를 함께 사용할 수 있습니다.", "Both shortcuts can be on."));
+        sp.Children.Add(SwitchRow(Tr("Win 키로 열기", "Open with the Win key"), Tr("Win 키만 눌렀다 떼면 Bloom이 열립니다. Win+E 같은 조합은 그대로입니다.", "Tap Win alone and Bloom opens. Combinations like Win+E still work."), s.WinKey, v =>
         {
             s.WinKey = v;
             host.ApplyHotkeys();
         }));
-        sp.Children.Add(SwitchRow(Tr("Alt+Space로 열기", "Open with Alt+Space"), Tr("Win 키가 익숙하지 않을 때 쓰기 좋아요.", "Handy if the Win key feels odd."), s.AltSpace, v =>
+        sp.Children.Add(SwitchRow(Tr("Alt+Space로 열기", "Open with Alt+Space"), Tr("Alt+Space를 눌러 Bloom을 엽니다.", "Press Alt+Space to open Bloom."), s.AltSpace, v =>
         {
             s.AltSpace = v;
             host.ApplyHotkeys();
         }));
-        sp.Children.Add(SwitchRow(Tr("Windows 시작할 때 함께 켜기", "Start with Windows"), Tr("트레이에 조용히 있다가 부를 때만 떠요.", "Waits quietly in the tray until you call it."), s.Autostart, v =>
+        sp.Children.Add(SwitchRow(Tr("Windows 시작할 때 함께 켜기", "Start with Windows"), Tr("Windows에 로그인하면 트레이에서 실행됩니다.", "Runs in the tray when you sign in to Windows."), s.Autostart, v =>
         {
             s.Autostart = v;
             if (!Paths.IsDev) Autostart.Set(v);
@@ -230,7 +230,7 @@ internal sealed class OnboardingWindow : Window
     private FrameworkElement BrowserPick()
     {
         var s = Settings.Current;
-        var sp = Column(Tr("검색은 어느 브라우저로?", "Which browser for searches?"), Tr("검색어를 적고 '웹 검색'을 고르면, 그리고 바로 가기와 링크도 이 브라우저로 넘겨요.", "Web searches, shortcuts and links open in this browser."));
+        var sp = Column(Tr("검색과 링크를 열 브라우저", "Browser for searches and links"), Tr("검색어를 적고 '웹 검색'을 고르면, 그리고 바로 가기와 링크도 이 브라우저로 엽니다.", "Web searches, shortcuts and links open in this browser."));
         var list = new StackPanel();
         void Build()
         {
@@ -264,13 +264,13 @@ internal sealed class OnboardingWindow : Window
 
     private FrameworkElement HomeTools()
     {
-        var sp = Column(Tr("홈에 둘 기능", "Features on the home"), Tr("빈 검색창 아래 즐겨찾기 줄에 넣어 둘게요. 나중에 Ctrl+K로 빼거나 옮길 수 있어요.", "They go into the favorites row under the empty search line. Ctrl+K removes or moves them later."));
+        var sp = Column(Tr("홈에 둘 기능", "Features on the home"), Tr("선택한 기능이 즐겨찾기에 추가됩니다. Ctrl+K로 빼거나 옮길 수 있습니다.", "Adds selected features to favorites. Ctrl+K removes or moves them."));
         var list = new StackPanel();
         var note = Theme.T("", 12.5, Theme.P.TextDim, Theme.Regular, false);
         note.Margin = new Thickness(2, 0, 0, 10);
         void Build()
         {
-            note.Text = Tr($"켜 둔 기능만 즐겨찾기 줄에 넣어요 — 지금 {picked.Count}개", $"Only the ones switched on go into the favorites row — {picked.Count} now");
+            note.Text = Tr($"사용할 기능만 즐겨찾기에 추가 · 현재 {picked.Count}개", $"Enabled features added to favorites · {picked.Count} selected");
             list.Children.Clear();
             foreach (var (id, about, _) in Tools)
             {
@@ -311,7 +311,7 @@ internal sealed class OnboardingWindow : Window
     private FrameworkElement Looks()
     {
         var s = Settings.Current;
-        var sp = Column(Tr("어떤 모양이 좋아요?", "Which look do you like?"), Tr("고르는 즉시 이 창부터 바뀌어요.", "This window changes as soon as you pick."));
+        var sp = Column(Tr("화면 모양", "Appearance"), Tr("선택 즉시 적용", "Applies immediately"));
         var seg = new Segmented(new[] { ("system", Tr("시스템", "System")), ("light", Tr("밝게", "Light")), ("dark", Tr("어둡게", "Dark")) }, s.Theme);
         seg.Picked += v =>
         {
@@ -330,14 +330,14 @@ internal sealed class OnboardingWindow : Window
         };
         sp.Children.Add(Labeled(Tr("색", "Colour"), sw));
         // how it draws: the GPU (smooth) or the CPU (about 30 MB less memory; a slow CPU may stutter on moving screens)
-        var draw = new Segmented(new[] { ("gpu", Tr("GPU · 부드럽게", "GPU · smooth")), ("cpu", Tr("CPU · 가볍게", "CPU · light")) }, s.GpuDrawing ? "gpu" : "cpu");
+        var draw = new Segmented(new[] { ("gpu", Tr("부드러운 움직임", "Smooth motion")), ("cpu", Tr("메모리 절약", "Lower memory use")) }, s.GpuDrawing ? "gpu" : "cpu");
         draw.Picked += v =>
         {
             s.GpuDrawing = v == "gpu";
             Settings.Save();
         };
         sp.Children.Add(Labeled(Tr("그리기", "Drawing"), draw));
-        var about = Theme.T(Hangul.KeepAll(Tr("GPU는 움직임이 부드러워요. CPU는 메모리를 약 30 MB 덜 쓰지만, 느린 CPU에서는 움직임이 끊길 수 있어요. 다음에 Bloom을 켤 때부터 적용되고, 설정 › 성능에서 언제든 바꿔요.", "The GPU keeps motion smooth. The CPU uses about 30 MB less memory, but motion may stutter on a slow CPU. It applies from Bloom's next start; change it any time in Settings › Performance.")), 12, Theme.P.TextFaint, Theme.Regular, false);
+        var about = Theme.T(Hangul.KeepAll(Tr("부드러운 움직임은 GPU를 사용합니다. 메모리 절약은 약 30 MB를 덜 쓰지만, 느린 CPU에서는 움직임이 끊길 수 있습니다. 다음 실행부터 적용됩니다.", "Smooth motion uses the GPU. Lower memory use saves about 30 MB, but may stutter on a slow CPU. Applies at next start.")), 12, Theme.P.TextFaint, Theme.Regular, false);
         about.TextWrapping = TextWrapping.Wrap;
         about.Margin = new Thickness(2, 10, 2, 0);
         sp.Children.Add(about);
@@ -346,7 +346,7 @@ internal sealed class OnboardingWindow : Window
 
     private FrameworkElement Helpers()
     {
-        var sp = Column(Tr("함께 쓰는 프로그램", "Programs Bloom works with"), Tr("없어도 Bloom은 동작해요. 있으면 그 기능이 켜져요. 설치는 각 프로그램의 공식 안내를 따라 주세요.", "Bloom works without them; each one turns its feature on. Install them from their official pages."));
+        var sp = Column(Tr("함께 쓰는 프로그램", "Programs Bloom works with"), Tr("연동할 프로그램을 공식 페이지에서 설치하세요. 설치하지 않아도 Bloom의 다른 기능은 사용할 수 있습니다.", "Bloom works without them; each one turns its feature on. Install them from their official pages."));
         sp.Children.Add(Found("Everything", Tr("파일 이름으로 PC 전체를 바로 찾기", "Find any file on the PC by name"), EverythingClient.ExePath() is not null, "https://www.voidtools.com/"));
         sp.Children.Add(Found("Claude Code CLI", Tr("AI 채팅 · Bloom Lens · 번역 (본인 계정으로 로그인)", "AI chat · Bloom Lens · translation (with your own login)"), ClaudeSession.FindCli(Settings.Current.ClaudePath) is not null, "https://docs.anthropic.com/en/docs/claude-code"));
         sp.Children.Add(Found("Codex CLI", Tr("ChatGPT로 대화 · 번역 (본인 계정으로 로그인)", "Chat and translate with ChatGPT (with your own login)"), CodexSession.FindCli(Settings.Current.CodexPath) is not null, "https://github.com/openai/codex"));
@@ -372,7 +372,7 @@ internal sealed class OnboardingWindow : Window
         if (!ais.Contains(s.AiProvider)) s.AiProvider = ais[0];
         if (!ais.Contains(s.TranslateProvider)) s.TranslateProvider = ais[0];
         Settings.Save();
-        var sp = Column(Tr("어떤 AI를 쓸까요?", "Which AI should do what?"), Tr("이 PC에서 찾은 AI만 보여요. 나중에 설정에서 언제든 바꿀 수 있어요.", "Only the AIs found on this PC are shown. Change it any time in Settings."));
+        var sp = Column(Tr("기능별 AI 선택", "Choose AI by feature"), Tr("이 PC에서 찾은 AI만 선택할 수 있습니다.", "Choose from AI found on this PC."));
         // beside the chat's label: when an idle chat's CLI closes (its memory back), in minutes or hours
         var idle = new DurationField(s.AiIdleMinutes, 24 * 60, DurationField.MinutesHours) { Done = () => Focus() };
         idle.Changed += v =>
@@ -380,16 +380,16 @@ internal sealed class OnboardingWindow : Window
             s.AiIdleMinutes = v;
             Settings.Save();
         };
-        var idleLabel = Theme.T(Tr("안 쓰면 CLI 닫기", "Close an idle CLI after"), 12.5, Theme.P.TextFaint, Theme.Semi, false);
+        var idleLabel = Theme.T(Tr("대화 메모리 해제 시간", "Release idle chat memory after"), 12.5, Theme.P.TextFaint, Theme.Semi, false);
         idleLabel.VerticalAlignment = VerticalAlignment.Center;
         idleLabel.Margin = new Thickness(0, 0, 10, 0);
-        var idleRow = new StackPanel { Orientation = Orientation.Horizontal, ToolTip = Tr("대화를 이만큼 안 쓰면 CLI를 닫아 메모리를 돌려줘요 · 0이면 닫지 않아요", "A chat unused this long closes its CLI to free memory · 0 = never"), Children = { idleLabel, idle } };
+        var idleRow = new StackPanel { Orientation = Orientation.Horizontal, ToolTip = Tr("사용하지 않은 대화의 메모리 해제 · 0이면 유지", "Releases idle chat memory · 0 = keep it"), Children = { idleLabel, idle } };
         sp.Children.Add(AiChoice(Tr("AI 채팅", "AI chat"), ais, s.AiProvider, v => s.AiProvider = v, v => v == "chatgpt"
-            ? Tr("Codex로 답해요 — 빠른 답과 폭넓은 상식에 좋고 PC 작업도 맡길 수 있어요", "Answers through Codex — quick answers, broad knowledge, can work on your PC")
-            : Tr("Claude Code로 답해요 — 긴 글 · 코드에 강하고 PC 작업도 맡길 수 있어요", "Answers through Claude Code — strong at long text and code, can work on your PC"), idleRow));
+            ? Tr("Codex로 답변하고 승인한 PC 작업을 실행합니다.", "Answers through Codex and runs approved PC actions.")
+            : Tr("Claude Code로 답변하고 승인한 PC 작업을 실행합니다.", "Answers through Claude Code and runs approved PC actions."), idleRow));
         var lens = AiChoice(Tr("Bloom Lens · 번역", "Bloom Lens · translation"), ais, s.TranslateProvider, v => s.TranslateProvider = v, v => v == "chatgpt"
-            ? Tr("ChatGPT가 화면 글자를 읽고 번역해요", "ChatGPT reads and translates the screen's text")
-            : Tr("Claude Haiku가 화면 글자를 읽고 번역해요 — 빠르고 가벼워요", "Claude Haiku reads and translates the screen's text — quick and light"));
+            ? Tr("ChatGPT로 화면 글자를 읽고 번역합니다.", "Reads and translates screen text with ChatGPT.")
+            : Tr("Claude Haiku로 화면 글자를 읽고 번역합니다.", "Reads and translates screen text with Claude Haiku."));
         lens.Margin = new Thickness(0, 14, 0, 0);
         sp.Children.Add(lens);
         return sp;
@@ -462,13 +462,13 @@ internal sealed class OnboardingWindow : Window
 
     private FrameworkElement KeysToKnow()
     {
-        var sp = Column(Tr("이것만 알면 돼요", "All you need to know"), null);
+        var sp = Column(Tr("기본 단축키", "Basic shortcuts"), null);
         sp.Children.Add(Tip("Win", Tr("열고 적기 — 앱, 설정, 계산(12*3), 파일, 웹 검색", "Open and type — apps, settings, maths (12*3), files, web search")));
         sp.Children.Add(Tip("Tab", Tr("적은 말을 그대로 AI에게 묻기", "Ask AI what you typed")));
         sp.Children.Add(Tip("Ctrl+K", Tr("더보기 — 고른 항목으로 할 수 있는 일 전부", "More — everything you can do with the selected item")));
         sp.Children.Add(Tip("Ctrl+Alt+L", Tr("Bloom Lens — 화면 영역을 AI에게 묻기 · 번역 · 글자 복사", "Bloom Lens — ask AI about a screen area, translate, copy text")));
         sp.Children.Add(Tip("Ctrl+Alt+V", Tr("클립보드 기록", "Clipboard history")));
-        var line = Theme.T(Tr("문장으로도 돼요:  \"10분 타이머\"  \"3시 반에 회의 알림\"  \"#ff5a8a\"", "Sentences work too:  \"10 min timer\"  \"remind me at 3:30pm meeting\"  \"#ff5a8a\""), 13, Theme.P.TextDim, Theme.Regular, false);
+        var line = Theme.T(Tr("문장으로도 됩니다:  \"10분 타이머\"  \"3시 반에 회의 알림\"  \"#ff5a8a\"", "Sentences work too:  \"10 min timer\"  \"remind me at 3:30pm meeting\"  \"#ff5a8a\""), 13, Theme.P.TextDim, Theme.Regular, false);
         line.Margin = new Thickness(0, 14, 0, 0);
         sp.Children.Add(line);
         return sp;
@@ -476,11 +476,12 @@ internal sealed class OnboardingWindow : Window
 
     private FrameworkElement Done()
     {
-        var sp = Column(Tr("준비됐어요", "You're all set"), Tr("Win 키를 눌러 보세요. 바꾸고 싶은 건 언제든 'Bloom 설정'에서, 이 안내는 'Bloom 둘러보기'로 다시 볼 수 있어요.", "Press the Win key. Change anything in 'Bloom settings', and see this guide again with 'Bloom tour'."));
+        var sp = Column(Tr("설정 완료", "Setup complete"), Tr("선택한 단축키로 Bloom을 여세요. 설정과 사용 안내는 런처에서 다시 열 수 있습니다.", "Open Bloom with the shortcut you chose. Settings and the tour are available from the launcher."));
         var mark = Launcher.MarkImage(56);
         mark.HorizontalAlignment = HorizontalAlignment.Left;
         mark.Margin = new Thickness(0, 0, 0, 24);
         sp.Children.Insert(0, mark);
+        sp.Children.Add(ToolUi.TextButton(Tr("Bloom 설정 열기", "Open Bloom settings"), () => host.OpenSettings("general")));
         return sp;
     }
 
@@ -634,7 +635,7 @@ internal sealed class OnboardingWindow : Window
         Grid.SetColumn(text, 1);
         g.Children.Add(text);
         FrameworkElement state = found
-            ? Theme.T(Tr("찾았어요", "Found"), 12.5, Theme.P.AccentText, Theme.Medium, false)
+            ? Theme.T(Tr("설치됨", "Installed"), 12.5, Theme.P.AccentText, Theme.Medium, false)
             : Link(Tr("설치 안내  ↗", "How to install  ↗"), () => Launch.Open(url));
         state.VerticalAlignment = VerticalAlignment.Center;
         Grid.SetColumn(state, 2);

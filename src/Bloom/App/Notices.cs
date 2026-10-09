@@ -11,7 +11,7 @@ namespace Bloom.App;
 
 /// One card: its kind (start | done | waiting | limit | recover), the small line over it ("Claude Code · 작업 완료"),
 /// what it is about, a line under that, and a key for a card that stays until its state ends (승인 대기).
-internal sealed record Notice(string Kind, string Head, string Title, string? Detail, string? Key = null);
+internal sealed record Notice(string Kind, string Head, string Title, string? Detail, string? Key = null, string? ActionText = null, Action? Action = null);
 
 /// 알림: Claude Code and Codex turns (ClaudeWatch, CodexWatch — 진행 중, 작업 완료, 승인 대기) and the plan limits
 /// (AiUsage — 한도 임박 · 소진, 한도 복구) as cards (NoticeWindow) with a sound each (Chimes). Every kind has its switch
@@ -19,6 +19,7 @@ internal sealed record Notice(string Kind, string Head, string Title, string? De
 /// running, a limit already low) is taken in silently, so a restart never repeats old news.
 internal static class Notices
 {
+    public static Action? OpenUpdates { get; set; }
     // 진행 중 waits a moment (quick turns stay quiet; a program's run — a tool checking something — longer), and
     // 작업 완료 needs a turn that took a while
     private static readonly TimeSpan StartDelay = TimeSpan.FromSeconds(4), HeadlessStartDelay = TimeSpan.FromSeconds(15), ShortestDone = TimeSpan.FromSeconds(10);
@@ -65,11 +66,11 @@ internal static class Notices
         var s = Settings.Current;
         var all = new (bool on, Notice n)[]
         {
-            (s.NoticeStart, new Notice("start", Tr("Claude Code · 진행 중", "Claude Code · Working"), Tr("알림 미리 보기", "Notice preview"), Tr("“지금 무엇을 하는지 이렇게 보여요”", "“This is what it is working on”"))),
-            (s.NoticeDone, new Notice("done", Tr("Codex · 작업 완료", "Codex · Done"), Tr("알림 미리 보기", "Notice preview"), Tr("3분 걸렸어요", "Took 3 min"))),
-            (s.NoticeWaiting, new Notice("waiting", Tr("Claude Code · 승인 대기", "Claude Code · Needs approval"), Tr("알림 미리 보기", "Notice preview"), Tr("확인을 기다리고 있어요 · 누르면 닫혀요", "Waiting for you · click to close"))),
-            (s.NoticeLimit, new Notice("limit", Tr("Claude · 한도 임박", "Claude · Limit near"), Tr("주간 한도 18% 남았어요", "18% of the weekly limit left"), Tr("2일 뒤 초기화", "Resets in 2 d"))),
-            (s.NoticeRecover, new Notice("recover", Tr("ChatGPT · 한도 복구", "ChatGPT · Limit back"), Tr("5시간 한도가 다시 찼어요", "The 5-hour limit is full again"), null)),
+            (s.NoticeStart, new Notice("start", Tr("Claude Code · 진행 중", "Claude Code · Working"), Tr("알림 미리 보기", "Notice preview"), Tr("현재 작업 표시", "Current task"))),
+            (s.NoticeDone, new Notice("done", Tr("Codex · 작업 완료", "Codex · Done"), Tr("알림 미리 보기", "Notice preview"), Tr("소요 시간 3분", "Elapsed: 3 min"))),
+            (s.NoticeWaiting, new Notice("waiting", Tr("Claude Code · 승인 대기", "Claude Code · Needs approval"), Tr("알림 미리 보기", "Notice preview"), Tr("승인 대기 · 클릭하여 닫기", "Approval pending · click to close"))),
+            (s.NoticeLimit, new Notice("limit", Tr("Claude · 한도 임박", "Claude · Limit near"), Tr("주간 한도 18% 남음", "18% of the weekly limit left"), Tr("2일 뒤 초기화", "Resets in 2 d"))),
+            (s.NoticeRecover, new Notice("recover", Tr("ChatGPT · 한도 복구", "ChatGPT · Limit reset"), Tr("5시간 한도 초기화 완료", "5-hour limit reset"), null)),
         };
         var shown = all.Where(x => x.on).Select(x => x.n).ToList();
         if (shown.Count == 0) shown.Add(all[1].n);
@@ -117,7 +118,7 @@ internal static class Notices
             if (t.Waiting && before?.Waiting != true)
             {
                 Cancel(t.Key);
-                if (!first && Settings.Current.NoticeWaiting) Show(new Notice("waiting", Head(t.Tool, Tr("승인 대기", "Needs approval")), t.Title, Tr("확인을 기다리고 있어요", "Waiting for you"), t.Key));
+                if (!first && Settings.Current.NoticeWaiting) Show(new Notice("waiting", Head(t.Tool, Tr("승인 대기", "Needs approval")), t.Title, Tr("승인 대기", "Approval pending"), t.Key));
             }
             else if (!t.Waiting && before?.Waiting == true) window?.Remove(t.Key);
         }
@@ -154,7 +155,7 @@ internal static class Notices
         Cancel(t.Key);
         window?.Remove(t.Key);
         if (!Settings.Current.Notices || !Settings.Current.NoticeDone || took < ShortestDone) return;
-        Show(new Notice("done", Head(t.Tool, Tr("작업 완료", "Done")), t.Title, Tr($"{Span(took)} 걸렸어요", $"Took {Span(took)}")));
+        Show(new Notice("done", Head(t.Tool, Tr("작업 완료", "Done")), t.Title, Tr($"소요 시간 {Span(took)}", $"Elapsed: {Span(took)}")));
     }
 
     /// 한도 임박 at 20 % left, 소진 when used up, 복구 when a low one is back after its reset time (the usage shows a
@@ -175,27 +176,27 @@ internal static class Notices
                 if (level == 0)
                 {
                     if (s.NoticeRecover && before.resets is { } r && DateTime.Now >= r.AddMinutes(-1))
-                        Show(new Notice("recover", Head(who, Tr("한도 복구", "Limit back")), Tr($"{l.Title} 한도가 다시 찼어요", $"The {l.Title} limit is full again"), null));
+                        Show(new Notice("recover", Head(who, Tr("한도 복구", "Limit reset")), Tr($"{l.Title} 한도 초기화 완료", $"{l.Title} limit reset"), null));
                     continue;
                 }
                 if (level < before.level || !s.NoticeLimit) continue;
                 string? when = l.Resets is { } at && at > DateTime.Now ? Tr($"{Span(at - DateTime.Now)} 뒤 초기화", $"Resets in {Span(at - DateTime.Now)}") : null;
                 Show(level == 2
-                    ? new Notice("limit", Head(who, Tr("한도 소진", "Limit used up")), Tr($"{l.Title} 한도를 다 썼어요", $"The {l.Title} limit is used up"), when)
-                    : new Notice("limit", Head(who, Tr("한도 임박", "Limit near")), Tr($"{l.Title} 한도 {Math.Round(left)}% 남았어요", $"{Math.Round(left)}% of the {l.Title} limit left"), when));
+                    ? new Notice("limit", Head(who, Tr("한도 소진", "Limit used up")), Tr($"{l.Title} 한도 소진", $"{l.Title} limit used up"), when)
+                    : new Notice("limit", Head(who, Tr("한도 임박", "Limit near")), Tr($"{l.Title} 한도 {Math.Round(left)}% 남음", $"{l.Title} limit · {Math.Round(left)}% left"), when));
             }
     }
 
     /// The end of something the user started in Bloom (a hidden 내 명령 script, a chain with skipped lines, a file moved
     /// or copied): shown whether or not 작업 알림 is on, as it answers the user's own action.
-    public static void Result(bool ok, string head, string title, string? detail) => Show(new Notice(ok ? "done" : "limit", head, title, detail));
+    public static void Result(bool ok, string head, string title, string? detail, string? actionText = null, Action? action = null) => Show(new Notice(ok ? "done" : "limit", head, title, detail, ActionText: actionText, Action: action));
 
     /// A new Bloom is downloaded (Updates): it goes in at the next start; a card without a sound.
-    public static void UpdateReady(string version) => Show(new Notice("done", Tr("Bloom · 업데이트", "Bloom · Update"), Tr($"새 버전({version})을 받아 뒀어요", $"Version {version} is downloaded"),
-        Tr("다음에 켤 때 적용돼요 · 설정 > 정보에서 지금 다시 시작할 수 있어요", "It goes in at the next start · Settings > About restarts into it now")), sound: false);
+    public static void UpdateReady(string version) => Show(new Notice("done", Tr("Bloom · 업데이트", "Bloom · Update"), Tr($"새 버전 {version} 다운로드 완료", $"Version {version} downloaded"),
+        Tr("다음 실행 시 적용", "Applies at next start"), ActionText: Tr("업데이트 설정", "Update settings"), Action: OpenUpdates), sound: false);
 
     /// A Bloom chat's AI waits for a yes or no while no Bloom window is in front.
-    public static void Ask(string what) => Show(new Notice("waiting", Tr("Bloom AI · 승인 대기", "Bloom AI · Needs your OK"), what, Tr("Bloom 채팅에서 허락하거나 거절해 주세요", "Allow or decline it in Bloom's chat")));
+    public static void Ask(string what, Action? action = null) => Show(new Notice("waiting", Tr("Bloom AI · 승인 대기", "Bloom AI · Approval pending"), what, Tr("허용 또는 거절을 선택하세요", "Choose Allow or Decline"), ActionText: Tr("AI 채팅 열기", "Open AI chat"), Action: action));
 
     /// A card (and its sound) — not over a full-screen game or presentation, unless asked for (미리 보기).
     private static void Show(Notice n, bool sound = true, bool asked = false)

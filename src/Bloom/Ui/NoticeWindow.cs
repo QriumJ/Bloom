@@ -123,6 +123,12 @@ internal sealed class NoticeWindow : Window
             detail.Margin = new Thickness(0, 3, 0, 0);
             text.Children.Add(detail);
         }
+        if (n.Action is { } action && n.ActionText is { Length: > 0 } actionText)
+        {
+            var button = ToolUi.TextButton(actionText, action);
+            button.Margin = new Thickness(0, 8, 0, 0);
+            text.Children.Add(button);
+        }
         var row = new Grid();
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });

@@ -154,7 +154,7 @@ internal sealed class NotesTool : ITool
         var notes = (q.Length == 0 ? Notes.Ordered : Matching(q)).ToList();
         if (notes.Count == 0)
         {
-            list.Children.Add(ToolUi.Empty(q.Length == 0 ? Tr("아직 메모가 없어요 — 위에 적고 Enter", "No notes yet — type above and press Enter") : Tr("맞는 메모가 없어요 — Enter로 새 메모", "No note matches — Enter makes a new one")));
+            list.Children.Add(ToolUi.Empty(q.Length == 0 ? Tr("저장된 메모 없음 · 위에 입력하고 Enter로 저장하세요", "No saved notes. Type above and press Enter.") : Tr("검색된 메모 없음 · Enter로 새 메모 저장", "No note matches · Enter saves a new note")));
             return;
         }
         foreach (var n in notes)

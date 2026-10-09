@@ -177,11 +177,11 @@ internal sealed class BloomTools : IToolPolicy
         new("find_recent", "look", (q, _) => Look("recent", q), (_, _) => Tr("최근 파일 보기", "Recent files")),
         new("find_windows", "look", (q, _) => Look("windows", q), (_, _) => Tr("열린 창 보기", "Open windows")),
         new("find_timers", "look", (q, _) => Look("timers", q), (_, _) => Tr("타이머 보기", "Timers")),
-        new("find_commands", "look", (q, _) => Look("commands", q), (_, _) => Tr("내 명령 보기", "My commands")),
+        new("find_commands", "look", (q, _) => Look("commands", q), (_, _) => Tr("사용자 명령 보기", "Custom commands")),
         new("find_notes", "look", (q, _) => OnUi(() => FindNotes(q)), (q, _) => Tr($"메모 찾기: {q}", $"Find notes: {q}").TrimEnd(' ', ':')),
         new("open", "open", (q, _) => OnUi(() => Open(q)), (q, _) => Tr($"열기: {Clip(q)}", $"Open: {Clip(q)}")),
         new("run_line", "open", (q, _) => OnUi(() => RunLine(q)), (q, _) => Tr($"Bloom에서 실행: {Clip(q)}", $"Run in Bloom: {Clip(q)}")),
-        new("run_command", "open", (q, to) => OnUi(() => RunCommand(q, to)), (q, to) => Tr($"내 명령 실행: {q} {Clip(to, 40)}", $"Run my command: {q} {Clip(to, 40)}").Trim()),
+        new("run_command", "open", (q, to) => OnUi(() => RunCommand(q, to)), (q, to) => Tr($"사용자 명령 실행: {q} {Clip(to, 40)}", $"Run custom command: {q} {Clip(to, 40)}").Trim()),
         new("note", "bloom", (q, to) => OnUi(() => WriteNote(q, to)), (q, to) => to.Trim().Length > 0
             ? Tr($"메모에 적기: ‘{Clip(to.Trim(), 30)}’에 {Clip(Line(q), 40)}", $"Add to the note ‘{Clip(to.Trim(), 30)}’: {Clip(Line(q), 40)}")
             : Tr($"새 메모: {Clip(Line(q), 50)}", $"New note: {Clip(Line(q), 50)}")),

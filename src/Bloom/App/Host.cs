@@ -129,9 +129,10 @@ internal sealed partial class Host
         Chats.Updated += t => Window.ChatChanged(t);
         Chats.SessionsChanged += () => Window.SessionsChanged();
         // a tool call waiting while no Bloom window is in front: a card says so
-        Chats.AskWaiting += (_, ask) =>
+        Notices.OpenUpdates = () => OpenSettings("about", Tr("업데이트", "Update"));
+        Chats.AskWaiting += (thread, ask) =>
         {
-            if (!Window.IsActive && chatWindow?.IsActive != true) Notices.Ask(ask.Says);
+            if (!Window.IsActive && chatWindow?.IsActive != true) Notices.Ask(ask.Says, () => OpenChat(thread));
         };
         Rates.Updated += () => Later();
         Clipboard.Changed += () => Later();
@@ -204,7 +205,7 @@ internal sealed partial class Host
     public void ShowWhatsNew(bool quiet = false)
     {
         string v = ReleaseNotes.Current;
-        var w = new WhatsNewWindow(v, ReleaseNotes.For(v) ?? Tr("이번 버전의 변경 기록이 없어요.", "There are no notes for this version.")) { ShowActivated = !quiet };
+        var w = new WhatsNewWindow(v, ReleaseNotes.For(v) ?? Tr("이번 버전의 변경 기록 없음", "No release notes for this version")) { ShowActivated = !quiet };
         w.Closed += (_, _) => Window.TrimSoon();
         w.Show();
     }
@@ -362,9 +363,9 @@ internal sealed partial class Host
     public void EndProcess(ProcGroup g, bool force)
     {
         var (ended, refused) = Processes.End(g, force);
-        string msg = refused > 0 && ended == 0 ? Tr($"‘{g.Name}’ 종료 실패 — 관리자 권한으로 실행 중일 수 있어요", $"Couldn't end ‘{g.Name}’ — it may run as administrator")
-            : refused > 0 ? Tr($"{ended}개는 종료, {refused}개는 거부됐어요", $"{ended} ended, {refused} refused")
-            : force ? Tr($"‘{g.Name}’ 강제 종료했어요", $"Force-quit ‘{g.Name}’") : Tr($"‘{g.Name}’에 창 닫기를 보냈어요", $"Asked ‘{g.Name}’ to close");
+        string msg = refused > 0 && ended == 0 ? Tr($"‘{g.Name}’ 종료 실패 · 관리자 권한으로 실행 중이면 작업 관리자에서 종료하세요", $"Could not end ‘{g.Name}’. If it runs as administrator, close it in Task Manager.")
+            : refused > 0 ? Tr($"{ended}개 종료 · {refused}개 종료 실패", $"{ended} ended · {refused} could not be ended")
+            : force ? Tr($"‘{g.Name}’ 강제 종료 완료", $"Force-quit ‘{g.Name}’") : Tr($"‘{g.Name}’ 창 닫기 요청 완료", $"Close requested for ‘{g.Name}’");
         Window.ShowToast(msg);
         _ = Task.Delay(400).ContinueWith(_ =>
         {
@@ -406,6 +407,12 @@ internal sealed partial class Host
     }
 
     public void OpenSettings() => OpenSettings(null);
+
+    public void OpenSettings(string page, string filter)
+    {
+        OpenSettings(page);
+        settingsWindow?.Filter(filter);
+    }
 
     public void OpenSettings(string? page)
     {

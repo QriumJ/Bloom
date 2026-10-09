@@ -22,25 +22,25 @@ internal static class SystemItems
     static SystemItems()
     {
         Cmd("cmd:ai", Tr("AI 채팅", "AI chat"), Tr("Claude · ChatGPT 대화 창 · 지난 대화 이어가기", "A window for Claude and ChatGPT chats, past ones too"), G.Sparkle, "ai chat claude 클로드 질문 채팅 ask");
-        Cmd("cmd:threads", Tr("AI 대화 목록", "AI chats"), Tr("지난 대화 이어가기", "Pick up a past chat"), G.History, "ai history threads conversations 대화 기록");
+        Cmd("cmd:threads", Tr("AI 채팅", "AI chats"), Tr("지난 대화 이어가기", "Pick up a past chat"), G.History, "ai history threads conversations 대화 기록");
         Cmd("cmd:files", Tr("파일 검색", "Search files"), "Everything", G.Search, "search files everything 에브리띵 파일 찾기 find");
         Cmd("cmd:clipboard", Tr("클립보드 기록", "Clipboard history"), Tr("복사한 텍스트 · 이미지 · 파일 다시 붙여넣기", "Paste text, images and files you copied"), G.Paste, "clipboard history clip paste 클립보드 기록 복사 붙여넣기 클립");
         Cmd("cmd:calendar", Tr("캘린더", "Calendar"), Tr("알림 · 리마인더를 달력으로", "Reminders on a calendar"), G.Calendar, "calendar schedule agenda reminders 캘린더 일정 달력 스케줄 알림 리마인더");
-        Cmd("cmd:processes", Tr("프로세스 종료", "Kill process"), Tr("CPU · 메모리를 보고 프로그램 끝내기", "See CPU and memory, end programs"), G.Close, "kill process task 프로세스 종료 강제 종료 작업 끝내기 응답 없음 멈춤 메모리 cpu");
+        Cmd("cmd:processes", Tr("앱 종료", "End apps"), Tr("CPU · 메모리를 보고 프로그램 끝내기", "See CPU and memory, end programs"), G.Close, "kill process task 프로세스 종료 강제 종료 작업 끝내기 응답 없음 멈춤 메모리 cpu");
         Cmd("cmd:space", "Bloom Space Cleaner", Tr("디스크 공간 지도 · 큰 파일 찾아 정리", "A map of disk space · find and clear big files"), G.Folder, "space cleaner spacesniffer disk usage treemap 디스크 공간 용량 폴더 크기 정리 큰 파일 스페이스 클리너");
-        Cmd("cmd:commands", Tr("내 명령", "My commands"), Tr("스크립트 · 스니펫 · 여러 동작 묶음을 만들고 실행", "Make and run scripts, snippets and chains of actions"), G.Bolt, "my commands scripts snippets chains macros automation powershell batch 내 명령 스크립트 스니펫 상용구 묶음 매크로 자동화 파워셸 배치");
+        Cmd("cmd:commands", Tr("사용자 명령", "Custom commands"), Tr("스크립트 · 스니펫 · 여러 동작 묶음을 만들고 실행", "Make and run scripts, snippets and chains of actions"), G.Bolt, "my commands scripts snippets chains macros automation powershell batch 내 명령 스크립트 스니펫 상용구 묶음 매크로 자동화 파워셸 배치");
         Cmd("cmd:quicklinks", Tr("브라우저", "Browser"), Tr("사이트 바로 가기 · 단축어 + 검색어로 바로 검색", "Site shortcuts · keyword + words searches right away"), G.Link, "browser quicklinks quick links 브라우저 퀵링크 바로가기 바로 가기 단축어 검색 링크 사이트");
         Cmd("cmd:lens", "Bloom Lens", Tr("화면 영역을 골라 AI에게 묻기 · 번역 · 글자 복사 · 실시간 번역 · 캡처", "Pick an area of the screen: ask AI, translate, copy text, live translation, capture"), G.Page, "lens bloom lens 렌즈 블룸 렌즈 screen capture screenshot 캡처 스크린샷 화면 ai 질문 묻기 ocr 텍스트 추출 글자 읽기 번역 translate 실시간 번역 live");
         Cmd("cmd:capture", Tr("화면 캡처", "Screen capture"), Tr("고른 영역을 그림으로 복사 · Ctrl+V로 붙여넣기 (Bloom Lens)", "Copies an area as a picture · paste it with Ctrl+V (Bloom Lens)"), G.Camera, "capture screenshot snip screen copy picture print screen 캡처 캡쳐 스크린샷 화면 캡처 복사 그림 붙여넣기 스샷");
         Cmd("cmd:pin", Tr("화면 고정", "Pin to the screen"), Tr("화면 영역을 그림으로 맨 위에 띄워 두기 (Bloom Lens)", "Keep an area of the screen on top as a picture (Bloom Lens)"), G.Pin, "pin screen capture screenshot float on top sticky picture snip 화면 고정 캡처 스크린샷 띄우기 맨 위 그림 고정 핀 붙이기");
-        Cmd("cmd:timer", Tr("타이머 · 알림", "Timers · reminders"), Tr("\"10분 타이머\", \"3시 반에 회의 알림\"처럼 적어도 돼요", "Or type \"10 min timer\", \"remind me at 3:30pm meeting\""), G.Stopwatch, "timer reminder alarm countdown pomodoro 타이머 알림 리마인더 알람 스톱워치 뽀모도로 카운트다운 시간 재기");
+        Cmd("cmd:timer", Tr("타이머 · 알림", "Timers · reminders"), Tr("예: \"10분 타이머\", \"3시 반에 회의 알림\"", "Or type \"10 min timer\", \"remind me at 3:30pm meeting\""), G.Stopwatch, "timer reminder alarm countdown pomodoro 타이머 알림 리마인더 알람 스톱워치 뽀모도로 카운트다운 시간 재기");
         Cmd("cmd:color", Tr("컬러 피커", "Color picker"), Tr("화면에서 색 찍기 · HEX · RGB · 그라데이션 추천", "Pick colours from the screen · HEX · RGB · gradient ideas"), G.Eyedrop, "color colour picker eyedropper hex rgb hsl gradient palette 컬러 피커 색 스포이드 색상 색깔 그라데이션 팔레트 색 추출");
-        Cmd("cmd:notes", Tr("메모장", "Notes"), Tr("여러 메모 · 적는 대로 저장 · 런처 옆에 붙여 쓰기", "Notes kept as you type · use them beside the launcher"), G.Document, "notes memo notepad sticky jot 메모 메모장 노트 적기 포스트잇");
+        Cmd("cmd:notes", Tr("메모", "Notes"), Tr("여러 메모 · 적는 대로 저장 · 런처 옆에 붙여 쓰기", "Notes kept as you type · use them beside the launcher"), G.Document, "notes memo notepad sticky jot 메모 메모장 노트 적기 포스트잇");
         Cmd("cmd:tools", Tr("도구 붙이기", "Attach tools"), Tr("메모 · 타이머 · 계산기 · 클립보드를 런처 옆 창으로 (Ctrl+J)", "Notes, timers, calculator, clipboard as windows beside the launcher (Ctrl+J)"), G.NewWindow, "tools panel side dock widget attach 도구 패널 붙이기 위젯 옆");
         Cmd("cmd:windows", Tr("창 전환", "Switch windows"), Tr("열린 창을 찾아서 앞으로", "Find an open window and bring it to the front"), G.NewWindow, "switch windows window alt tab 창 전환 윈도우 열린 창 작업 전환");
         Cmd("cmd:layout", Tr("창 배치", "Window layout"), Tr("앞의 창을 절반 · 1/3 · 1/4 · 가운데 · 다음 화면으로", "The window in front to a half, a third, a quarter, the middle or the next screen"), '', "window layout snap arrange tile resize move half third quarter maximize center next screen monitor 창 배치 정렬 분할 절반 반 화면 나누기 최대화 가운데 다음 화면 모니터 스냅");
         Cmd("cmd:winget", Tr("앱 설치 (winget)", "Install apps (winget)"), Tr("winget · Microsoft Store 목록에서 찾아 설치", "Find and install from winget and the Microsoft Store"), G.Download, "install apps winget package manager store download setup 앱 설치 프로그램 설치 다운로드 패키지 윈겟 스토어 깔기");
-        Cmd("cmd:emoji", Tr("이모지 · 기호", "Emoji & symbols"), Tr("한국어 · 영어로 찾아서 바로 붙여넣기", "Search in Korean or English and paste"), '\uE76E', "emoji emoticon symbol special character 이모지 이모티콘 기호 특수문자 특수 문자 화살표 하트");
+        Cmd("cmd:emoji", Tr("이모지 · 기호", "Emoji · symbols"), Tr("한국어 · 영어로 찾아서 바로 붙여넣기", "Search in Korean or English and paste"), '\uE76E', "emoji emoticon symbol special character 이모지 이모티콘 기호 특수문자 특수 문자 화살표 하트");
         Cmd("cmd:recent", Tr("최근 파일", "Recent files"), Tr("Windows가 기억하는 최근에 연 파일 · 폴더", "Files and folders Windows remembers you opened"), G.History, "recent files documents opened 최근 파일 최근 문서 열어본 최근 항목");
         Cmd("cmd:system", Tr("시스템", "System"), Tr("다크 모드 · 소리 · 블루투스 · Wi-Fi · 절전 …", "Dark mode · sound · Bluetooth · Wi-Fi · sleep …"), '\uE770', "system toggles quick settings 시스템 빠른 설정 토글 켜기 끄기");
         Cmd("cmd:quick", Tr("AI 빠른 동작", "AI actions"), Tr("선택하거나 복사한 글을 요약 · 번역 · 다듬기", "Summarize, translate or polish the selected or copied text"), G.Sparkle, "ai quick actions summarize translate rewrite fix grammar 빠른 동작 요약 번역 다듬기 맞춤법 교정");
@@ -50,7 +50,7 @@ internal static class SystemItems
         Cmd("cmd:settings", Tr("Bloom 설정", "Bloom settings"), null, G.Settings, "settings preferences 설정 환경설정 options config bloom 블룸");
         Cmd("cmd:reindex", Tr("앱 목록 새로고침", "Refresh the app list"), null, G.Refresh, "reload refresh apps reindex 새로고침");
         Cmd("cmd:lock", Tr("화면 잠금", "Lock screen"), Tr("Windows 잠금", "Lock Windows"), G.Lock, "lock screen 잠금 잠그기");
-        Cmd("cmd:restart", Tr("재시작", "Restart"), Tr("PC 다시 시작", "Restart the PC"), G.Restart, "restart reboot 재시작 다시 시작 재부팅 리부트");
+        Cmd("cmd:restart", Tr("다시 시작", "Restart"), Tr("PC 다시 시작", "Restart the PC"), G.Restart, "restart reboot 재시작 다시 시작 재부팅 리부트");
         Cmd("cmd:shutdown", Tr("시스템 종료", "Shut down"), Tr("PC 끄기", "Turn off the PC"), G.Power, "shut down shutdown power off 시스템 종료 컴퓨터 끄기 전원 끄기");
         Cmd("cmd:quit", Tr("Bloom 종료", "Quit Bloom"), null, G.Power, "quit exit close 종료 bloom 블룸"); // "끄기" means the PC (시스템 종료)
 
@@ -123,7 +123,7 @@ internal static class SystemItems
         Folder(Tr("사진", "Pictures"), "shell:My Pictures", "pictures photos 사진");
         Folder(Tr("동영상", "Videos"), "shell:My Video", "videos 동영상 비디오");
         Folder(Tr("음악", "Music"), "shell:My Music", "music 음악");
-        Folder(Tr("내 PC", "This PC"), "shell:MyComputerFolder", "this pc my computer 내 컴퓨터 드라이브");
+        Folder(Tr("이 PC", "This PC"), "shell:MyComputerFolder", "this pc my computer 내 PC 내 컴퓨터 드라이브");
         Folder(Tr("휴지통", "Recycle Bin"), "shell:RecycleBinFolder", "recycle bin trash 휴지통");
         Folder(Tr("시작프로그램 폴더", "Startup folder"), "shell:Startup", "startup folder 시작프로그램");
         Folder("AppData", Paths.AppData, "appdata roaming");

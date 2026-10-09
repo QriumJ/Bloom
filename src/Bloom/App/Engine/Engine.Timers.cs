@@ -23,7 +23,7 @@ internal sealed partial class Engine
             Id = "timer:start",
             Kind = ItemKind.Command,
             Title = title,
-            Subtitle = timer ? Tr($"{Timers.WhenText(ask.Due)}에 끝나요", $"Ends {Timers.WhenText(ask.Due)}") : ask.Length is null ? Tr($"{Timers.LeftText(ask.Due - DateTime.Now)} 남음", $"{Timers.LeftText(ask.Due - DateTime.Now)} left") : Tr($"{Timers.WhenText(ask.Due)}에 알려요", $"Reminds you {Timers.WhenText(ask.Due)}"),
+            Subtitle = timer ? Tr($"{Timers.WhenText(ask.Due)} 종료", $"Ends {Timers.WhenText(ask.Due)}") : ask.Length is null ? Tr($"{Timers.LeftText(ask.Due - DateTime.Now)} 남음", $"{Timers.LeftText(ask.Due - DateTime.Now)} left") : Tr($"{Timers.WhenText(ask.Due)} 알림", $"Reminds you {Timers.WhenText(ask.Due)}"),
             Icon = IconSpec.Of(timer ? G.Stopwatch : G.Calendar, true),
             PrimaryLabel = Tr("시작", "Start"),
             StayOpen = stay,
@@ -33,7 +33,7 @@ internal sealed partial class Engine
                 var due = ask.Length is { } l ? DateTime.Now + l : ask.Due;
                 Timers.Add(ask.Kind, ask.Label, due);
                 if (stay) host.Window.Go(Mode.Timers);
-                host.Window.ShowToast(timer ? Tr($"타이머 시작 · {Timers.WhenText(due)}에 끝나요", $"Timer started · ends {Timers.WhenText(due)}") : Tr($"{Timers.WhenText(due)}에 알려 드릴게요", $"I'll remind you {Timers.WhenText(due)}"));
+                host.Window.ShowToast(timer ? Tr($"타이머 시작 · {Timers.WhenText(due)} 종료", $"Timer started · ends {Timers.WhenText(due)}") : Tr($"{Timers.WhenText(due)} 알림 설정됨", $"Reminder set for {Timers.WhenText(due)}"));
             },
         };
     }
@@ -43,7 +43,7 @@ internal sealed partial class Engine
         Id = "timer:" + e.Id,
         Kind = ItemKind.Command,
         Title = e.Label,
-        Subtitle = (e.Kind == "timer" ? Tr("타이머 · ", "Timer · ") : Tr("알림 · ", "Reminder · ")) + Timers.WhenText(e.DueAt),
+        Subtitle = (e.Kind == "timer" ? Tr($"타이머 · {Timers.WhenText(e.DueAt)}", $"Timer · {Timers.WhenText(e.DueAt)}") : Tr($"알림 · {Timers.WhenText(e.DueAt)}", $"Reminder · {Timers.WhenText(e.DueAt)}")),
         Live = () => Timers.LeftText(e.Left),
         Icon = IconSpec.Of(e.Kind == "timer" ? G.Stopwatch : G.Calendar, true),
         PrimaryLabel = Tr("5분 더", "5 more min"),
@@ -66,7 +66,7 @@ internal sealed partial class Engine
             var ask = TimeParse.Read(t, timerField: true);
             var s = new Section(Tr("새로 시작", "Start new"));
             if (ask is not null) s.Items.Add(StartTimerItem(ask, true));
-            else s.Items.Add(new ResultItem { Id = "timer:help", Kind = ItemKind.Info, Title = Tr("시간을 알아듣지 못했어요", "Couldn't read a time"), Subtitle = Tr("예: 10분 · 1시간 30분 · 15:30 회의 · 내일 9시 업로드", "e.g. 10 min · 1h 30m · 15:30 meeting · tomorrow 9am upload"), Icon = IconSpec.Of(G.Info), PrimaryLabel = "" });
+            else s.Items.Add(new ResultItem { Id = "timer:help", Kind = ItemKind.Info, Title = Tr("시간 인식 실패 · ‘10분’ 또는 ‘오후 3시 회의’처럼 입력하세요", "Time not recognized. Enter ‘10 min’ or ‘3pm meeting’."), Subtitle = Tr("예: 10분 · 1시간 30분 · 15:30 회의 · 내일 9시 업로드", "e.g. 10 min · 1h 30m · 15:30 meeting · tomorrow 9am upload"), Icon = IconSpec.Of(G.Info), PrimaryLabel = "" });
             sections.Add(s);
         }
         else
@@ -152,7 +152,7 @@ internal sealed partial class Engine
         {
             var empty = new Section(Tr("컬러 피커", "Color picker"));
             empty.Items.Add(pickItem);
-            empty.Items.Add(new ResultItem { Id = "color:help", Kind = ItemKind.Info, Title = Tr("색 코드를 적어도 돼요", "You can type a colour code too"), Subtitle = "#ff5a8a · rgb(255, 90, 138) · hsl(342, 100%, 68%)", Icon = IconSpec.Of(G.Info), PrimaryLabel = "" });
+            empty.Items.Add(new ResultItem { Id = "color:help", Kind = ItemKind.Info, Title = Tr("색 코드 입력 가능", "You can type a colour code too"), Subtitle = "#ff5a8a · rgb(255, 90, 138) · hsl(342, 100%, 68%)", Icon = IconSpec.Of(G.Info), PrimaryLabel = "" });
             return new List<Section> { empty };
         }
         var sections = new List<Section>();

@@ -118,12 +118,12 @@ internal static class DemoAnswers
             return (null, null);
         }
         if (!name.StartsWith("translate-", StringComparison.Ordinal))
-            return (Tr("녹화 모드의 예시 답이에요. 실제 답은 Claude나 ChatGPT가 써요.", "A sample answer from the recording mode. Claude or ChatGPT writes the real one."), null);
+            return (Tr("녹화 모드의 예시 답변입니다. 실제 답변은 Claude 또는 ChatGPT에서 생성됩니다.", "Sample answer in recording mode. Actual answers come from Claude or ChatGPT."), null);
         int lang = name["translate-".Length..] switch { "en" => 1, "ja" => 2, _ => 0 };
         string key = Key(text);
         foreach (var s in Sentences)
             if (Array.Exists(s, v => Key(v) == key)) return (s[lang], null);
-        return (Tr("녹화 모드에서는 예시 문장만 번역해요.", "The recording mode translates its sample sentences only."), null);
+        return (Tr("녹화 모드에서 예시 문장만 번역 가능", "Only sample sentences can be translated in recording mode."), null);
     }
 
     private static string Key(string s) => string.Concat(s.Where(c => !char.IsWhiteSpace(c))).ToLowerInvariant();
@@ -140,22 +140,22 @@ internal static class DemoAnswers
 
         if (Has("발표", "talk", "presentation"))
             return Tr(
-                "발표 전까지 할 일이에요.\n\n1. **슬라이드 초안** 목요일까지\n2. **리허설** 팀과 한 번\n3. **예상 질문** 다섯 개 정리\n\n하나씩 같이 볼까요?",
-                "Here's what to do before the talk.\n\n1. **Draft the slides** by Thursday\n2. **Rehearse** once with the team\n3. **List five questions** people may ask\n\nWant to go through them one by one?");
+                "발표 준비\n\n1. 목요일까지 **슬라이드 초안** 작성\n2. 팀과 **리허설** 1회\n3. **예상 질문** 5개 정리",
+                "Presentation preparation\n\n1. **Draft slides** by Thursday\n2. **Rehearse** once with the team\n3. **List five likely questions**");
         if (Has("메일", "mail"))
             return Tr(
-                "이렇게 보내 보세요.\n\n> 안녕하세요, 지난 회의 자료 공유드려요. 금요일까지 의견 주시면 다음 주 초에 정리해서 다시 보내 드릴게요. 감사합니다.\n\n더 짧게 줄여 드릴까요?",
-                "Here's a draft.\n\n> Hi all, sharing the notes from our last meeting. Send me your thoughts by Friday and I'll circulate a summary early next week. Thanks!\n\nWant it shorter?");
+                "메일 초안\n\n> 지난 회의 자료를 공유합니다. 금요일까지 의견을 보내세요. 정리한 내용은 다음 주 초에 공유합니다.",
+                "Email draft\n\n> Attached are the notes from the last meeting. Send feedback by Friday. A summary will follow early next week.");
         if (Has("요약", "정리", "summar"))
             return Tr(
-                "핵심만 추렸어요.\n\n- **목표**: 다음 분기 재구매율 45%\n- **방법**: 첫 구매 후 7일 안에 안내 메일\n- **할 일**: 담당자 정하기, 메일 문구 쓰기\n\n표로도 만들어 드릴까요?",
-                "Here are the key points.\n\n- **Goal**: 45% repeat buyers next quarter\n- **How**: a follow-up email within 7 days of the first order\n- **Next**: pick an owner, write the email\n\nWant it as a table?");
+                "요약\n\n- **목표**: 다음 분기 재구매율 45%\n- **방법**: 첫 구매 후 7일 안에 안내 메일 발송\n- **할 일**: 담당자 지정, 메일 문구 작성",
+                "Summary\n\n- **Goal**: 45% repeat buyers next quarter\n- **Method**: a follow-up email within 7 days of the first order\n- **Next steps**: assign an owner and write the email");
         if (Has("여행", "주말", "trip", "weekend"))
             return Tr(
-                "가볍게 다녀오기 좋은 일정이에요.\n\n1. **토요일 오전** 시장 구경과 브런치\n2. **오후** 바닷가 산책\n3. **일요일** 느지막이 카페 들렀다 귀가\n\n숙소도 같이 찾아볼까요?",
-                "Here's an easy weekend plan.\n\n1. **Saturday morning** a market and brunch\n2. **Afternoon** a walk by the sea\n3. **Sunday** a slow café stop, then home\n\nShall we look for a place to stay too?");
+                "주말 일정\n\n1. **토요일 오전** 시장 구경과 식사\n2. **오후** 바닷가 산책\n3. **일요일** 카페 방문 후 귀가",
+                "Weekend plan\n\n1. **Saturday morning**: market and brunch\n2. **Afternoon**: walk by the sea\n3. **Sunday**: café, then home");
         return Tr(
-            "좋아요, 이렇게 해 볼게요.\n\n1. **할 일**을 먼저 나눠요\n2. 급한 것부터 **순서**를 정해요\n3. 끝난 건 바로 **체크**해요\n\n더 자세히 알려 드릴까요?",
-            "Sure, here's a way to go about it.\n\n1. **Split** it into small tasks\n2. **Order** them by what's most urgent\n3. **Check** each one off as you go\n\nWant more detail?");
+            "작업 순서\n\n1. 작은 작업으로 **나누세요**.\n2. 급한 작업부터 **순서를 정하세요**.\n3. 완료한 작업을 **표시하세요**.",
+            "Task steps\n\n1. **Split** the work into small tasks.\n2. **Order** tasks by urgency.\n3. **Mark** completed tasks.");
     }
 }

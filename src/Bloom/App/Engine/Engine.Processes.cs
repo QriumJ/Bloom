@@ -32,7 +32,7 @@ internal sealed partial class Engine
             Id = "proc:" + g.Key.ToLowerInvariant(),
             Kind = ItemKind.Process,
             Title = g.Name,
-            Subtitle = g.Self ? Tr("Bloom — 이 앱이에요", "Bloom — this app") : g.Protected ? Tr($"{g.Exe} · Windows에 필요해서 끌 수 없어요", $"{g.Exe} · Windows needs it, it can't be ended") : Join(g.Exe, n > 1 ? Tr($"프로세스 {n}개", $"{n} processes") : null),
+            Subtitle = g.Self ? Tr("Bloom · 현재 앱", "Bloom — this app") : g.Protected ? Tr($"{g.Exe} · Windows에 필요해서 끌 수 없습니다", $"{g.Exe} · Windows needs it, it can't be ended") : Join(g.Exe, n > 1 ? Tr($"프로세스 {n}개", $"{n} processes") : null),
             Accessory = (g.Cpu < 0 ? "CPU …" : $"CPU {g.Cpu:0.0}%") + " · " + Size(g.Memory),
             Icon = g.Path is { } path ? IconSpec.Shell(path) : IconSpec.Of(G.App),
             Data = g,
@@ -41,7 +41,7 @@ internal sealed partial class Engine
         };
         if (locked) return item;
         string what = Tr($"‘{g.Name}’{(n > 1 ? $" 프로세스 {n}개" : "")}", $"‘{g.Name}’{(n > 1 ? $" ({n} processes)" : "")}");
-        item.Run = () => host.Window.Confirm(what + Tr(" 강제 종료 — 저장하지 않은 내용은 사라져요", ": force quit — unsaved work is lost"), new ActionItem
+        item.Run = () => host.Window.Confirm(Tr($"{what}: 강제 종료 · 저장하지 않은 내용 삭제", $"{what}: force quit — unsaved work is lost"), new ActionItem
         {
             Title = Tr("강제 종료", "Force quit"),
             Keys = "Enter",
@@ -54,7 +54,7 @@ internal sealed partial class Engine
         {
             var list = new List<ActionItem>
             {
-                new() { Title = Tr("창 닫기로 끝내기 (저장할지 물어봐요)", "Close its windows (it may ask to save)"), Keys = "Ctrl+Enter", Glyph = G.Close, StayOpen = true, Run = () => host.EndProcess(g, false) },
+                new() { Title = Tr("창 닫기로 끝내기 (저장할지 확인 창이 표시됩니다)", "Close its windows (it may ask to save)"), Keys = "Ctrl+Enter", Glyph = G.Close, StayOpen = true, Run = () => host.EndProcess(g, false) },
             };
             if (g.Exe.Equals("explorer.exe", StringComparison.OrdinalIgnoreCase))
                 list.Insert(0, new ActionItem { Title = Tr("탐색기 다시 시작", "Restart Explorer"), Glyph = G.Restart, StayOpen = true, Run = () => host.RestartExplorer(g) });

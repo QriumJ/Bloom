@@ -133,7 +133,7 @@ internal sealed class ClaudeSession : IChatSession
         string? cli = FindCli(Settings.Current.ClaudePath);
         if (cli is null)
         {
-            error = Tr("Claude Code CLI를 찾지 못했어요. (%USERPROFILE%\\.local\\bin\\claude.exe)", "Claude Code CLI not found. (%USERPROFILE%\\.local\\bin\\claude.exe)");
+            error = AiErrors.ClaudeMissing;
             return false;
         }
         string work = Paths.InLocal(@"ai\.keep");
@@ -193,7 +193,7 @@ internal sealed class ClaudeSession : IChatSession
             var p = Process.Start(psi);
             if (p is null)
             {
-                error = Tr("Claude CLI를 시작하지 못했어요.", "Couldn't start the Claude CLI.");
+                error = AiErrors.ClaudeStartFailed;
                 return false;
             }
             proc = p;
@@ -217,7 +217,8 @@ internal sealed class ClaudeSession : IChatSession
         }
         catch (Exception e)
         {
-            error = Tr("Claude CLI 실행 실패: ", "Claude CLI failed: ") + e.Message;
+            Log.Error("claude start", e);
+            error = AiErrors.ClaudeStartFailed;
             return false;
         }
     }
@@ -325,7 +326,7 @@ internal sealed class ClaudeSession : IChatSession
             Busy = false;
             string tail;
             lock (stderr) tail = stderr.ToString().Trim();
-            TurnEnded?.Invoke(false, tail.Length > 0 ? Trim(tail) : Tr("Claude CLI가 응답 없이 끝났어요.", "The Claude CLI ended without an answer."));
+            TurnEnded?.Invoke(false, tail.Length > 0 ? Trim(tail) : AiErrors.ClaudeNoAnswer);
         }
         string err;
         lock (stderr) err = stderr.ToString();
@@ -364,7 +365,7 @@ internal sealed class ClaudeSession : IChatSession
                             "WebFetch" or "web_fetch" => Tr("페이지 읽는 중…", "Reading a page…"),
                             "Read" => Tr("첨부 파일 읽는 중…", "Reading the attachments…"),
                             "Write" => Tr("파일 만드는 중…", "Making a file…"),
-                            _ => doing?.Invoke(tool) ?? tool + Tr(" 사용 중…", " in use…"),
+                            _ => doing?.Invoke(tool) ?? Tr($"{tool} 사용 중…", $"Using {tool}…"),
                         });
                     }
                     else if (bt == "text") Status?.Invoke(null);

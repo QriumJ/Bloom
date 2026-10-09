@@ -107,7 +107,7 @@ internal sealed partial class Engine
         if (RootRecent(q) is { } recent) sections.Add(recent);
         bool strong = sections.Count > 0; // anything answered the line: the fallbacks go last
 
-        var fall = new Section(strong ? Tr("다른 곳에서 찾기", "Search elsewhere") : Tr("찾는 게 없나요?", "Not finding it?")) { Fallback = true };
+        var fall = new Section(strong ? Tr("다른 곳에서 찾기", "Search elsewhere") : Tr("결과 없음 · 다른 곳에서 찾기", "No results · search elsewhere")) { Fallback = true };
         if (Features.On("chat"))
         {
             var continued = host.TabThread;

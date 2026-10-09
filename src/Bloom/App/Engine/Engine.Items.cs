@@ -100,7 +100,7 @@ internal sealed partial class Engine
             AppNames.Set(a.Id, name.Length == 0 || name == original ? null : name);
             host.AppsChanged();
             host.Window.Go(Mode.Root);
-            host.Window.ShowToast(name.Length == 0 || name == original ? Tr($"‘{original}’ 원래 이름으로 돌렸어요", $"‘{original}’ has its original name again") : Tr($"‘{original}’ → ‘{name}’ (Bloom에서만)", $"‘{original}’ → ‘{name}’ (in Bloom only)"));
+            host.Window.ShowToast(name.Length == 0 || name == original ? Tr($"‘{original}’ 원래 이름 복원 완료", $"‘{original}’ has its original name again") : Tr($"‘{original}’ → ‘{name}’ (Bloom에서만)", $"‘{original}’ → ‘{name}’ (in Bloom only)"));
         };
         return f;
     }
@@ -194,7 +194,7 @@ internal sealed partial class Engine
             if (item.Side is { } admin) list.Insert(1, admin);
             list.AddRange(FileActions(path, name, folder));
             if (ext is ".ps1" or ".bat" or ".cmd" or ".exe")
-                list.Add(new ActionItem { Title = Tr("내 명령으로 등록…", "Add to my commands…"), Glyph = G.Bolt, StayOpen = true, Run = () => host.Window.StartForm(CommandForm("script", null, path.Contains(' ') ? $"\"{path}\"" : path)) });
+                list.Add(new ActionItem { Title = Tr("사용자 명령에 추가…", "Add to custom commands…"), Glyph = G.Bolt, StayOpen = true, Run = () => host.Window.StartForm(CommandForm("script", null, path.Contains(' ') ? $"\"{path}\"" : path)) });
             return list;
         };
         return item;

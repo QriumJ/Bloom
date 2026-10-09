@@ -36,7 +36,7 @@ internal sealed partial class Chats
             return;
         }
         m.Asks.Add(ask);
-        m.Status = Tr("허락을 기다려요", "Waiting for your OK");
+        m.Status = Tr("승인 대기", "Approval pending");
         Updated?.Invoke(t);
         AskWaiting?.Invoke(t, ask);
     }

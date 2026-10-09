@@ -17,7 +17,7 @@ internal sealed partial class Engine
         var s = new Section(Tr("열린 창", "Open windows"), Tr($"{list.Count}개", $"{list.Count}"));
         foreach (var w in list) s.Items.Add(FromWindow(w));
         if (s.Items.Count == 0)
-            s.Items.Add(new ResultItem { Id = "win:none", Kind = ItemKind.Info, Title = Tr("맞는 창이 없어요", "No window matches"), Icon = IconSpec.Of(G.Info) });
+            s.Items.Add(new ResultItem { Id = "win:none", Kind = ItemKind.Info, Title = Tr("검색된 창 없음", "No window matches"), Icon = IconSpec.Of(G.Info) });
         return new List<Section> { s };
     }
 
@@ -69,7 +69,7 @@ internal sealed partial class Engine
     private void CloseWindow(IntPtr h, string title)
     {
         OpenWindows.Close(h);
-        host.Window.ShowToast(Tr($"‘{Clip(title, 24)}’ 창에 닫기를 보냈어요", $"Asked ‘{Clip(title, 24)}’ to close"));
+        host.Window.ShowToast(Tr($"‘{Clip(title, 24)}’ 창 닫기 요청 완료", $"Close requested for ‘{Clip(title, 24)}’"));
         // the app may ask to save first; the list catches up a moment later
         _ = System.Threading.Tasks.Task.Delay(500).ContinueWith(_ => host.Window.Dispatcher.BeginInvoke(() =>
         {

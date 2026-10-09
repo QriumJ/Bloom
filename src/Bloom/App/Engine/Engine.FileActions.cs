@@ -23,7 +23,7 @@ internal sealed partial class Engine
             Glyph = G.Delete,
             Danger = true,
             StayOpen = true,
-            Run = () => host.Window.Confirm(Tr($"‘{name}’을(를) 휴지통으로 보낼까요?", $"Move ‘{name}’ to the Recycle Bin?"), new ActionItem
+            Run = () => host.Window.Confirm(Tr($"‘{name}’을 휴지통으로 옮깁니다.", $"Moves ‘{name}’ to the Recycle Bin."), new ActionItem
             {
                 Title = Tr("휴지통으로", "Move to bin"),
                 Keys = "Enter",
@@ -34,8 +34,8 @@ internal sealed partial class Engine
                 {
                     bool ok = host.Recycle(path);
                     host.Window.Refresh(false);
-                    host.Window.ShowToast(ok ? Tr($"‘{name}’ 휴지통으로 보냈어요 — 휴지통에서 되돌릴 수 있어요", $"Moved ‘{name}’ to the Recycle Bin — you can restore it from there")
-                        : Tr("휴지통으로 보내지 못했어요 (사용 중이거나 권한이 없어요)", "Couldn't move it to the Recycle Bin (in use, or no permission)"));
+                    host.Window.ShowToast(ok ? Tr($"‘{name}’ 휴지통 이동 완료 · 휴지통에서 복원 가능", $"Moved ‘{name}’ to the Recycle Bin — you can restore it from there")
+                        : Tr("휴지통 이동 실패 · 파일을 사용하는 앱을 닫고 권한을 확인한 뒤 다시 시도하세요", "Could not move to the Recycle Bin. Close apps using the file, check permissions and retry."));
                 },
             }),
         };
@@ -50,17 +50,17 @@ internal sealed partial class Engine
         f.Fields.Add(new FormField
         {
             Label = Tr("새 이름", "New name"),
-            Hint = folder ? Tr("새 폴더 이름", "The folder's new name") : Tr("새 파일 이름 — 확장자까지 적은 그대로 바뀌어요", "The file's new name — the extension changes as typed too"),
+            Hint = folder ? Tr("새 폴더 이름", "The folder's new name") : Tr("새 파일 이름 — 확장자까지 적은 그대로 바뀝니다", "The file's new name — the extension changes as typed too"),
             Value = name,
             Check = v =>
             {
                 string n = v.Trim();
-                if (n.Length == 0) return (null, Tr("이름을 넣어 주세요", "Please enter a name"));
-                if (n.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) return (null, Tr("이름에 \\ / : * ? \" < > | 는 쓸 수 없어요", "A name can't have \\ / : * ? \" < > |"));
-                if (n == name) return (null, Tr("이름이 그대로예요 — 바꾸지 않으려면 Esc", "That's the same name — Esc to leave it"));
+                if (n.Length == 0) return (null, Tr("이름을 입력하세요", "Enter a name"));
+                if (n.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) return (null, Tr("이름에 \\ / : * ? \" < > | 는 쓸 수 없습니다", "A name can't have \\ / : * ? \" < > |"));
+                if (n == name) return (null, Tr("현재 이름과 같습니다. 다른 이름을 입력하거나 Esc를 누르세요.", "Name unchanged. Enter another name or press Esc."));
                 string to = Path.Combine(dir, n);
                 if (!string.Equals(n, name, StringComparison.OrdinalIgnoreCase) && (File.Exists(to) || Directory.Exists(to)))
-                    return (null, Tr($"같은 폴더에 ‘{n}’이(가) 이미 있어요", $"‘{n}’ is already in that folder"));
+                    return (null, Tr($"‘{n}’ 이름이 이미 있습니다. 다른 이름을 입력하세요.", $"‘{n}’ already exists. Enter another name."));
                 return (n, null);
             },
         });
@@ -69,7 +69,7 @@ internal sealed partial class Engine
             string n = form[0];
             bool ok = ShellFiles.Rename(path, n, IntPtr.Zero);
             host.Window.Go(back, ok ? Path.GetFileNameWithoutExtension(n) : "");
-            host.Window.ShowToast(ok ? Tr($"‘{name}’ → ‘{n}’", $"‘{name}’ → ‘{n}’") : Tr("이름을 바꾸지 못했어요 (사용 중이거나 권한이 없어요)", "Couldn't rename it (in use, or no permission)"));
+            host.Window.ShowToast(ok ? Tr($"‘{name}’ → ‘{n}’", $"‘{name}’ → ‘{n}’") : Tr("이름 변경 실패 · 파일을 사용하는 앱을 닫고 권한을 확인한 뒤 다시 시도하세요", "Could not rename the file. Close apps using it, check permissions and retry."));
         };
         return f;
     }

@@ -99,7 +99,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
             Padding = new Thickness(0, 2, 0, 2),
             Template = Launcher.BareTextBox(),
         };
-        inputHint = Theme.T(Tr("메시지 입력 — Enter로 보내고 Shift+Enter로 줄을 바꿔요", "Message — Enter sends, Shift+Enter adds a line"), 14, Theme.P.TextFaint);
+        inputHint = Theme.T(Tr("메시지 입력 — Enter로 보내고 Shift+Enter로 줄을 변경합니다", "Message — Enter sends, Shift+Enter adds a line"), 14, Theme.P.TextFaint);
         inputHint.IsHitTestVisible = false;
         inputHint.VerticalAlignment = VerticalAlignment.Center;
         var field = new Grid();
@@ -135,7 +135,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
         Grid.SetRow(composerCard, 3);
         main.Children.Add(composerCard);
         main.Children.Add(Rule(4));
-        var foot = Hints((Tr("첨부", "Attach"), "Ctrl+O"), (Tr("새 대화", "New chat"), "Ctrl+N"), (Tr("대화 찾기", "Find a chat"), "Ctrl+F"), (Tr("멈추기", "Stop"), "Esc"));
+        var foot = Hints((Tr("첨부", "Attach"), "Ctrl+O"), (Tr("새 대화", "New chat"), "Ctrl+N"), (Tr("대화 찾기", "Find a chat"), "Ctrl+F"), (Tr("중지", "Stop"), "Esc"));
         Grid.SetRow(foot, 5);
         main.Children.Add(foot);
 
@@ -279,7 +279,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
         string model = AiModels.Normalize(thread.Model);
         if (!AiModels.HasEffort(model)) return;
         Chats.SetEffort(thread, AiModels.Next(AiModels.Efforts(model), Chats.EffortOf(thread)));
-        ShowToast(Tr("생각 수준: ", "Thinking level: ") + AiModels.EffortName(Chats.EffortOf(thread)));
+        ShowToast(Tr($"생각 수준: {AiModels.EffortName(Chats.EffortOf(thread))}", $"Thinking level: {AiModels.EffortName(Chats.EffortOf(thread))}"));
         Header();
     }
 
@@ -292,6 +292,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
     public void ShowToast(string text)
     {
         toast.Text = text;
+        toast.TextWrapping = TextWrapping.Wrap;
         toastCard.Visibility = Visibility.Visible;
         toastCard.Opacity = 1;
         var fade = Motion.Paced(new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(Motion.Fades ? 220 : 0)) { BeginTime = TimeSpan.FromMilliseconds(Motion.Fades ? 1300 : 1500) });
@@ -338,7 +339,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
         if (host.Chats.IsLive(thread))
         {
             var end = TextButton(G.Stop, Tr("세션 종료", "End session"), () => EndSession(thread));
-            end.ToolTip = Tr("이 대화의 CLI를 지금 닫고 새 대화로 넘어가요 — 지난 대화는 목록에 남아요", "Closes this chat's CLI now and starts a new chat — the last one stays in the list");
+            end.ToolTip = Tr("대화 메모리를 해제하고 새 대화를 엽니다. 대화 기록은 유지됩니다.", "Frees chat memory and opens a new chat. History stays.");
             end.Margin = new Thickness(8, 0, 0, 0);
             tools.Children.Add(end);
         }

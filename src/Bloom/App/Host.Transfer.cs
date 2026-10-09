@@ -35,7 +35,7 @@ internal sealed partial class Host
         catch (Exception e)
         {
             Log.Error("export", e);
-            Tell(owner, Tr("내보내지 못했어요", "Couldn't export"), e.Message);
+            Tell(owner, Tr("설정 내보내기 실패", "Settings export failed"), Tr("파일을 저장하지 못했습니다. 저장 위치와 권한을 확인하고 다시 시도하세요.", "Could not save the file. Check the destination and permissions, then retry."));
             return false;
         }
     }
@@ -56,16 +56,21 @@ internal sealed partial class Host
             var files = SettingsTransfer.Import(dlg.FileName);
             Reload();
             Log.Write($"settings imported ({files.Count} files)");
-            Tell(owner, Tr("설정을 불러왔어요", "Settings imported"), Tr("지금 쓰던 설정은 데이터 폴더의 backups에 남겨 뒀어요.", "The settings you had are kept in the data folder's backups."));
+            Tell(owner, Tr("설정 불러오기 완료", "Settings imported"), Tr("기존 설정은 데이터 폴더에 백업되었습니다.", "Previous settings backed up in the data folder."));
             if (Lang.Pending(Settings.Current.Language)
-                && Ask(owner, "Bloom", Tr("불러온 설정의 언어로 바꾸려면 Bloom을 다시 시작해야 해요. 지금 다시 시작할까요?", "The imported settings use another language. Restart Bloom now to switch?"), MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                && ConfirmWindow.Ask(owner, Tr("Bloom 다시 시작", "Restart Bloom"), Tr("불러온 언어를 적용하려면 Bloom을 다시 시작해야 합니다.", "Restart Bloom to apply the imported language."),
+                    (Tr("다시 시작", "Restart"), MessageBoxResult.Yes), (Tr("나중에", "Later"), MessageBoxResult.No)) == MessageBoxResult.Yes)
                 Restart();
             return true;
         }
         catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
         {
             Log.Error("import", e);
-            Tell(owner, Tr("불러오지 못했어요", "Couldn't import"), e is InvalidDataException ? e.Message : Tr("파일을 읽지 못했어요 — Bloom에서 내보낸 설정 파일인지 확인해 주세요.", "Couldn't read the file — check that it is a settings file exported from Bloom."));
+            string reason = e.Data["BloomCopy"] as string
+                ?? (e is UnauthorizedAccessException
+                    ? Tr("설정 파일에 접근하지 못했습니다. 파일과 데이터 폴더의 권한을 확인하고 다시 시도하세요.", "Could not access settings. Check permissions for the file and data folder, then retry.")
+                    : Tr("설정 파일을 읽지 못했습니다. Bloom에서 내보낸 파일을 선택하세요.", "Could not read settings. Choose a file exported from Bloom."));
+            Tell(owner, Tr("설정 불러오기 실패", "Settings import failed"), reason);
             return false;
         }
     }
@@ -75,14 +80,16 @@ internal sealed partial class Host
     /// when cancelled.
     public bool ResetAll(Window? owner)
     {
-        string what = Tr("설정, 즐겨찾기, 앱 이름, 브라우저 바로 가기, 타이머 · 알림, 클립보드 기록, AI 대화, 사용 기록이 모두 지워지고 처음 설정 화면부터 다시 시작해요.\n\n이 작업은 되돌릴 수 없어요.", "Settings, favorites, app names, browser shortcuts, timers and reminders, clipboard history, AI chats and usage history are all deleted, and Bloom starts again from the first-run screens.\n\nThis can't be undone.");
-        if (Ask(owner, Tr("Bloom을 처음 상태로 되돌릴까요?", "Reset Bloom to how it was first installed?"), what, MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return false;
-        var first = Ask(owner, Tr("지우기 전에 설정을 내보낼까요?", "Export your settings before deleting?"), Tr("지금 설정과 즐겨찾기를 파일 하나로 남겨 두면, 처음 설정 화면에서 '설정 불러오기'로 되살릴 수 있어요.", "Keep your settings and favorites in one file, and bring them back with 'Import settings' on the first-run screens."), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        string what = Tr("설정, 즐겨찾기, 앱 이름, 브라우저 바로 가기, 타이머·알림, 클립보드 기록, AI 채팅, 사용 기록을 영구 삭제하고 처음 설정 화면부터 시작합니다.", "Permanently deletes settings, favorites, app names, browser shortcuts, timers and reminders, clipboard history, AI chats and usage history, then starts from the first-run screens.");
+        if (ConfirmWindow.Ask(owner, Tr("Bloom 초기화", "Reset Bloom"), what, (Tr("초기화", "Reset"), MessageBoxResult.OK), (Tr("취소", "Cancel"), MessageBoxResult.Cancel)) != MessageBoxResult.OK) return false;
+        var first = ConfirmWindow.Ask(owner, Tr("초기화 전 설정 백업", "Back up settings before reset"),
+            Tr("설정과 즐겨찾기를 파일로 내보내면 처음 설정 화면의 ‘설정 불러오기’로 복원할 수 있습니다.", "Export settings and favorites to a file to restore them with ‘Import settings’ on the first-run screens."),
+            (Tr("설정 내보내기", "Export settings"), MessageBoxResult.Yes), (Tr("백업 없이 초기화", "Reset without backup"), MessageBoxResult.No), (Tr("취소", "Cancel"), MessageBoxResult.Cancel));
         if (first == MessageBoxResult.Cancel) return false;
         if (first == MessageBoxResult.Yes && !ExportSettings(owner)) return false;
         if (!StartSuccessor("--reset-from"))
         {
-            Tell(owner, Tr("초기화하지 못했어요", "Couldn't reset"), Tr("새 Bloom을 시작하지 못했어요. 아무것도 지우지 않았어요.", "Couldn't start a new Bloom. Nothing was deleted."));
+            Tell(owner, Tr("초기화 실패", "Reset failed"), Tr("Bloom을 다시 시작하지 못했습니다. 삭제된 데이터는 없습니다. Bloom을 다시 열고 시도하세요.", "Could not restart Bloom. No data was deleted. Reopen Bloom and try again."));
             return false;
         }
         Log.Write("reset: quitting for the new start");
@@ -98,17 +105,18 @@ internal sealed partial class Host
     {
         bool installed = Updates.Uninstaller() is not null;
         string what = installed
-            ? Tr("Bloom이 PC에서 지워져요. 시작 메뉴 바로 가기와 Windows 시작 시 자동 실행도 함께 없어져요.", "Bloom is removed from this PC, with its Start-menu shortcut and its start with Windows.")
-            : Tr("Bloom을 끄고 Windows 시작 시 자동 실행을 풀어요. 이 Bloom은 설치 파일로 설치한 게 아니라서, 끈 뒤에 열리는 폴더를 직접 지워 주세요.", "Bloom quits and no longer starts with Windows. This copy wasn't installed with the setup, so delete the folder that opens afterwards.");
-        if (Ask(owner, Tr("정말 Bloom을 삭제할까요?", "Really uninstall Bloom?"), what, MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return false;
-        var data = Ask(owner, Tr("대화 · 설정 · 즐겨찾기까지 다 지울까요?", "Delete your chats, settings and favorites too?"),
-            Tr("예: AI 대화, 설정, 즐겨찾기, 메모, 클립보드 기록까지 모두 지워요. 되돌릴 수 없어요.\n아니요: 남겨 두면 다시 설치했을 때 그대로 이어서 써요.", "Yes: AI chats, settings, favorites, notes and clipboard history all go. This can't be undone.\nNo: they stay, and a new install picks up where you left off."),
-            MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            ? Tr("이 PC에서 Bloom과 시작 메뉴 바로 가기를 삭제하고 Windows 시작 시 자동 실행을 해제합니다.", "Removes Bloom and its Start menu shortcut from this PC and stops it starting with Windows.")
+            : Tr("설치 프로그램으로 설치하지 않은 Bloom입니다. Bloom이 종료되고 Windows 시작 시 자동 실행이 해제됩니다. 종료 후 열리는 폴더를 직접 삭제하세요.", "This copy was not installed with the setup. Bloom quits and stops starting with Windows. Delete the folder that opens afterwards.");
+        if (ConfirmWindow.Ask(owner, Tr("Bloom 삭제", "Uninstall Bloom"), what, (Tr("Bloom 삭제", "Uninstall Bloom"), MessageBoxResult.OK), (Tr("취소", "Cancel"), MessageBoxResult.Cancel)) != MessageBoxResult.OK) return false;
+        // keeping is the accent choice: deleting the data can't be undone
+        var data = ConfirmWindow.Ask(owner, Tr("저장된 데이터", "Saved data"),
+            Tr("데이터를 삭제하면 AI 채팅, 설정, 즐겨찾기, 메모, 클립보드 기록이 영구 삭제됩니다. 유지하면 다시 설치한 뒤 그대로 사용할 수 있습니다.", "Deleting data permanently removes AI chats, settings, favorites, notes and clipboard history. Kept data is used again after reinstalling."),
+            (Tr("데이터 유지", "Keep data"), MessageBoxResult.No), (Tr("데이터 삭제", "Delete data"), MessageBoxResult.Yes), (Tr("취소", "Cancel"), MessageBoxResult.Cancel));
         if (data == MessageBoxResult.Cancel) return false;
         bool wipe = data == MessageBoxResult.Yes;
         if (!StartSuccessor("--uninstall-from", wipe ? new[] { "--wipe" } : Array.Empty<string>()))
         {
-            Tell(owner, Tr("삭제하지 못했어요", "Couldn't uninstall"), Tr("새 Bloom을 시작하지 못했어요. 아무것도 지우지 않았어요.", "Couldn't start a new Bloom. Nothing was deleted."));
+            Tell(owner, Tr("삭제 실패", "Uninstall failed"), Tr("Bloom을 다시 시작하지 못했습니다. 삭제된 데이터는 없습니다. Bloom을 다시 열고 시도하세요.", "Could not restart Bloom. No data was deleted. Reopen Bloom and try again."));
             return false;
         }
         Autostart.Set(false);
@@ -154,9 +162,6 @@ internal sealed partial class Host
         Quit();
     }
 
-    private static MessageBoxResult Ask(Window? owner, string title, string text, MessageBoxButton buttons, MessageBoxImage image) =>
-        owner is not null ? MessageBox.Show(owner, text, title, buttons, image) : MessageBox.Show(text, title, buttons, image);
-
     public void ReloadForQa() => Reload();
 
     /// Everything that was read from the data folder, read again and applied (look, keys, names, lists).
@@ -178,9 +183,5 @@ internal sealed partial class Host
         settingsWindow?.Refresh();
     }
 
-    private static void Tell(Window? owner, string title, string text)
-    {
-        if (owner is not null) MessageBox.Show(owner, text, title, MessageBoxButton.OK, MessageBoxImage.Information);
-        else MessageBox.Show(text, title, MessageBoxButton.OK, MessageBoxImage.Information);
-    }
+    private static void Tell(Window? owner, string title, string text) => ConfirmWindow.Tell(owner, title, text);
 }

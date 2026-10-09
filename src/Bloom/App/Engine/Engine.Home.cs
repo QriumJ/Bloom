@@ -67,7 +67,7 @@ internal sealed partial class Engine
                     if (clips.Items.Count > 0) sections.Add(clips);
                     break;
                 case "threads":
-                    var threads = new Section(Tr("최근 AI 대화", "Recent AI chats"));
+                    var threads = new Section(Tr("최근 AI 채팅", "Recent AI chats"));
                     foreach (var t in Threads("").SelectMany(x => x.Items).Where(i => i.Id != "thread:new").Take(3)) threads.Items.Add(t);
                     if (threads.Items.Count > 0) sections.Add(threads);
                     break;

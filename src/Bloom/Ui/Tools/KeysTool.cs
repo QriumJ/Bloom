@@ -34,11 +34,11 @@ internal sealed class KeysTool : ITool
         view.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         view.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         view.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        var (field, box) = ToolUi.Field(Tr("앱 이름이나 키로 찾기", "Find by name or keys"));
+        var (field, box) = ToolUi.Field(Tr("앱 이름 또는 단축키로 찾기", "Find by app name or shortcut"));
         search = box;
         field.Margin = new Thickness(12, 10, 12, 2);
         view.Children.Add(field);
-        var note = Theme.T(Tr("내가 지정한 단축키 · 누르면 실행돼요", "The shortcuts you set · click one to run it"), 11.5, Theme.P.TextFaint);
+        var note = Theme.T(Tr("지정된 단축키 · 클릭하여 실행", "Assigned shortcuts · click to run"), 11.5, Theme.P.TextFaint);
         note.Margin = new Thickness(16, 4, 16, 2);
         Grid.SetRow(note, 1);
         view.Children.Add(note);
@@ -70,7 +70,8 @@ internal sealed class KeysTool : ITool
         list.Children.Clear();
         if (all.Count == 0)
         {
-            list.Children.Add(ToolUi.Empty(Tr("아직 지정한 단축키가 없어요 — 런처에서 앱 · 폴더 · 명령을 고르고 Ctrl+K › 단축키 지정", "No shortcuts yet — pick an app, folder or command in the launcher, then Ctrl+K › Set a shortcut")));
+            list.Children.Add(ToolUi.Empty(Tr("지정된 단축키 없음 · 런처에서 항목을 선택하고 Ctrl+K로 지정하세요", "No assigned shortcuts. Choose an item in the launcher and press Ctrl+K to assign one.")));
+            list.Children.Add(ToolUi.TextButton(Tr("런처에서 항목 선택", "Choose an item in the launcher"), () => host.OpenView(Mode.Root)));
             return;
         }
         var shown = all
@@ -79,7 +80,7 @@ internal sealed class KeysTool : ITool
             .ToList();
         if (shown.Count == 0)
         {
-            list.Children.Add(ToolUi.Empty(Tr("맞는 게 없어요", "Nothing matches")));
+            list.Children.Add(ToolUi.Empty(Tr("검색 결과 없음", "Nothing matches")));
             return;
         }
         foreach (var k in shown) list.Children.Add(Row(k));
@@ -99,8 +100,8 @@ internal sealed class KeysTool : ITool
         g.Children.Add(icon);
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         text.Children.Add(Theme.T(k.Item.Title, 13, Theme.P.Text, Theme.Medium));
-        string? sub = item is null ? Tr("찾지 못했어요 — 지워졌거나 옮겨졌을 수 있어요", "Not found — it may have been deleted or moved")
-            : host.Shortcuts?.Status("item:" + k.Item.Id) == "taken" ? Tr("다른 앱이 이 키를 쓰고 있어요", "Another app uses these keys")
+        string? sub = item is null ? Tr("항목을 찾지 못했습니다. 위치를 확인하거나 단축키를 다시 지정하세요.", "Item not found. Check its location or reassign the shortcut.")
+            : host.Shortcuts?.Status("item:" + k.Item.Id) == "taken" ? Tr("다른 앱에서 사용 중인 키", "Another app uses these keys")
             : item.Accessory;
         if (sub is { Length: > 0 })
         {

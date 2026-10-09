@@ -25,13 +25,13 @@ internal sealed partial class Engine
                 Id = "note:new",
                 Kind = ItemKind.Command,
                 Title = Tr($"메모로 남기기: {body}", $"Keep as a note: {body}"),
-                Subtitle = Tr("Enter로 저장 · 메모장에 들어가요", "Enter keeps it · it goes into Notes"),
+                Subtitle = Tr("Enter로 메모 저장", "Enter keeps it · it goes into Notes"),
                 Icon = IconSpec.Of(G.Document, true),
                 PrimaryLabel = Tr("저장", "Keep"),
                 Run = () =>
                 {
                     Notes.New(body);
-                    host.Window.ShowToast(Tr("메모에 남겼어요", "Kept as a note"));
+                    host.Window.ShowToast(Tr("메모 저장 완료", "Kept as a note"));
                 },
             });
         }

@@ -164,15 +164,16 @@ internal sealed partial class Launcher : Window, IChatHost
         Grid.SetColumn(hint, 3);
         bar.Children.Add(hint);
         var corner = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
-        // the bar's right end: 도구 붙이기 outside the quick AI (Ctrl+J's menu), 📎 in it, ⚙ 설정 always; 📌 only while the
-        // launcher is pinned (Ctrl+P), a click lets it go
+        // the bar's right end (CornerButtons): 도구 붙이기 outside the quick AI (Ctrl+J's menu), 📎 and 📌 in it, ⚙ 설정
+        // outside it; elsewhere 📌 only while the launcher is pinned (Ctrl+P), a click lets it go
         toolsButton = BarButton(G.NewWindow, Tr("도구 붙이기 (Ctrl+J)", "Attach tools (Ctrl+J)"), OpenTools);
         corner.Children.Add(toolsButton);
-        attachButton = BarButton(G.Attach, Tr("파일 · 사진 첨부 — Ctrl+O, 붙여넣기나 끌어 놓기도 돼요", "Attach files or pictures — Ctrl+O, pasting or dropping works too"), PickFiles);
+        attachButton = BarButton(G.Attach, Tr("파일 · 사진 첨부 — Ctrl+O, 붙여넣기나 끌어 놓기도 됩니다", "Attach files or pictures — Ctrl+O, pasting or dropping works too"), PickFiles);
         attachButton.Visibility = Visibility.Collapsed;
         corner.Children.Add(attachButton);
-        corner.Children.Add(BarButton(G.Settings, Tr("설정 (Ctrl+,)", "Settings (Ctrl+,)"), host.OpenSettings));
-        pinButton = BarButton('', Tr("화면에 고정 (Ctrl+P) — 다른 곳을 눌러도 남아요 · 검색줄이나 아래 바를 끌면 옮겨져요", "Keep on screen (Ctrl+P) — stays when you click elsewhere · drag the search line or the bottom bar to move it"), () => SetPinned(!Pinned));
+        settingsButton = BarButton(G.Settings, Tr("설정 (Ctrl+,)", "Settings (Ctrl+,)"), host.OpenSettings);
+        corner.Children.Add(settingsButton);
+        pinButton = BarButton('', Tr("맨 위에 고정 (Ctrl+P) · 다른 창을 눌러도 맨 위에 유지됩니다. 검색줄이나 아래 바를 끌어서 옮기세요.", "Keep on top (Ctrl+P) — stays above other windows when you click elsewhere · drag the search line or the bottom bar to move it"), () => SetPinned(!Pinned));
         pinButton.Visibility = Visibility.Collapsed;
         corner.Children.Add(pinButton);
         Grid.SetColumn(corner, 4);
@@ -207,6 +208,7 @@ internal sealed partial class Launcher : Window, IChatHost
         Grid.SetColumnSpan(actions, 2);
         body.Children.Add(actions);
         toastText = Theme.T("", 12.5, Theme.P.Text, Theme.Medium, false);
+        toastText.TextWrapping = TextWrapping.Wrap;
         toast = new SmoothBorder
         {
             Child = toastText,
@@ -466,24 +468,20 @@ internal sealed partial class Launcher : Window, IChatHost
         }, DispatcherPriority.Input);
     }
 
-    /// The focus went outside the launcher and its attached tools: a conversation or a pinned launcher stays (behind
-    /// other windows, the Win key brings it forward); otherwise everything hides.
+    /// The focus went outside the launcher and its attached tools: a pinned launcher stays on top, its tools with it;
+    /// otherwise everything hides, a conversation too (the Win key opens it again where it was). A dialog of the
+    /// launcher's own (Ctrl+O, 저장…) keeps it.
     public void GroupLeft()
     {
-        if (Mode == Mode.Chat || Pinned)
-        {
-            Topmost = false;
-            host.Tools.SetTopmost(false);
-            return;
-        }
+        if (Pinned || Win32.GetWindow(Win32.GetForegroundWindow(), 4 /* GW_OWNER */) == Handle) return;
         Dismiss();
     }
 
-    /// 📌: stays on screen when something else takes the focus (Ctrl+P, or by itself while you work in an attached
-    /// tool); Esc still hides it, and hiding lets the pin go.
+    /// 📌: stays on top of other windows when something else takes the focus (Ctrl+P, the bar's button — always shown
+    /// in the AI chat, in place of 설정); Esc still hides it, and hiding lets the pin go.
     public bool Pinned { get; private set; }
 
-    private readonly SmoothBorder pinButton, attachButton, toolsButton;
+    private readonly SmoothBorder pinButton, attachButton, toolsButton, settingsButton;
 
     public void SetPinned(bool on)
     {
@@ -492,7 +490,18 @@ internal sealed partial class Launcher : Window, IChatHost
         g.Text = on ? "" : "";
         g.Foreground = on ? Theme.P.Accent : Theme.P.TextFaint;
         pinButton.Background = on ? Theme.P.AccentSoft : Brushes.Transparent;
-        pinButton.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        CornerButtons();
+    }
+
+    /// The bar's right end for the view: 도구 붙이기 outside the AI chat, 📎 and 📌 in it, ⚙ 설정 outside it; elsewhere
+    /// 📌 shows only while pinned.
+    private void CornerButtons()
+    {
+        bool chatMode = Mode == Mode.Chat;
+        attachButton.Visibility = chatMode ? Visibility.Visible : Visibility.Collapsed;
+        toolsButton.Visibility = !chatMode && Features.On("notes") ? Visibility.Visible : Visibility.Collapsed;
+        settingsButton.Visibility = chatMode ? Visibility.Collapsed : Visibility.Visible;
+        pinButton.Visibility = chatMode || Pinned ? Visibility.Visible : Visibility.Collapsed;
     }
 
     /// The 도구 menu (Ctrl+J, the bar button): each tool opens beside the launcher, or closes; asked again while it is
@@ -622,6 +631,7 @@ internal sealed partial class Launcher : Window, IChatHost
     public void ShowToast(string text)
     {
         toastText.Text = text;
+        toast.MaxWidth = Math.Max(120, ActualWidth - 48);
         toast.Visibility = Visibility.Visible;
         toast.Opacity = 1;
         // without fades it simply goes after the same time

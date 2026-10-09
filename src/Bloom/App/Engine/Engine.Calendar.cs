@@ -41,7 +41,7 @@ internal sealed partial class Engine
                 foreach (var e in g) s.Items.Add(FromTimer(e));
                 sections.Add(s);
             }
-            if (hits.Count == 0) sections.Add(Info("cal:none", Tr("찾은 알림이 없어요", "No reminders found"), null));
+            if (hits.Count == 0) sections.Add(Info("cal:none", Tr("검색된 알림 없음", "No reminders found"), null));
             return sections;
         }
 
@@ -53,8 +53,8 @@ internal sealed partial class Engine
             {
                 Id = "cal:empty",
                 Kind = ItemKind.Info,
-                Title = Tr("이 날은 알림이 없어요", "No reminders on this day"),
-                Subtitle = Tr("검색창에 \"내일 9시 업로드 알림\"처럼 적어 만들어요 · ←→ 날짜 · PgUp/PgDn 달", "Type \"remind me tomorrow 9am to upload\" in the search line · ←→ day · PgUp/PgDn month"),
+                Title = Tr("이 날짜의 알림 없음", "No reminders on this day"),
+                Subtitle = Tr("검색창에 \"내일 9시 업로드 알림\"처럼 입력하세요 · ←→ 날짜 · PgUp/PgDn 달", "Type \"remind me tomorrow 9am to upload\" in the search line · ←→ day · PgUp/PgDn month"),
                 Icon = IconSpec.Of(G.Calendar),
             });
         sections.Add(day1);
@@ -76,9 +76,9 @@ internal sealed partial class Engine
         string date = d.ToString(Tr("M월 d일 dddd", "dddd, MMM d"), Lang.Culture);
         return n switch
         {
-            0 => Tr("오늘 · ", "Today · ") + date,
-            1 => Tr("내일 · ", "Tomorrow · ") + date,
-            2 => Tr("모레 · ", "In 2 days · ") + date,
+            0 => Tr($"오늘 · {date}", $"Today · {date}"),
+            1 => Tr($"내일 · {date}", $"Tomorrow · {date}"),
+            2 => Tr($"모레 · {date}", $"In 2 days · {date}"),
             < 0 => Tr($"{date} · {-n}일 전", $"{date} · {-n} days ago"),
             _ => Tr($"{date} · {n}일 뒤", $"{date} · in {n} days"),
         };

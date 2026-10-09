@@ -31,7 +31,7 @@ internal sealed partial class Launcher
     {
         [Mode.Root] = new()
         {
-            Placeholder = () => Tr("앱, 파일, 계산, 웹 검색 · Tab으로 AI에게", "Apps, files, maths, web search · Tab asks AI"),
+            Placeholder = () => Tr("검색하거나 AI에게 묻기", "Search, or ask AI"),
             Live = true,
         },
         [Mode.Files] = new()
@@ -43,9 +43,9 @@ internal sealed partial class Launcher
         },
         [Mode.Threads] = new()
         {
-            Chip = () => Tr("AI 대화", "AI chats"),
+            Chip = () => Tr("AI 채팅", "AI chats"),
             Placeholder = () => Tr("대화 찾기, 또는 새로 묻기", "Find a chat, or ask something new"),
-            Context = () => Tr("AI 대화", "AI chats"),
+            Context = () => Tr("AI 채팅", "AI chats"),
             Build = Engine.Threads,
             Live = true,
         },
@@ -85,17 +85,17 @@ internal sealed partial class Launcher
         },
         [Mode.Commands] = new()
         {
-            Chip = () => Tr("내 명령", "My commands"),
+            Chip = () => Tr("사용자 명령", "Custom commands"),
             Placeholder = () => Tr("명령 찾기 · 스크립트 · 스니펫 · 묶음", "Find a command · scripts, snippets, chains"),
-            Context = () => Tr($"내 명령 · {UserCommands.Current.Items.Count}개 · 단축어 + 스페이스 + 입력", $"My commands · {UserCommands.Current.Items.Count} · keyword + space + input"),
+            Context = () => Tr($"사용자 명령 · {UserCommands.Current.Items.Count}개 · 단축어 + 스페이스 + 입력", $"Custom commands · {UserCommands.Current.Items.Count} · keyword + space + input"),
             Build = Engine.CommandsView,
             Live = true,
         },
         [Mode.Processes] = new()
         {
-            Chip = () => Tr("프로세스", "Processes"),
+            Chip = () => Tr("앱", "Apps"),
             Placeholder = () => Tr("프로그램 찾기 · Enter 강제 종료 · Ctrl+Enter 창 닫기", "Find a program · Enter quits it · Ctrl+Enter closes its windows"),
-            Context = () => Tr($"프로세스 종료 · 프로그램 {host.Processes.Groups.Count}개", $"Kill process · {host.Processes.Groups.Count} programs"),
+            Context = () => Tr($"앱 종료 · {host.Processes.Groups.Count}개", $"End apps · {host.Processes.Groups.Count}"),
             Build = Engine.ProcessesView,
             KeepScroll = true,
             Live = true,
@@ -198,7 +198,7 @@ internal sealed partial class Launcher
                 ? Tr("결과로 할 일 고르기", "Pick what to do with the result")
                 : Tr("동작 고르기 · 또는 원하는 걸 적고 Enter", "Pick an action · or type your own and Enter"),
             Context = () => host.Quick.Source.Length > 0
-                ? Tr($"AI 빠른 동작 · {(host.Quick.FromSelection ? "선택한 글" : "복사한 글")} {host.Quick.Source.Length}자", $"AI actions · {(host.Quick.FromSelection ? "selected" : "copied")} text, {host.Quick.Source.Length} chars")
+                ? (host.Quick.FromSelection ? Tr($"AI 빠른 동작 · 선택한 글 {host.Quick.Source.Length}자", $"AI actions · selected text, {host.Quick.Source.Length} chars") : Tr($"AI 빠른 동작 · 복사한 글 {host.Quick.Source.Length}자", $"AI actions · copied text, {host.Quick.Source.Length} chars"))
                 : Tr("AI 빠른 동작", "AI actions"),
             Build = Engine.QuickView,
             Split = true,

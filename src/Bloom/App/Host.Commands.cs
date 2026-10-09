@@ -14,7 +14,7 @@ internal sealed partial class Host
     {
         if (Engine.FromFavorite(entry) is not { Run: { } run } item)
         {
-            Notices.Result(false, Tr("단축키 · 오류", "Shortcut · Error"), entry.Title, Tr("찾지 못했어요 — 지워졌거나 옮겨졌을 수 있어요", "Not found — it may have been deleted or moved"));
+            Notices.Result(false, Tr("단축키 · 오류", "Shortcut · Error"), entry.Title, Tr("항목을 찾지 못했습니다. 위치를 확인하거나 단축키를 다시 지정하세요.", "Item not found. Check its location or reassign the shortcut."));
             return;
         }
         try
@@ -128,7 +128,7 @@ internal sealed partial class Host
             case "cmd:shutdown":
                 // asked once more, as the Start menu's power button is two clicks away
                 bool restart = id == "cmd:restart";
-                Window.Confirm(restart ? Tr("PC를 다시 시작할까요?", "Restart the PC?") : Tr("PC를 끌까요?", "Shut down the PC?"), new ActionItem
+                Window.Confirm(restart ? Tr("PC를 다시 시작합니다. 저장하지 않은 내용이 사라질 수 있습니다.", "Restarting the PC may discard unsaved work.") : Tr("PC를 종료합니다. 저장하지 않은 내용이 사라질 수 있습니다.", "Shutting down the PC may discard unsaved work."), new ActionItem
                 {
                     Title = restart ? Tr("다시 시작", "Restart") : Tr("시스템 종료", "Shut down"),
                     Keys = "Enter",
@@ -150,6 +150,6 @@ internal sealed partial class Host
         if (Win32.ExitWindows(restart)) return;
         Log.Write("power: refused");
         Summon();
-        Window.ShowToast(restart ? Tr("다시 시작하지 못했어요", "Couldn't restart") : Tr("시스템을 종료하지 못했어요", "Couldn't shut down"));
+        Window.ShowToast(restart ? Tr("다시 시작 실패 · 작업을 저장하고 Windows 시작 메뉴에서 다시 시작하세요", "Restart failed. Save your work and restart from the Windows Start menu.") : Tr("시스템 종료 실패 · 작업을 저장하고 Windows 시작 메뉴에서 종료하세요", "Shutdown failed. Save your work and shut down from the Windows Start menu."));
     }
 }

@@ -28,7 +28,7 @@ internal static class ChatAttach
         return skipped;
     }
 
-    public static string Skipped(int n) => Tr($"{n}개는 넣지 못했어요 — 폴더 · 50MB 넘는 파일은 빼고, 한 번에 {Chats.MaxFiles}개까지", $"Couldn't add {n} — no folders or files over 50 MB, at most {Chats.MaxFiles} at a time");
+    public static string Skipped(int n) => Tr($"{n}개 첨부 실패 · 50 MB 이하 파일을 한 번에 {Chats.MaxFiles}개까지 선택하세요. 폴더는 첨부할 수 없습니다.", $"Could not attach {n}. Choose up to {Chats.MaxFiles} files of 50 MB or less; folders cannot be attached.");
 
     /// What a Ctrl+V in a conversation attaches: copied files, or a copied picture saved as a PNG first; null when the
     /// clipboard holds text (it pastes as usual) or nothing to attach.

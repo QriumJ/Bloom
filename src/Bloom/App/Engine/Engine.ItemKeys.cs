@@ -29,7 +29,7 @@ internal sealed partial class Engine
                 {
                     ItemKeys.Set(entry, null);
                     host.ApplyHotkeys();
-                    host.Window.ShowToast(Tr($"‘{Clip(entry.Title, 20)}’ 단축키를 지웠어요", $"Removed the shortcut of ‘{Clip(entry.Title, 20)}’"));
+                    host.Window.ShowToast(Tr($"‘{Clip(entry.Title, 20)}’ 단축키 제거 완료", $"Removed the shortcut of ‘{Clip(entry.Title, 20)}’"));
                 },
             });
         return list;
@@ -41,7 +41,7 @@ internal sealed partial class Engine
         f.Fields.Add(new FormField
         {
             Label = Tr("단축키", "Shortcut"),
-            Hint = Tr("쓸 키를 그대로 누르세요 — 예) Ctrl+Alt+M · 어디서든 누르면 바로 실행돼요", "Press the keys — e.g. Ctrl+Alt+M · runs it from anywhere"),
+            Hint = Tr("사용할 키를 누르세요 · 예: Ctrl+Alt+M · 어디서든 실행 가능", "Press the keys — e.g. Ctrl+Alt+M · runs it from anywhere"),
             Value = now is null ? "" : Hotkeys.Label(now),
             Keys = true,
             Check = v =>
@@ -50,8 +50,8 @@ internal sealed partial class Engine
                     return (null, KeysHint);
                 if (host.Shortcuts?.Owner(combo) is { } owner && owner != "item:" + entry.Id)
                     return (null, owner.StartsWith("item:", System.StringComparison.Ordinal)
-                        ? Tr($"‘{ItemKeyTitle(owner)}’에 이미 지정한 단축키예요", $"Already the shortcut of ‘{ItemKeyTitle(owner)}’")
-                        : Tr("Bloom의 다른 단축키가 쓰고 있어요 (설정에서 바꿀 수 있어요)", "One of Bloom's own shortcuts uses it (change it in Settings)"));
+                        ? Tr($"‘{ItemKeyTitle(owner)}’에 지정된 단축키입니다. 다른 조합을 누르세요.", $"Shortcut assigned to ‘{ItemKeyTitle(owner)}’. Press another combination.")
+                        : Tr("Bloom에서 사용 중인 단축키입니다. 다른 조합을 누르세요.", "Bloom uses this shortcut. Press another combination."));
                 return (combo, null);
             },
         });
@@ -62,14 +62,14 @@ internal sealed partial class Engine
             host.ApplyHotkeys();
             host.Window.Go(Mode.Root);
             host.Window.ShowToast(host.Shortcuts?.Status("item:" + entry.Id) == "taken"
-                ? Tr($"{Hotkeys.Label(combo)}는 다른 앱이 쓰고 있어요 — 다른 조합으로 바꿔 주세요", $"Another app uses {Hotkeys.Label(combo)} — pick another combination")
+                ? Tr($"{Hotkeys.Label(combo)}는 다른 앱에서 사용 중입니다. 다른 조합을 누르세요.", $"Another app uses {Hotkeys.Label(combo)} — pick another combination")
                 : Tr($"{Hotkeys.Label(combo)} → ‘{Clip(entry.Title, 20)}’", $"{Hotkeys.Label(combo)} → ‘{Clip(entry.Title, 20)}’"));
         };
         return f;
     }
 
     /// What a shortcut field says when the keys can't be one.
-    public static string KeysHint => Tr("Ctrl · Alt · Shift · Win 중 하나와 함께 눌러 주세요 — F키 · PrintScreen · Pause처럼 글자를 치지 않는 키는 혼자도 돼요", "Press it with Ctrl, Alt, Shift or Win — keys that type nothing (F keys, PrintScreen, Pause) work alone too");
+    public static string KeysHint => Tr("Ctrl, Alt, Shift, Win 중 하나와 함께 누르세요. F키, PrintScreen, Pause는 단독으로 사용할 수 있습니다.", "Press it with Ctrl, Alt, Shift or Win — keys that type nothing (F keys, PrintScreen, Pause) work alone too");
 
     private static string ItemKeyTitle(string name) =>
         Settings.Current.ItemKeys.Find(k => "item:" + k.Item.Id == name) is { } k ? Clip(k.Item.Title, 20) : name;

@@ -42,9 +42,9 @@ internal static class Winget
     /// administrator rights still bring up Windows' own prompt.
     public static async Task<(bool ok, string? said)> Install(WingetPackage p)
     {
-        if (Exe is not { } exe) return (false, Tr("winget이 없어요", "winget is not installed"));
+        if (Exe is not { } exe) return (false, Tr("winget이 없습니다", "winget is not installed"));
         var (code, output) = await Run(exe, InstallArgs(p), CancellationToken.None);
-        if (code == AlreadyInstalled) return (true, Tr("이미 최신 버전이 설치돼 있어요", "The latest version is already installed"));
+        if (code == AlreadyInstalled) return (true, Tr("최신 버전 설치됨", "The latest version is already installed"));
         return (code == 0, UserCommands.LastLine(output) ?? (code == 0 ? null : Tr($"코드 {code}", $"Code {code}")));
     }
 

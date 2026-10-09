@@ -209,7 +209,7 @@ internal sealed class TranslateWindow : Window
     {
         chips.Children.Clear();
         string provider = Settings.Current.TranslateProvider == "chatgpt" ? "chatgpt" : "claude";
-        chips.Children.Add(Chip(provider == "chatgpt" ? "ChatGPT" : "Claude", Tr("Claude ↔ ChatGPT (설정에도 저장돼요)", "Claude ↔ ChatGPT (saved in Settings too)"), () =>
+        chips.Children.Add(Chip(provider == "chatgpt" ? "ChatGPT" : "Claude", Tr("Claude ↔ ChatGPT (설정에도 저장됩니다)", "Claude ↔ ChatGPT (saved in Settings too)"), () =>
         {
             Settings.Current.TranslateProvider = provider == "chatgpt" ? "claude" : "chatgpt";
             Settings.Save();
@@ -229,7 +229,7 @@ internal sealed class TranslateWindow : Window
         var levels = Translator.Levels(provider);
         if (levels.Length > 0 && Translator.Effort(provider) is { } effort)
         {
-            var levelChip = Chip(Tr("생각 ", "Thinking ") + AiModels.EffortName(effort), Tr("생각 수준 (높을수록 느리고 사용량이 많아요 · 설정에도 저장돼요)", "Thinking level (higher is slower and uses more · saved in Settings too)"), () =>
+            var levelChip = Chip(Tr($"생각 {AiModels.EffortName(effort)}", $"Thinking {AiModels.EffortName(effort)}"), Tr("생각 수준 (높을수록 느리고 사용량이 많습니다 · 설정에도 저장됩니다)", "Thinking level (higher is slower and uses more · saved in Settings too)"), () =>
             {
                 Translator.SetEffort(provider, AiModels.Next(levels, effort));
                 Chrome();
@@ -300,7 +300,7 @@ internal sealed class TranslateWindow : Window
         if (cts.IsCancellationRequested) return;
         work.Working = false;
         if (result is not null) output.Text = Hangul.KeepAll(result); // Korean words stay whole when it wraps
-        else if (error is { Length: > 0 }) output.Text = Hangul.KeepAll(Tr("번역하지 못했어요 — ", "Couldn't translate — ") + error);
+        else if (error is { Length: > 0 }) output.Text = Hangul.KeepAll(error);
         Status();
     }
 
@@ -361,7 +361,7 @@ internal sealed class TranslateWindow : Window
     private void Copy()
     {
         Launch.Copy((output.SelectionLength > 0 ? output.SelectedText : output.Text).Replace("\u2060", "")); // without the keep-all joiners
-        Status(Tr("복사했어요", "Copied"));
+        Status(Tr("복사 완료", "Copied"));
     }
 
     private void OnKey(object sender, KeyEventArgs e)

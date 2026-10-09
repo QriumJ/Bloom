@@ -51,7 +51,7 @@ internal sealed partial class Engine
         }
         if (s.Items.Count > 0) sections.Add(s);
         if (sections.Count == 0)
-            sections.Add(new Section(null) { Items = { new ResultItem { Id = "sys:none", Kind = ItemKind.Info, Title = Tr("맞는 항목이 없어요", "Nothing matches"), Icon = IconSpec.Of(G.Info) } } });
+            sections.Add(new Section(null) { Items = { new ResultItem { Id = "sys:none", Kind = ItemKind.Info, Title = Tr("검색 결과 없음", "Nothing matches"), Icon = IconSpec.Of(G.Info) } } });
         return sections;
     }
 
@@ -80,7 +80,7 @@ internal sealed partial class Engine
             Id = "sys:setvolume",
             Kind = ItemKind.Toggle,
             Title = Tr($"볼륨을 {v}%로", $"Set volume to {v}%"),
-            Subtitle = SystemControl.Volume is { } now ? Tr($"지금 {now}%", $"Now {now}%") : Tr("출력 장치가 없어요", "No output device"),
+            Subtitle = SystemControl.Volume is { } now ? Tr($"지금 {now}%", $"Now {now}%") : Tr("출력 장치 없음", "No output device"),
             Icon = IconSpec.Of(''),
             PrimaryLabel = Tr("바꾸기", "Set"),
             Run = () => Done(SystemControl.SetVolume(v), Tr($"볼륨 {v}%", $"Volume {v}%")),
@@ -136,7 +136,7 @@ internal sealed partial class Engine
             case "sys:volume":
                 int? v = SystemControl.Volume;
                 item.Accessory = v is null ? Tr("없음", "None") : $"{v}%";
-                item.Subtitle = Tr("Enter 10% 크게 · Ctrl+K 작게 · \"볼륨 30\"처럼 적어도 돼요", "Enter louder by 10% · Ctrl+K quieter · or type \"volume 30\"");
+                item.Subtitle = Tr("Enter 10% 크게 · Ctrl+K 작게 · \"볼륨 30\"처럼 적어도 됩니다", "Enter louder by 10% · Ctrl+K quieter · or type \"volume 30\"");
                 item.PrimaryLabel = Tr("크게", "Louder");
                 if (v is { } cur)
                 {
@@ -151,7 +151,7 @@ internal sealed partial class Engine
             case "sys:output":
                 var outs = SystemControl.Outputs();
                 var def = outs.Find(o => o.Default);
-                item.Subtitle = def?.Name ?? Tr("출력 장치가 없어요", "No output device");
+                item.Subtitle = def?.Name ?? Tr("출력 장치 없음", "No output device");
                 item.Accessory = Tr($"{outs.Count}개", $"{outs.Count}");
                 item.PrimaryLabel = Tr("바꾸기", "Switch");
                 if (outs.Count > 1)
@@ -172,7 +172,7 @@ internal sealed partial class Engine
             case "sys:wifi":
                 int kind = id == "sys:bluetooth" ? SystemControl.Bluetooth : SystemControl.Wifi;
                 bool? on = id == "sys:bluetooth" ? bluetooth : wifi;
-                item.Subtitle = radiosAt == 0 ? Tr("확인하는 중…", "Checking…") : on is null ? Tr("이 PC에 없어요", "Not on this PC") : null;
+                item.Subtitle = radiosAt == 0 ? Tr("확인하는 중…", "Checking…") : on is null ? Tr("이 PC에서 사용 불가", "Not on this PC") : null;
                 item.Accessory = on is null ? (radiosAt == 0 ? "…" : Tr("없음", "None")) : on.Value ? Tr("켜짐", "On") : Tr("꺼짐", "Off");
                 item.PrimaryLabel = on == true ? Tr("끄기", "Turn off") : Tr("켜기", "Turn on");
                 if (on is { } radioOn)
@@ -203,24 +203,24 @@ internal sealed partial class Engine
                 };
                 break;
             case "sys:display":
-                item.Subtitle = Tr("키나 마우스를 움직이면 다시 켜져요", "A key or the mouse wakes it");
+                item.Subtitle = Tr("키나 마우스를 움직이면 다시 켜집니다", "A key or the mouse wakes it");
                 item.PrimaryLabel = Tr("끄기", "Turn off");
                 item.StayOpen = false;
                 item.Run = SystemControl.DisplayOff;
                 break;
             case "sys:recycle":
                 var (n, bytes) = SystemControl.RecycleBin();
-                item.Subtitle = n == 0 ? Tr("비어 있어요", "It is empty") : Tr($"{n}개 · {Size(bytes)}", $"{n} items · {Size(bytes)}");
-                item.PrimaryLabel = Tr("비우기", "Empty");
+                item.Subtitle = n == 0 ? Tr("비어 있음", "Empty") : Tr($"{n}개 · {Size(bytes)}", $"{n} items · {Size(bytes)}");
+                item.PrimaryLabel = Tr("휴지통 비우기", "Empty recycle bin");
                 if (n > 0)
-                    item.Run = () => host.Window.Confirm(Tr($"휴지통의 {n}개({Size(bytes)})를 영구히 지울까요?", $"Delete the {n} items ({Size(bytes)}) in the recycle bin for good?"), new ActionItem
+                    item.Run = () => host.Window.Confirm(Tr($"휴지통의 {n}개 항목({Size(bytes)})을 영구 삭제합니다.", $"Permanently deletes {n} items ({Size(bytes)}) from the Recycle Bin."), new ActionItem
                     {
                         Title = Tr("휴지통 비우기", "Empty recycle bin"),
                         Keys = "Enter",
                         Glyph = G.Delete,
                         Danger = true,
                         StayOpen = true,
-                        Run = () => Done(SystemControl.EmptyRecycleBin(), Tr("휴지통을 비웠어요", "Recycle bin emptied")),
+                        Run = () => Done(SystemControl.EmptyRecycleBin(), Tr("휴지통 비우기 완료", "Recycle bin emptied")),
                     });
                 break;
         }
@@ -230,7 +230,7 @@ internal sealed partial class Engine
     /// After a switch: a toast, and the rows show the new state.
     private void Done(bool ok, string what)
     {
-        host.Window.ShowToast(ok ? what : Tr("바꾸지 못했어요", "Couldn't change it"));
+        host.Window.ShowToast(ok ? what : Tr("설정을 바꾸지 못했습니다. 다시 시도하세요.", "Could not change the setting. Try again."));
         host.Window.Refresh(true);
     }
 

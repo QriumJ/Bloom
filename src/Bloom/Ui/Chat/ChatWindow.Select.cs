@@ -79,7 +79,7 @@ internal sealed partial class ChatWindow
         {
             deleteArmed = true;
             Running();
-            ShowToast(Tr("한 번 더 누르면 지워요 — 되돌릴 수 없어요", "Click again to delete — this can't be undone"));
+            ShowToast(Tr("한 번 더 누르면 영구 삭제됩니다.", "Click again to delete — this can't be undone"));
             return;
         }
         selecting = deleteArmed = false;
@@ -87,16 +87,19 @@ internal sealed partial class ChatWindow
         foreach (var g in groups) host.Chats.DeleteGroup(g);
         host.DeleteThreads(threads);
         BuildList();
-        ShowToast(Counted(threads.Count, groups.Count, Tr("지웠어요", "deleted")));
+        ShowToast(Counted(threads.Count, groups.Count, deleted: true));
     }
 
-    /// "대화 3개 · 그룹 1개 …".
-    private static string Counted(int threads, int groups, string tail)
+    /// "대화 3개 · 그룹 1개 선택" while picking, "… 삭제 완료" after the delete (whole sentences: the word order differs by language).
+    private static string Counted(int threads, int groups, bool deleted)
     {
-        var parts = new List<string>();
-        if (threads > 0) parts.Add(Tr($"대화 {threads}개", $"{threads} chat{(threads == 1 ? "" : "s")}"));
-        if (groups > 0) parts.Add(Tr($"그룹 {groups}개", $"{groups} group{(groups == 1 ? "" : "s")}"));
-        return parts.Count == 0 ? Tr("고른 게 없어요", "Nothing picked") : string.Join(" · ", parts) + " " + tail;
+        if (threads > 0 && groups > 0)
+            return deleted ? Tr($"대화 {threads}개 · 그룹 {groups}개 삭제 완료", $"Deleted chats: {threads} · groups: {groups}") : Tr($"대화 {threads}개 · 그룹 {groups}개 선택", $"Selected chats: {threads} · groups: {groups}");
+        if (threads > 0)
+            return deleted ? Tr($"대화 {threads}개 삭제 완료", $"Deleted chats: {threads}") : Tr($"대화 {threads}개 선택", $"Selected chats: {threads}");
+        if (groups > 0)
+            return deleted ? Tr($"그룹 {groups}개 삭제 완료", $"Deleted groups: {groups}") : Tr($"그룹 {groups}개 선택", $"Selected groups: {groups}");
+        return Tr("선택된 항목 없음", "Nothing picked");
     }
 
     /// The tick box before a line while picking.
@@ -125,7 +128,7 @@ internal sealed partial class ChatWindow
     {
         int threads = host.Chats.Threads.Count(t => picked.Contains(t.Id)), groups = host.Chats.Groups.Count(g => picked.Contains(GroupKey(g)));
         var g = new StackPanel { Margin = new Thickness(22, 10, 12, 12) };
-        var count = Theme.T(Counted(threads, groups, Tr("선택", "picked")), 12, Theme.P.TextDim, Theme.Medium);
+        var count = Theme.T(Counted(threads, groups, deleted: false), 12, Theme.P.TextDim, Theme.Medium);
         count.TextTrimming = TextTrimming.CharacterEllipsis;
         count.Margin = new Thickness(0, 0, 0, 8);
         g.Children.Add(count);

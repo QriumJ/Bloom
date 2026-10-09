@@ -226,7 +226,7 @@ internal sealed partial class Launcher
         var (value, error) = field.Check?.Invoke(box.Text) ?? (box.Text.Trim(), null);
         if (error is not null || value is null)
         {
-            f.Error = error ?? Tr("다시 넣어 주세요", "Please try again");
+            f.Error = error ?? Tr("다시 시도하세요", "Try again");
             Refresh(false);
             return;
         }

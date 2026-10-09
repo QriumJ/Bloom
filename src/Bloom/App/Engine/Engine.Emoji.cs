@@ -18,7 +18,7 @@ internal sealed partial class Engine
             var s = new Section(Tr("결과", "Results"), Tr($"{found.Count}개", $"{found.Count}"));
             foreach (var e in found) s.Items.Add(FromSymbol(e));
             if (s.Items.Count == 0)
-                s.Items.Add(new ResultItem { Id = "sym:none", Kind = ItemKind.Info, Title = Tr("찾은 이모지 · 기호가 없어요", "No emoji or symbol found"), Subtitle = Tr("다른 말로, 또는 영어로 찾아보세요 (heart, arrow)", "Try other words (heart, arrow, smile)"), Icon = IconSpec.Of(G.Info) });
+                s.Items.Add(new ResultItem { Id = "sym:none", Kind = ItemKind.Info, Title = Tr("검색된 이모지·기호 없음", "No emoji or symbol found"), Subtitle = Tr("다른 말로, 또는 영어로 찾아보세요 (heart, arrow)", "Try other words (heart, arrow, smile)"), Icon = IconSpec.Of(G.Info) });
             sections.Add(s);
             return sections;
         }

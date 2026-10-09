@@ -47,7 +47,7 @@ internal sealed class CalcTool : ITool
         clearButton = ToolUi.Button(G.Delete, Tr("기록 지우기", "Clear the history"), () =>
         {
             lines.Clear();
-            detail.Text = Tr("기록을 지웠어요", "History cleared");
+            detail.Text = Tr("기록 삭제 완료", "History cleared");
             Fill();
         });
         input.TextChanged += (_, _) => Show();
@@ -64,7 +64,7 @@ internal sealed class CalcTool : ITool
     {
         var a = Calculator.Evaluate(input.Text);
         answer.Text = a?.Value ?? "";
-        detail.Text = a?.Detail ?? (input.Text.Trim().Length > 0 && a is null ? Tr("식을 계속 적어 주세요", "Keep typing the sum") : "");
+        detail.Text = a?.Detail ?? (input.Text.Trim().Length > 0 && a is null ? Tr("식을 계속 입력하세요", "Keep typing the sum") : "");
     }
 
     private void Keep()
@@ -74,7 +74,7 @@ internal sealed class CalcTool : ITool
         Launch.Copy(copy);
         lines.Insert(0, (a.Expr, a.Value, copy));
         if (lines.Count > 30) lines.RemoveAt(lines.Count - 1);
-        detail.Text = Tr("복사했어요", "Copied");
+        detail.Text = Tr("복사 완료", "Copied");
         input.SelectAll();
         Fill();
     }
@@ -85,7 +85,7 @@ internal sealed class CalcTool : ITool
         clearButton.Visibility = lines.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (lines.Count == 0)
         {
-            history.Children.Add(ToolUi.Empty(Tr("Enter로 답을 복사하고 여기에 남겨요", "Enter copies the answer and keeps it here")));
+            history.Children.Add(ToolUi.Empty(Tr("Enter로 결과 복사 및 기록 저장", "Enter copies the result and saves it in history")));
             return;
         }
         foreach (var (expr, value, copy) in lines)
@@ -98,7 +98,7 @@ internal sealed class CalcTool : ITool
             var row = ToolUi.Row(g, () =>
             {
                 Launch.Copy(copy);
-                detail.Text = Tr($"복사했어요 · {value}", $"Copied · {value}");
+                detail.Text = Tr($"복사 완료 · {value}", $"Copied · {value}");
             });
             row.ToolTip = Tr("눌러서 복사", "Click to copy");
             history.Children.Add(row);

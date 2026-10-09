@@ -52,7 +52,7 @@ internal sealed class Detail
         string name = Path.GetFileName(path.TrimEnd('\\'));
         d.Add(Tr("이름", "Name"), name.Length > 0 ? name : path);
         d.Add(Tr("위치", "Location"), Path.GetDirectoryName(path.TrimEnd('\\')) is { } dir ? Bloom.App.Engine.Short(dir) : null);
-        d.Add(Tr("종류", "Kind"), folder ? Tr("폴더", "Folder") : ext.Length > 1 ? ext[1..].ToUpperInvariant() + Tr(" 파일", " file") : Tr("파일", "File"));
+        d.Add(Tr("종류", "Kind"), folder ? Tr("폴더", "Folder") : ext.Length > 1 ? Tr($"{ext[1..].ToUpperInvariant()} 파일", $"{ext[1..].ToUpperInvariant()} file") : Tr("파일", "File"));
         try
         {
             if (folder)

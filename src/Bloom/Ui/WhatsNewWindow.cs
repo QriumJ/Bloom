@@ -25,8 +25,8 @@ internal sealed class WhatsNewWindow : Window
         Icon = Shots.AppIcon();
 
         var stack = new StackPanel { Margin = new Thickness(32, 26, 32, 20) };
-        stack.Children.Add(Theme.T(Tr($"Bloom {version}로 업데이트했어요", $"Bloom is now {version}"), 20, Theme.P.Text, Theme.Semi));
-        var sub = Theme.T(Tr("이번 버전에서 바뀐 점이에요", "Here's what changed"), 13, Theme.P.TextFaint);
+        stack.Children.Add(Theme.T(Tr($"Bloom {version} 업데이트 완료", $"Bloom {version} update complete"), 20, Theme.P.Text, Theme.Semi));
+        var sub = Theme.T(Tr("이번 버전의 변경 사항", "Changes in this version"), 13, Theme.P.TextFaint);
         sub.Margin = new Thickness(0, 6, 0, 16);
         stack.Children.Add(sub);
         var body = Markdown.Render(notes, link => Launch.Open(link));

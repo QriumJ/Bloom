@@ -21,6 +21,13 @@ internal static class SettingsTransfer
 
     private const string Manifest = "bloom-settings.json";
 
+    private static InvalidDataException Invalid(string text)
+    {
+        var error = new InvalidDataException(text);
+        error.Data["BloomCopy"] = text;
+        return error;
+    }
+
     public static string SuggestedName() => Tr($"Bloom 설정 {DateTime.Now:yyyy-MM-dd}.zip", $"Bloom settings {DateTime.Now:yyyy-MM-dd}.zip");
 
     /// Writes the current settings (flush them first) into `path`; returns how many files went in.
@@ -50,22 +57,22 @@ internal static class SettingsTransfer
     public static List<string> Import(string path)
     {
         using var zip = ZipFile.OpenRead(path);
-        if (zip.GetEntry(Manifest) is not { } m) throw new InvalidDataException(Tr("Bloom 설정 파일이 아니에요", "Not a Bloom settings file"));
+        if (zip.GetEntry(Manifest) is not { } m) throw Invalid(Tr("Bloom 설정 파일이 아닙니다. Bloom에서 내보낸 파일을 선택하세요.", "Not a Bloom settings file. Choose a file exported from Bloom."));
         using (var r = new StreamReader(m.Open()))
-            if (JsonNode.Parse(r.ReadToEnd())?["app"]?.GetValue<string>() != "Bloom") throw new InvalidDataException(Tr("Bloom 설정 파일이 아니에요", "Not a Bloom settings file"));
+            if (JsonNode.Parse(r.ReadToEnd())?["app"]?.GetValue<string>() != "Bloom") throw Invalid(Tr("Bloom 설정 파일이 아닙니다. Bloom에서 내보낸 파일을 선택하세요.", "Not a Bloom settings file. Choose a file exported from Bloom."));
 
         // read and check everything before anything on disk changes
         var incoming = new Dictionary<string, string>();
         foreach (string f in Files)
         {
             if (zip.GetEntry(f) is not { } e) continue;
-            if (e.Length > 8 * 1024 * 1024) throw new InvalidDataException(Tr($"{f}이(가) 너무 커요", $"{f} is too large"));
+            if (e.Length > 8 * 1024 * 1024) throw Invalid(Tr("설정 파일이 너무 큽니다. 더 작은 Bloom 설정 파일을 선택하세요.", "Settings file too large. Choose a smaller Bloom settings file."));
             using var r = new StreamReader(e.Open());
             string text = r.ReadToEnd();
-            if (JsonNode.Parse(text) is not JsonObject) throw new InvalidDataException(Tr($"{f}을(를) 읽지 못했어요", $"Couldn't read {f}"));
+            if (JsonNode.Parse(text) is not JsonObject) throw Invalid(Tr("설정 파일 형식이 잘못되었습니다. Bloom에서 내보낸 파일을 선택하세요.", "Invalid settings format. Choose a file exported from Bloom."));
             incoming[f] = text;
         }
-        if (incoming.Count == 0) throw new InvalidDataException(Tr("불러올 설정이 들어 있지 않아요", "There are no settings in it to import"));
+        if (incoming.Count == 0) throw Invalid(Tr("설정이 없는 파일입니다. Bloom에서 내보낸 파일을 선택하세요.", "No settings in this file. Choose a file exported from Bloom."));
         if (incoming.TryGetValue("settings.json", out string? settings)) incoming["settings.json"] = KeepLocal(settings);
 
         string backup = Paths.In(Path.Combine("backups", DateTime.Now.ToString("yyyyMMdd-HHmmss")));

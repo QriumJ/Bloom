@@ -78,7 +78,7 @@ internal sealed partial class Engine
             {
                 Id = "ev:start",
                 Kind = ItemKind.Info,
-                Title = Tr("Everything이 꺼져 있어요", "Everything is not running"),
+                Title = Tr("Everything 실행 안 됨", "Everything is not running"),
                 Subtitle = Tr("Enter로 Everything 실행", "Enter starts Everything"),
                 Icon = IconSpec.Of(G.Info),
                 PrimaryLabel = Tr("실행", "Run"),
@@ -100,7 +100,7 @@ internal sealed partial class Engine
         if (list is not null)
             foreach (var f in list) sec.Items.Add(FromFile(f, true));
         if (sec.Items.Count == 0)
-            sec.Items.Add(new ResultItem { Id = "ev:none", Kind = ItemKind.Info, Title = Tr("찾은 항목이 없어요", "Nothing found"), Subtitle = Tr("Everything 문법도 됩니다: ext:pdf, size:>10mb, dm:today", "Everything's syntax works too: ext:pdf, size:>10mb, dm:today"), Icon = IconSpec.Of(G.Info) });
+            sec.Items.Add(new ResultItem { Id = "ev:none", Kind = ItemKind.Info, Title = Tr("검색 결과 없음", "Nothing found"), Subtitle = Tr("Everything 문법도 됩니다: ext:pdf, size:>10mb, dm:today", "Everything's syntax works too: ext:pdf, size:>10mb, dm:today"), Icon = IconSpec.Of(G.Info) });
         sections.Add(sec);
         return sections;
     }
@@ -109,7 +109,7 @@ internal sealed partial class Engine
     {
         var sections = new List<Section>();
         var q = new Query(text);
-        var s = new Section(Tr("AI 대화", "AI chats"), Tr($"{host.Chats.Threads.Count}개", $"{host.Chats.Threads.Count}"));
+        var s = new Section(Tr("AI 채팅", "AI chats"), Tr($"{host.Chats.Threads.Count}개", $"{host.Chats.Threads.Count}"));
         var top = new Section(null);
         top.Items.Add(new ResultItem
         {

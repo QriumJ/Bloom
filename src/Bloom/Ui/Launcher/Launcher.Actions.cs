@@ -67,7 +67,7 @@ internal sealed partial class Launcher
             if (Home.ForCommand(item.Id) is { } widget)
             {
                 bool on = Home.IsOn(widget);
-                list.Add(new ActionItem { Title = on ? Tr($"홈에서 빼기 ({Home.Name(widget)})", $"Remove from home ({Home.Name(widget)})") : Tr($"홈에 고정 ({Home.Name(widget)})", $"Pin to home ({Home.Name(widget)})"), Glyph = on ? G.Unstar : G.Star, StayOpen = true, Run = () => { Home.Set(widget, !on); ShowToast(on ? Tr($"홈에서 ‘{Home.Name(widget)}’을 뺐어요", $"Removed ‘{Home.Name(widget)}’ from home") : Tr($"홈에 ‘{Home.Name(widget)}’을 고정했어요", $"Pinned ‘{Home.Name(widget)}’ to home")); Refresh(true); } });
+                list.Add(new ActionItem { Title = on ? Tr($"홈에서 빼기 ({Home.Name(widget)})", $"Remove from home ({Home.Name(widget)})") : Tr($"홈에 고정 ({Home.Name(widget)})", $"Pin to home ({Home.Name(widget)})"), Glyph = on ? G.Unstar : G.Star, StayOpen = true, Run = () => { Home.Set(widget, !on); ShowToast(on ? Tr($"홈에서 ‘{Home.Name(widget)}’ 제거 완료", $"Removed ‘{Home.Name(widget)}’ from home") : Tr($"홈에 ‘{Home.Name(widget)}’ 고정 완료", $"Pinned ‘{Home.Name(widget)}’ to home")); Refresh(true); } });
             }
             if (Usage.Current.Items.ContainsKey(item.Id) && Mode == Mode.Root && box.Text.Length == 0 && !fav)
                 list.Add(new ActionItem { Title = Tr("최근 사용에서 지우기", "Remove from recent"), Glyph = G.Delete, StayOpen = true, Run = () => { Usage.Forget(item.Id); Refresh(false); } });
@@ -113,16 +113,16 @@ internal sealed partial class Launcher
     /// AI draws a favorite's icon (one Claude call); the toast says when it starts and how it ended.
     public async void DrawIcon(string id, string name, string? idea)
     {
-        ShowToast(Tr($"AI가 ‘{ClipText(name, 14)}’ 아이콘을 그리는 중… (사용량 1회)", $"AI is drawing an icon for ‘{ClipText(name, 14)}’… (1 use)"));
+        ShowToast(Tr($"‘{ClipText(name, 14)}’ 아이콘 생성 중… (사용량 1회)", $"Creating icon for ‘{ClipText(name, 14)}’… (1 use)"));
         var (icon, error) = await Ai.IconMaker.Draw(name, idea, System.Threading.CancellationToken.None);
         if (icon is null)
         {
-            ShowToast(error ?? Tr("그리지 못했어요", "Couldn't draw it"));
+            ShowToast(error ?? Tr("아이콘 생성 실패 · 다시 시도하세요", "Icon creation failed. Try again."));
             return;
         }
         Favorites.SetMono(id, icon);
         if (IsVisible && Mode == Mode.Root) Refresh(true);
-        ShowToast(Tr($"‘{ClipText(name, 14)}’ 아이콘을 바꿨어요 · 마음에 안 들면 Ctrl+K → 다시 그리기", $"Changed the icon of ‘{ClipText(name, 14)}’ · not happy? Ctrl+K → draw again"));
+        ShowToast(Tr($"‘{ClipText(name, 14)}’ 아이콘 변경 완료 · Ctrl+K로 다시 그리기", $"Icon changed for ‘{ClipText(name, 14)}’ · Ctrl+K to draw again"));
     }
 
     /// ▲ ▼ 숨기기 on a home block (top right, over its header): order and hide right on the home.
@@ -158,10 +158,10 @@ internal sealed partial class Launcher
             Home.MoveShown(key, 1);
             Refresh(true);
         });
-        Tool(G.Close, Tr("홈에서 숨기기 (설정 > 홈 화면에서 다시 켜요)", "Hide from home (turn it back on in Settings > Home)"), true, () =>
+        Tool(G.Close, Tr("홈에서 숨기기", "Hide from home"), true, () =>
         {
             Home.Set(key, false);
-            ShowToast(Tr($"‘{Home.Name(key)}’을 숨겼어요 · 설정 > 홈 화면에서 다시 켜요", $"Hid ‘{Home.Name(key)}’ · turn it back on in Settings > Home"));
+            ShowToast(Tr($"‘{Home.Name(key)}’ 숨김 · 홈 편집에서 다시 표시", $"‘{Home.Name(key)}’ hidden · restore in Edit home"));
             Refresh(true);
         });
         return new SmoothBorder
@@ -192,12 +192,12 @@ internal sealed partial class Launcher
             Run = () =>
             {
                 Favorites.AddToGroup(g.Id, entry);
-                ShowToast(Tr($"‘{g.Title}’ 폴더에 넣었어요", $"Added to ‘{g.Title}’"));
+                ShowToast(Tr($"‘{g.Title}’에 추가 완료", $"Added to ‘{g.Title}’"));
                 Refresh(true);
             },
         }).ToList();
         list.Add(new ActionItem { Title = Tr("새 폴더 만들기…", "New folder…"), Glyph = G.Add, StayOpen = true, Run = () => StartForm(Engine.GroupForm(null, entry)) });
-        actions.Open(Tr("즐겨찾기 폴더에 넣기 · ", "Add to a favorites folder · ") + ClipText(item.Title, 20), list);
+        actions.Open(Tr($"즐겨찾기 폴더에 넣기 · {ClipText(item.Title, 20)}", $"Add to a favorites folder · {ClipText(item.Title, 20)}"), list);
     }
 
     private void ToggleFavorite(ResultItem item)
@@ -206,12 +206,12 @@ internal sealed partial class Launcher
         if (Favorites.Has(item.Id))
         {
             Favorites.Remove(item.Id);
-            ShowToast(Tr("즐겨찾기에서 뺐어요", "Removed from favorites"));
+            ShowToast(Tr("즐겨찾기에서 제거 완료", "Removed from favorites"));
         }
         else
         {
             Favorites.Add(e);
-            ShowToast(Tr("즐겨찾기에 추가했어요", "Added to favorites"));
+            ShowToast(Tr("즐겨찾기 추가 완료", "Added to favorites"));
         }
         Refresh(true);
     }
@@ -237,6 +237,12 @@ internal sealed partial class Launcher
         var list = ActionsFor(item);
         if (list.Count == 0) return;
         actions.Open(item.Title, list, 0, SelectedBox());
+    }
+
+    public void OpenActions(ResultItem item)
+    {
+        var list = ActionsFor(item);
+        if (list.Count > 0) actions.Open(item.Title, list);
     }
 
     /// The selected row's box in the body (the 더보기 menu opens on it); null when it isn't a list row.

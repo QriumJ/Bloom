@@ -30,7 +30,7 @@ internal sealed partial class Host
             if (await Ocr.ColorPick.Pick() is not { } c) return;
             if (Settings.Current.ColorCopy) Launch.Copy(ColorBook.Hex(c));
             ShowColor(c);
-            if (Settings.Current.ColorCopy) Window.ShowToast(Tr($"{ColorBook.Hex(c)} 복사했어요", $"Copied {ColorBook.Hex(c)}"));
+            if (Settings.Current.ColorCopy) Window.ShowToast(Tr($"{ColorBook.Hex(c)} 복사 완료", $"Copied {ColorBook.Hex(c)}"));
         }
         catch (Exception e)
         {

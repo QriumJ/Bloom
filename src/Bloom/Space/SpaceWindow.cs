@@ -179,8 +179,10 @@ internal sealed class SpaceWindow : Window
         bool running = scan.Running;
         double secs = ((scan.Finished ?? DateTime.UtcNow) - scan.Started).TotalSeconds;
         long size = Volatile.Read(ref scan.Root.Size);
-        scanText.Text = (running ? Tr("읽는 중 · ", "Scanning · ") : Tr("다 읽었어요 · ", "Done · ")) + Tr($"{TreemapView.Size(size)} · 폴더 {scan.Folders:#,0}개 · {secs:0.0}초", $"{TreemapView.Size(size)} · {scan.Folders:#,0} folders · {secs:0.0} s")
-            + (scan.DeniedFolders > 0 ? Tr($" · 못 읽은 폴더 {scan.DeniedFolders:#,0}개", $" · {scan.DeniedFolders:#,0} folders unreadable") : "");
+        string status = running ? Tr("읽는 중", "Scanning") : Tr("읽기 완료", "Scan complete");
+        scanText.Text = scan.DeniedFolders > 0
+            ? Tr($"{status} · {TreemapView.Size(size)} · 폴더 {scan.Folders:#,0}개 · {secs:0.0}초 · 읽기 실패 폴더 {scan.DeniedFolders:#,0}개", $"{status} · {TreemapView.Size(size)} · {scan.Folders:#,0} folders · {secs:0.0} s · {scan.DeniedFolders:#,0} folders unreadable")
+            : Tr($"{status} · {TreemapView.Size(size)} · 폴더 {scan.Folders:#,0}개 · {secs:0.0}초", $"{status} · {TreemapView.Size(size)} · {scan.Folders:#,0} folders · {secs:0.0} s");
         map.Redraw();
         if (DateTime.UtcNow - bigAt > TimeSpan.FromSeconds(running ? 2 : 0) || !running) Big();
         if (!running) tick.Stop();
@@ -380,7 +382,7 @@ internal sealed class SpaceWindow : Window
     {
         long size = Volatile.Read(ref n.Size);
         string what = n.IsDir ? Tr($"‘{n.Name}’ 폴더 (파일 {n.FileCount:#,0}개, {TreemapView.Size(size)})", $"The folder ‘{n.Name}’ ({n.FileCount:#,0} files, {TreemapView.Size(size)})") : $"‘{n.Name}’ ({TreemapView.Size(size)})";
-        Ask(what + Tr(" — 휴지통으로 보낼까요?", " — move to the recycle bin?"), Tr("휴지통에서 되돌릴 수 있어요. 휴지통에 안 들어갈 만큼 크면 Windows가 한 번 더 물어봐요.", "You can bring it back from the recycle bin. If it is too big for the bin, Windows asks once more."), Tr("휴지통으로", "Move to bin"), () => Delete(n, size));
+        Ask(Tr($"{what} — 휴지통 이동", $"{what} — move to the Recycle Bin"), Tr("휴지통에서 복원할 수 있습니다. 크기가 너무 커서 휴지통에 넣을 수 없으면 Windows 확인 창이 표시됩니다.", "Items can be restored from the Recycle Bin. Windows shows another confirmation if they are too large for it."), Tr("휴지통으로", "Move to bin"), () => Delete(n, size));
     }
 
     /// A question over the window (Enter = yes, Esc = no), in the window's own look.
@@ -430,7 +432,7 @@ internal sealed class SpaceWindow : Window
     {
         if (!Recycle(n.Path))
         {
-            hoverText.Text = Tr("휴지통으로 보내지 못했어요 (사용 중이거나 권한이 없어요)", "Couldn't move it to the recycle bin (in use, or no permission)");
+            hoverText.Text = Tr("휴지통 이동 실패 · 파일을 사용하는 앱을 닫고 권한을 확인한 뒤 다시 시도하세요", "Could not move to the Recycle Bin. Close apps using the file, check permissions and retry.");
             return;
         }
         // the map forgets it at once
@@ -442,7 +444,7 @@ internal sealed class SpaceWindow : Window
             map.Redraw();
             Big();
         }
-        hoverText.Text = Tr($"휴지통으로 보냈어요: {n.Path}", $"Moved to the recycle bin: {n.Path}");
+        hoverText.Text = Tr($"휴지통 이동 완료: {n.Path}", $"Moved to the recycle bin: {n.Path}");
         Drives();
     }
 

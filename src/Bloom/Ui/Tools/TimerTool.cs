@@ -102,12 +102,12 @@ internal sealed class TimerTool : ITool
             var end = DateTime.Now + length;
             Timers.Add("timer", text.Length > 0 ? text : Tr($"{Timers.DurationText(length)} 타이머", $"{Timers.DurationText(length)} timer"), end);
             input.Clear();
-            Say(Tr($"시작했어요 · {Timers.WhenText(end)}에 끝나요", $"Started · ends {Timers.WhenText(end)}"));
+            Say(Tr($"타이머 시작 · {Timers.WhenText(end)} 종료", $"Started · ends {Timers.WhenText(end)}"));
             return;
         }
         if (text.Length == 0)
         {
-            Say(Tr("시간을 맞추거나 ‘10분’, ‘오후 3시 회의’처럼 적어 주세요", "Set a time, or write ‘10 min’ or ‘3pm meeting’"));
+            Say(Tr("시간을 맞추거나 ‘10분’, ‘오후 3시 회의’처럼 입력하세요", "Set a time, or write ‘10 min’ or ‘3pm meeting’"));
             return;
         }
         // "10" alone reads as minutes here: this line only ever starts timers
@@ -115,13 +115,13 @@ internal sealed class TimerTool : ITool
         // this line only starts timers and reminders, so a time needs no 타이머 / 알림 word ("10분 회의", "오후 3시 회의")
         if (TimeParse.Read(text, timerField: true) is not { } ask)
         {
-            Say(Tr("시간을 못 읽었어요 — 위에서 맞추거나 ‘10분’, ‘오후 3시 회의’처럼 적어 주세요", "Couldn't read a time — set it above, or write ‘10 min’ or ‘3pm meeting’"));
+            Say(Tr("시간 인식 실패 · 위에서 시간을 맞추거나 ‘10분’, ‘오후 3시 회의’처럼 입력하세요", "Time not recognized. Set it above or enter ‘10 min’ or ‘3pm meeting’."));
             return;
         }
         var due = ask.Length is { } l ? DateTime.Now + l : ask.Due;
         Timers.Add(ask.Kind, ask.Label, due);
         input.Clear();
-        Say(ask.Kind == "timer" ? Tr($"시작했어요 · {Timers.WhenText(due)}에 끝나요", $"Started · ends {Timers.WhenText(due)}") : Tr($"{Timers.WhenText(due)}에 알려 드릴게요", $"I'll remind you {Timers.WhenText(due)}"));
+        Say(ask.Kind == "timer" ? Tr($"타이머 시작 · {Timers.WhenText(due)} 종료", $"Started · ends {Timers.WhenText(due)}") : Tr($"{Timers.WhenText(due)} 알림 설정됨", $"Reminder set for {Timers.WhenText(due)}"));
     }
 
     /// One unit of the length in its own column: a number with its name after it ("10분") that ▲ ▼, the wheel and the
@@ -246,7 +246,7 @@ internal sealed class TimerTool : ITool
         var waiting = Timers.Waiting.ToList();
         if (waiting.Count == 0)
         {
-            list.Children.Add(ToolUi.Empty(Tr("진행 중인 타이머 · 알림이 없어요", "No timers or reminders running")));
+            list.Children.Add(ToolUi.Empty(Tr("진행 중인 타이머·알림 없음", "No timers or reminders running")));
             return;
         }
         foreach (var t in waiting)

@@ -24,8 +24,8 @@ internal sealed partial class Engine
             {
                 Id = "clip:off",
                 Kind = ItemKind.Info,
-                Title = Tr("클립보드 기록이 꺼져 있어요", "Clipboard history is off"),
-                Subtitle = Tr("Enter로 켜기 · 켠 뒤에 복사한 것부터 모여요", "Enter turns it on · it keeps what you copy from then on"),
+                Title = Tr("클립보드 기록 꺼짐", "Clipboard history is off"),
+                Subtitle = Tr("Enter로 켜기 · 켠 뒤에 복사한 것부터 저장됩니다", "Enter turns it on · it keeps what you copy from then on"),
                 Icon = IconSpec.Of(G.Paste),
                 PrimaryLabel = Tr("켜기", "Turn on"),
                 StayOpen = true,
@@ -65,8 +65,8 @@ internal sealed partial class Engine
             {
                 Id = "clip:none",
                 Kind = ItemKind.Info,
-                Title = text.Trim().Length > 0 ? Tr("찾은 항목이 없어요", "Nothing found") : Tr("아직 복사한 게 없어요", "Nothing copied yet"),
-                Subtitle = Tr("텍스트 · 이미지 · 파일을 복사하면 여기에 모여요 (비밀번호 관리자가 숨긴 것은 빼요)", "Text, images and files you copy gather here (not what password managers hide)"),
+                Title = text.Trim().Length > 0 ? Tr("검색 결과 없음", "Nothing found") : Tr("클립보드 기록 없음", "Nothing copied yet"),
+                Subtitle = Tr("복사한 텍스트·이미지·파일 기록 · 비밀번호 관리자가 숨긴 내용 제외", "Text, images and files you copy gather here (not what password managers hide)"),
                 Icon = IconSpec.Of(G.Info),
             });
             sections.Add(s);
@@ -145,7 +145,7 @@ internal sealed partial class Engine
                 Glyph = G.Delete,
                 Danger = true,
                 StayOpen = true,
-                Run = () => host.Window.Confirm(Tr("고정하지 않은 클립보드 기록을 모두 지울까요?", "Delete all clipboard entries that aren't pinned?"), new ActionItem
+                Run = () => host.Window.Confirm(Tr("고정되지 않은 클립보드 기록을 모두 삭제합니다.", "Deletes all unpinned clipboard entries."), new ActionItem
                 {
                     Title = Tr("모두 지우기", "Delete all"),
                     Keys = "Enter",
@@ -156,7 +156,7 @@ internal sealed partial class Engine
                     {
                         int n = clip.Clear();
                         host.Window.Refresh(false);
-                        host.Window.ShowToast(Tr($"{n}개를 지웠어요", $"Deleted {n}"));
+                        host.Window.ShowToast(Tr($"{n}개 삭제 완료", $"Deleted {n}"));
                     },
                 }),
             });

@@ -158,10 +158,10 @@ internal sealed class PinWindow : Window
         var r = await WinOcr.Recognize(px, w, h, host.OcrLanguage());
         if (r is null || r.Text.Trim().Length == 0)
         {
-            Notices.Result(false, "Bloom Lens", Tr("글자를 찾지 못했어요", "No text found"), null);
+            Notices.Result(false, "Bloom Lens", Tr("인식된 글자 없음", "No text found"), null);
             return;
         }
         Launch.Copy(r.Text);
-        Notices.Result(true, "Bloom Lens", Tr($"{r.Lines.Count}줄을 읽어서 복사했어요", $"Read and copied {r.Lines.Count} lines"), null);
+        Notices.Result(true, "Bloom Lens", Tr($"{r.Lines.Count}줄 인식·복사 완료", $"Read and copied {r.Lines.Count} lines"), null);
     }
 }
