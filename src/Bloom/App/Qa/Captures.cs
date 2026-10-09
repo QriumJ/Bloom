@@ -223,8 +223,16 @@ internal static partial class Captures
         if (effort is not null) t.Effort = effort;
         var started = DateTime.UtcNow;
         int turn = 0;
+        // BLOOM_QA_RESTART=<seconds>: between asks the CLI is closed and that long waited (an idle close), so the next ask
+        // resumes the session in a new CLI — its log line shows whether the prompt cache was read or written again
+        int restart = int.TryParse(Environment.GetEnvironmentVariable("BLOOM_QA_RESTART"), out int wait) ? wait : -1;
         foreach (string q in asks ?? new[] { "1+1은? 숫자만", "방금 답에 10을 곱하면? 숫자만" })
         {
+            if (turn > 0 && restart >= 0)
+            {
+                host.Chats.EndSession(t);
+                await Task.Delay(TimeSpan.FromSeconds(restart));
+            }
             t.Model = models[Math.Min(turn++, models.Length - 1)];
             var sent = DateTime.UtcNow;
             host.Chats.Send(t, q);
