@@ -29,8 +29,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="Fonts\*.ttf" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Fonts\*.txt" CopyToOutputDirectory="PreserveNewest" />
     <!-- the emoji / symbol search (tools\make_symbols.py) -->
     <EmbeddedResource Include="Assets\symbols.tsv" LogicalName="Bloom.Assets.symbols.tsv" />
     <EmbeddedResource Include="..\..\CHANGELOG.md" LogicalName="Bloom.CHANGELOG.md" />

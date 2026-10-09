@@ -39,7 +39,7 @@ internal sealed class NoticeWindow : Window
         AllowsTransparency = true;
         Background = Brushes.Transparent;
         UseLayoutRounding = true;
-        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Ideal);
+        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
         Content = new Border { Child = stack, LayoutTransform = scale };
         SourceInitialized += (_, _) =>
         {

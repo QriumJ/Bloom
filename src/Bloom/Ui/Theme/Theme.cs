@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -10,8 +9,9 @@ namespace Bloom.Ui;
 internal static class Theme
 {
     public static readonly Palette P = new();
-    public static readonly FontFamily Sans = MakeFont("./#Bloom Sans, Segoe UI Emoji, Segoe UI Symbol, Malgun Gothic");
-    public static readonly FontFamily Mono = MakeFont("Cascadia Mono, Consolas, ./#Bloom Sans, Malgun Gothic");
+    /// Windows' own UI fonts: hinted, so with TextFormattingMode.Display (every window) small text stays sharp on 100% screens.
+    public static readonly FontFamily Sans = new("Segoe UI, Segoe UI Emoji, Segoe UI Symbol, Malgun Gothic");
+    public static readonly FontFamily Mono = new("Cascadia Mono, Consolas, Malgun Gothic");
     public static readonly FontFamily IconFont = new("Segoe Fluent Icons, Segoe MDL2 Assets");
 
     public static event Action? Changed;
@@ -68,10 +68,6 @@ internal static class Theme
 
     /// Transparency effects on → DWM acrylic under our tint; off → a solid background.
     public static bool Acrylic { get; private set; } = true;
-
-    /// Bloom Sans (Wanted Sans, Latin and Hangul in one family) comes from the app's Fonts folder.
-    private static FontFamily MakeFont(string families) =>
-        new(new Uri(Path.Combine(AppContext.BaseDirectory, "Fonts") + Path.DirectorySeparatorChar), families);
 
     public static FontWeight Regular => FontWeights.Normal;
     public static FontWeight Medium => FontWeights.Medium;

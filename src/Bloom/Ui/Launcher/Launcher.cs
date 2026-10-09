@@ -93,7 +93,7 @@ internal sealed partial class Launcher : Window, IChatHost
         WindowStartupLocation = WindowStartupLocation.Manual;
         UseLayoutRounding = true;
         SnapsToDevicePixels = true;
-        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Ideal);
+        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
         WindowChrome.SetWindowChrome(this, new WindowChrome { CaptionHeight = 0, GlassFrameThickness = new Thickness(-1), ResizeBorderThickness = new Thickness(0), CornerRadius = new CornerRadius(0), UseAeroCaptionButtons = false });
 
         layout = new Grid();

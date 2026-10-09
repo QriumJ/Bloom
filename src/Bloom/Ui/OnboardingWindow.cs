@@ -57,7 +57,7 @@ internal sealed class OnboardingWindow : Window
         ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         UseLayoutRounding = true;
-        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Ideal);
+        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
         Background = Theme.P.Solid;
         Icon = Shots.AppIcon();
         steps = new() { Welcome, Opening, BrowserPick, Looks, HomeTools, Helpers };

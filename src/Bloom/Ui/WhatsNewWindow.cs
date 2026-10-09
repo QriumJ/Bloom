@@ -20,7 +20,7 @@ internal sealed class WhatsNewWindow : Window
         ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         UseLayoutRounding = true;
-        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Ideal);
+        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
         Background = Theme.P.Solid;
         Icon = Shots.AppIcon();
 

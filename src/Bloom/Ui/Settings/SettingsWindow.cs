@@ -26,7 +26,7 @@ internal sealed class SettingsWindow : Window
         MinHeight = 460;
         WindowStartupLocation = WindowStartupLocation.CenterScreen; // the screen with the mouse
         UseLayoutRounding = true;
-        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Ideal);
+        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
         Background = Theme.P.Solid;
         Icon = Shots.AppIcon();
 

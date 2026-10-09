@@ -297,5 +297,5 @@ Nothing here is required. Without them, the related blocks and settings don't sh
 
 ## License
 
-MIT — [LICENSE](LICENSE). The font (Bloom Sans = [Wanted Sans](https://github.com/wanteddev/wanted-sans)) is under the SIL OFL 1.1 — `src/Bloom/Fonts/OFL.txt`.
+MIT — [LICENSE](LICENSE).
 Exchange rates: [Rates By Exchange Rate API](https://www.exchangerate-api.com).

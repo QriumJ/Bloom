@@ -296,5 +296,5 @@ dotnet format whitespace tests\Bloom.Tests\Bloom.Tests.csproj --verify-no-change
 
 ## 라이선스
 
-MIT — [LICENSE](LICENSE). 글꼴(Bloom Sans = [Wanted Sans](https://github.com/wanteddev/wanted-sans))은 SIL OFL 1.1 — `src/Bloom/Fonts/OFL.txt`.
+MIT — [LICENSE](LICENSE).
 환율은 [Rates By Exchange Rate API](https://www.exchangerate-api.com).

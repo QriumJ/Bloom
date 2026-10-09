@@ -44,7 +44,7 @@ internal sealed class SpaceWindow : Window
         MinHeight = 460;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         UseLayoutRounding = true;
-        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Ideal);
+        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
         Background = Theme.P.Solid;
         Icon = Shots.AppIcon();
 

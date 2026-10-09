@@ -60,7 +60,7 @@ internal sealed class TranslateWindow : Window
         Background = Brushes.Transparent;
         WindowStartupLocation = WindowStartupLocation.Manual;
         UseLayoutRounding = true;
-        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Ideal);
+        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
         WindowChrome.SetWindowChrome(this, new WindowChrome { CaptionHeight = 40, GlassFrameThickness = new Thickness(-1), ResizeBorderThickness = new Thickness(6), CornerRadius = new CornerRadius(0), UseAeroCaptionButtons = false });
 
         var grid = new Grid();

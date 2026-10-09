@@ -47,7 +47,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
         MinHeight = 520;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         UseLayoutRounding = true;
-        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Ideal);
+        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
         Background = Theme.P.Solid;
         Icon = Shots.AppIcon();
 

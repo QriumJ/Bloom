@@ -319,7 +319,7 @@ internal static class Icons
                 Foreground = Theme.P.Accent,
                 Margin = new Thickness(0, 0, 0, size * 0.03),
             };
-            TextOptions.SetTextFormattingMode(t, TextFormattingMode.Ideal);
+            TextOptions.SetTextFormattingMode(t, TextFormattingMode.Display);
             inner = t;
         }
         inner.HorizontalAlignment = HorizontalAlignment.Center;

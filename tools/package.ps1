@@ -15,11 +15,9 @@ $r2r = if ($ReadyToRun) { 'true' } else { 'false' }
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed ($LASTEXITCODE)" }
 
 # what the installed copy needs
-foreach ($name in 'Bloom.exe', 'Bloom.dll', 'Bloom.runtimeconfig.json', 'Fonts\OFL.txt') {
+foreach ($name in 'Bloom.exe', 'Bloom.dll', 'Bloom.runtimeconfig.json') {
     if (-not (Test-Path -LiteralPath (Join-Path $out $name))) { throw "missing $name" }
 }
-$fonts = @(Get-ChildItem -LiteralPath (Join-Path $out 'Fonts') -Filter *.ttf)
-if ($fonts.Count -ne 3) { throw "expected 3 fonts (Bloom Sans 400/500/600), found $($fonts.Count)" }
 $rc = Get-Content -LiteralPath (Join-Path $out 'Bloom.runtimeconfig.json') -Raw | ConvertFrom-Json
 $gc = $rc.runtimeOptions.configProperties
 if ($gc.'System.GC.Concurrent' -ne $false -or $gc.'System.GC.ConserveMemory' -ne 5) { throw 'runtimeconfig lacks the GC settings' }

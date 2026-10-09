@@ -25,6 +25,7 @@ internal sealed partial class CodexWatch
         public bool Subagent, Headless, TurnOpen, Waiting;
         public DateTime TurnStart, LastEvent;
         public long Offset = -1; // -1: not read yet
+        public bool Skip; // Bloom's own run or a subagent: never news, so its lines are never read
     }
 
     private readonly string sessions, index;
@@ -104,9 +105,15 @@ internal sealed partial class CodexWatch
             if (first)
             {
                 Meta(file, t);
+                t.Skip = t.Subagent || AgentText.IsBloomRun(t.Cwd);
                 t.Offset = Math.Max(0, length - FirstRead);
             }
-            else if (length < t.Offset) t.Offset = 0; // started over
+            if (t.Skip)
+            {
+                t.Offset = length; // most of a day's logs are Bloom's own chats: left unread (was ~45 MB of garbage at start)
+                return;
+            }
+            if (length < t.Offset) t.Offset = 0; // started over
             using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
             fs.Seek(t.Offset, SeekOrigin.Begin);
             var buf = new byte[length - t.Offset];
@@ -128,15 +135,11 @@ internal sealed partial class CodexWatch
     }
 
     /// The first line (session_meta) says the folder and whether it is a subagent; it carries the whole instructions,
-    /// so only its start is read and searched as text.
+    /// so only its start is read and searched as text: 16 KB, or up to FirstRead when the folder isn't in those.
     private static void Meta(string file, Thread t)
     {
-        using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        var buf = new byte[Math.Min(fs.Length, FirstRead)];
-        int got = fs.ReadAtLeast(buf, buf.Length, false);
-        string head = Encoding.UTF8.GetString(buf, 0, got);
-        int nl = head.IndexOf('\n');
-        if (nl >= 0) head = head[..nl];
+        string head = Head(file, MetaRead, out bool whole);
+        if (!whole && !MetaCwd().IsMatch(head)) head = Head(file, FirstRead, out _);
         if (MetaCwd().Match(head) is { Success: true } m)
             try
             {
@@ -148,6 +151,19 @@ internal sealed partial class CodexWatch
             }
         t.Subagent = MetaSubagent().IsMatch(head);
         t.Headless = MetaExec().IsMatch(head); // codex exec, run by a program
+    }
+
+    private const int MetaRead = 16 * 1024;
+
+    /// The start of a log up to its first line's end (at most `bytes`; `whole`: the line ended within them).
+    private static string Head(string file, int bytes, out bool whole)
+    {
+        using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        var buf = new byte[Math.Min(fs.Length, bytes)];
+        int got = fs.ReadAtLeast(buf, buf.Length, false);
+        int nl = Array.IndexOf(buf, (byte)'\n', 0, got);
+        whole = nl >= 0 || got == fs.Length;
+        return Encoding.UTF8.GetString(buf, 0, nl >= 0 ? nl : got);
     }
 
     /// One log line into the thread's state → "start" | "done" | "aborted" | null, and for "done" how long the turn took.

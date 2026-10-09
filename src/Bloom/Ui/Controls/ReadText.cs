@@ -85,7 +85,7 @@ internal sealed class ReadText : RichTextBox
     };
 
     private static double Measure(string line, double size, FontWeight weight) =>
-        new FormattedText(line, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, new Typeface(Theme.Sans, FontStyles.Normal, weight, FontStretches.Normal), size, Brushes.Black, 1).WidthIncludingTrailingWhitespace;
+        new FormattedText(line, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, new Typeface(Theme.Sans, FontStyles.Normal, weight, FontStretches.Normal), size, Brushes.Black, null, TextFormattingMode.Display, 1).WidthIncludingTrailingWhitespace; // as the windows draw it
 
     protected override Size MeasureOverride(Size constraint)
     {
