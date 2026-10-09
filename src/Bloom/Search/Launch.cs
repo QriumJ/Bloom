@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using Bloom.Core;
 using Bloom.Native;
 
@@ -63,14 +64,26 @@ internal static class Launch
         if (dir is not null) Open(dir);
     }
 
-    public static void Copy(string text)
+    public static void Copy(string text) => Put(text, "clipboard");
+
+    /// A picture to paste anywhere: the bitmap for every app, plus "PNG" (transparency, browsers, Office) when its file is given.
+    public static bool CopyImage(BitmapSource picture, string? png = null)
+    {
+        var obj = new DataObject();
+        obj.SetImage(picture);
+        if (png is not null && File.Exists(png)) obj.SetData("PNG", new MemoryStream(File.ReadAllBytes(png)));
+        return Put(obj, "clipboard image");
+    }
+
+    /// Clipboard.SetDataObject, tried a few times while another app holds the clipboard.
+    private static bool Put(object data, string what)
     {
         for (int i = 0; i < 4; i++)
         {
             try
             {
-                Clipboard.SetDataObject(text, true);
-                return;
+                Clipboard.SetDataObject(data, true);
+                return true;
             }
             catch (COMException)
             {
@@ -78,9 +91,10 @@ internal static class Launch
             }
             catch (Exception e)
             {
-                Log.Error("clipboard", e);
-                return;
+                Log.Error(what, e);
+                return false;
             }
         }
+        return false;
     }
 }

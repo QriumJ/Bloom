@@ -196,21 +196,30 @@ internal sealed partial class SettingsView : ScrollViewer
         }, filter);
     }
 
-    /// A global shortcut: off or one of a few combos; the line under it says whether Windows gave it to us.
-    private void Shortcut(string name, string title, string what, char glyph, string[] combos, string value, Action<string> set, string filter)
+    /// A global shortcut, pressed in (KeyRecorder): the row's Enter or a click listens for it; the line under it says
+    /// whether Windows gave it to us.
+    private void Shortcut(string name, string title, string what, char glyph, string value, Action<string> set, string filter)
     {
         string sub = host.Shortcuts?.Status(name) switch
         {
-            "taken" => Tr("다른 앱이 이미 쓰고 있어요 — 다른 조합을 골라 주세요", "Another app already uses it — pick another combination"),
-            "ok" => what,
-            _ => Tr("꺼짐 — 런처에서 검색해서 써요", "Off — search for it in the launcher"),
+            "taken" => Tr("다른 앱이 이미 쓰고 있어요 — 다른 조합을 눌러 주세요", "Another app already uses it — press another combination"),
+            _ when value != "off" => what, // "ok", or set but not registered (its feature is off)
+            _ => Tr("꺼짐 — 눌러서 단축키를 정해요", "Off — click to set a shortcut"),
         };
-        Choice(title, sub, glyph, new[] { ("off", Tr("끔", "Off")) }.Concat(combos.Select(c => (c, Hotkeys.Label(c)))).ToArray(), value, v =>
+        var keys = new KeyRecorder(value)
+        {
+            Listening = on => host.Shortcuts?.Pause(on),
+            Done = () => FocusFilter?.Invoke(),
+            Check = combo => host.Shortcuts?.Owner(combo) is { } owner && owner != name ? Tr("Bloom이 이미 쓰는 키예요", "Bloom already uses it") : null,
+        };
+        keys.Picked += v =>
         {
             set(v);
+            Settings.Save();
             host.ApplyHotkeys();
             Dispatcher.BeginInvoke(() => Build(lastFilter)); // the status line under it
-        }, filter);
+        };
+        Add(title, sub, keys, glyph, keys.Start, null, filter);
     }
 
     /// A length of time on its row (보관 기간, 쉬는 대화 닫기): DurationField, the row's Enter (or a click) puts the caret
@@ -525,6 +534,7 @@ internal sealed partial class SettingsView : ScrollViewer
     {
         if (dropdowns.Find(d => d.IsOpen) is { } open) return open.HandleKey(key);
         if (Keyboard.FocusedElement is TextBox { Tag: Func<Key, bool> numberKey }) return numberKey(key); // typing in a number field
+        if (Keyboard.FocusedElement is KeyRecorder { IsListening: true }) return true; // a shortcut being pressed in reads its own keys
         bool ctrl = (Keyboard.Modifiers & ModifierKeys.Control) != 0, shift = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
         switch (key)
         {

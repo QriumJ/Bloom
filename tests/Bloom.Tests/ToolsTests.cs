@@ -1,9 +1,10 @@
+using System.Windows.Input;
 using Bloom.App;
 using Bloom.Search;
 
 namespace Bloom.Tests;
 
-/// winget's table, item shortcuts as typed, the window layouts.
+/// winget's table, item shortcuts as typed and as pressed, uninstall commands, the window layouts.
 internal static class ToolsTests
 {
     public static void WingetTable()
@@ -38,6 +39,25 @@ internal static class ToolsTests
         Check.True(Hotkeys.Normal("m") is null, "a key alone");
         Check.True(Hotkeys.Normal("ctrl+alt") is null, "no key");
         Check.True(Hotkeys.Normal("ctrl+a+b") is null, "two keys");
+    }
+
+    public static void ShortcutsAsPressed()
+    {
+        Check.Eq(Hotkeys.FromKey(Key.M, ModifierKeys.Control | ModifierKeys.Alt), "ctrl+alt+m", "ctrl+alt+m");
+        Check.Eq(Hotkeys.FromKey(Key.F5, ModifierKeys.Shift | ModifierKeys.Alt), "alt+shift+f5", "modifiers in one order");
+        Check.Eq(Hotkeys.FromKey(Key.NumPad3, ModifierKeys.Control), "ctrl+3", "the number pad's digit");
+        Check.True(Hotkeys.FromKey(Key.M, ModifierKeys.None) is null, "a key alone");
+        Check.True(Hotkeys.FromKey(Key.OemComma, ModifierKeys.Control) is null, "a key Windows can't take here");
+        Check.True(Hotkeys.Parse(Hotkeys.FromKey(Key.Space, ModifierKeys.Control)!) is not null, "what is pressed registers");
+        Check.Eq(Hotkeys.Label("ctrl+alt+m"), "Ctrl+Alt+M", "shown as pressed");
+    }
+
+    public static void UninstallCommands()
+    {
+        Check.Eq(Uninstalls.Split("\"C:\\Program Files\\App\\unins000.exe\" /SILENT"), (@"C:\Program Files\App\unins000.exe", "/SILENT"), "quoted");
+        Check.Eq(Uninstalls.Split(@"C:\Program Files\App\uninstall.exe --remove"), (@"C:\Program Files\App\uninstall.exe", "--remove"), "unquoted with a space in the path");
+        Check.Eq(Uninstalls.Split("msiexec.exe /x {11111111-2222-3333-4444-555555555555}"), ("msiexec.exe", "/x {11111111-2222-3333-4444-555555555555}"), "msiexec");
+        Check.Eq(Uninstalls.Split("rundll32 shell32,Control_RunDLL"), ("rundll32", "shell32,Control_RunDLL"), "no .exe");
     }
 
     public static void Layouts()

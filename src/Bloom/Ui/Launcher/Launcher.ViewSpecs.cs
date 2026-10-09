@@ -111,7 +111,7 @@ internal sealed partial class Launcher
         [Mode.Lens] = new()
         {
             Chip = () => "Bloom Lens",
-            Placeholder = () => Tr("이 영역으로 할 일 · 1 묻기 2 번역 3 글자 4 실시간 5 고정", "What to do with this area · 1 ask 2 translate 3 text 4 live 5 pin"),
+            Placeholder = () => Tr("이 영역으로 할 일 · 1 묻기 2 번역 3 글자 4 실시간 5 고정 6 캡처", "What to do with this area · 1 ask 2 translate 3 text 4 live 5 pin 6 capture"),
             Context = () => host.LastLens is { } ll ? $"Bloom Lens · {ll.Rect.Width}×{ll.Rect.Height}" : "Bloom Lens",
             Build = _ => Engine.LensView(),
             Split = true,

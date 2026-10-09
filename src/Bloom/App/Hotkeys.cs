@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Windows.Input;
 using System.Windows.Interop;
 using Bloom.Native;
 
@@ -33,7 +34,7 @@ internal sealed class Hotkeys : IDisposable
     {
         if (byName.TryGetValue(name, out var old))
         {
-            Win32.UnregisterHotKey(window.Handle, old.id);
+            if (!paused.Remove(old.id)) Win32.UnregisterHotKey(window.Handle, old.id);
             actions.Remove(old.id);
             byName.Remove(name);
         }
@@ -46,6 +47,29 @@ internal sealed class Hotkeys : IDisposable
         bool ok = Win32.RegisterHotKey(window.Handle, id, k.mods | Win32.MOD_NOREPEAT, k.vk);
         if (ok) actions[id] = pressed;
         byName[name] = (ok ? id : 0, ok ? "ok" : "taken", combo);
+    }
+
+    private readonly HashSet<int> paused = new(); // ids let go while a shortcut is pressed in
+
+    /// While a shortcut is being pressed in (KeyRecorder), Bloom lets go of its own so a combo it holds reaches the
+    /// window instead of running; afterwards they are taken again (one another app grabbed meanwhile reads as taken).
+    public void Pause(bool on)
+    {
+        if (on == paused.Count > 0) return;
+        foreach (var (name, (id, _, combo)) in new List<KeyValuePair<string, (int id, string status, string combo)>>(byName))
+        {
+            if (on && id != 0)
+            {
+                Win32.UnregisterHotKey(window.Handle, id);
+                paused.Add(id);
+            }
+            else if (!on && paused.Contains(id) && (Parse(combo) is not { } k || !Win32.RegisterHotKey(window.Handle, id, k.mods | Win32.MOD_NOREPEAT, k.vk)))
+            {
+                actions.Remove(id);
+                byName[name] = (0, "taken", combo);
+            }
+        }
+        if (!on) paused.Clear();
     }
 
     public string Status(string name) => byName.TryGetValue(name, out var s) ? s.status : "off";
@@ -78,6 +102,41 @@ internal sealed class Hotkeys : IDisposable
         if (mods.Length == 0 || keys.Count != 1) return null;
         string combo = string.Join("+", mods) + "+" + keys[0];
         return Parse(combo) is null ? null : combo;
+    }
+
+    /// A key pressed with the modifiers held → "ctrl+alt+m", or null when Windows can't register it (no modifier, a
+    /// modifier alone, a key Parse doesn't take). Win is read from the keys themselves (WPF's modifiers leave it out).
+    public static string? FromKey(Key key, ModifierKeys mods)
+    {
+        string? k = key switch
+        {
+            >= Key.A and <= Key.Z => ((char)('a' + (key - Key.A))).ToString(),
+            >= Key.D0 and <= Key.D9 => ((char)('0' + (key - Key.D0))).ToString(),
+            >= Key.NumPad0 and <= Key.NumPad9 => ((char)('0' + (key - Key.NumPad0))).ToString(),
+            >= Key.F1 and <= Key.F12 => "f" + (key - Key.F1 + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
+            Key.Space => "space",
+            _ => null,
+        };
+        if (k is null) return null;
+        var parts = new List<string>();
+        if ((mods & ModifierKeys.Control) != 0) parts.Add("ctrl");
+        if ((mods & ModifierKeys.Alt) != 0) parts.Add("alt");
+        if ((mods & ModifierKeys.Shift) != 0) parts.Add("shift");
+        if ((mods & ModifierKeys.Windows) != 0 || Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin)) parts.Add("win");
+        if (parts.Count == 0) return null;
+        parts.Add(k);
+        return string.Join("+", parts);
+    }
+
+    /// The modifiers held right now as a label to show while a shortcut is pressed in: "Ctrl+Alt+".
+    public static string Held(ModifierKeys mods)
+    {
+        string s = "";
+        if ((mods & ModifierKeys.Control) != 0) s += "Ctrl+";
+        if ((mods & ModifierKeys.Alt) != 0) s += "Alt+";
+        if ((mods & ModifierKeys.Shift) != 0) s += "Shift+";
+        if (Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin)) s += "Win+";
+        return s;
     }
 
     /// "ctrl+alt+o" → (MOD_CONTROL | MOD_ALT, 'O'); letters, digits and F1–F12.

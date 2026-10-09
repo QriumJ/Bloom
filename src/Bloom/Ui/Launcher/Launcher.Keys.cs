@@ -28,7 +28,8 @@ internal sealed partial class Launcher
             // Tab: the conversation it picks up (if any); Shift+Tab: always a new one
             bool fresh = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
             string q = box.Text.Trim();
-            if (q.Length > 0) host.Ask(q, null, fresh);
+            if (q.Length == 0 && !fresh && QuickPending) ShowChat(thread!); // back to the answer left running
+            else if (q.Length > 0) host.Ask(q, null, fresh);
             else host.OpenChat(fresh ? null : host.TabThread);
             e.Handled = true;
         }
@@ -60,6 +61,11 @@ internal sealed partial class Launcher
             if (ctrl && key == Key.J) e.Handled = true;
             return;
         }
+        if (Mode == Mode.Form && form?.Current.Keys == true && key is not Key.Enter and not Key.Escape)
+        {
+            FormKeys(e); // before Ctrl+K, Ctrl+P …, which could be the shortcut being pressed in
+            return;
+        }
         if (key == Key.Escape && HomeEditing)
         {
             e.Handled = true;
@@ -75,8 +81,7 @@ internal sealed partial class Launcher
         if (key == Key.Escape)
         {
             e.Handled = true;
-            if (Mode == Mode.Chat && thread?.Busy == true) host.Chats.Stop(thread);
-            else if (Mode == Mode.Form) Go(form?.Back ?? Mode.Root);
+            if (Mode == Mode.Form) Go(form?.Back ?? Mode.Root);
             else if (Mode != Mode.Root) Go(Mode.Root);
             else if (box.Text.Length > 0) box.Clear();
             else Dismiss();
@@ -119,8 +124,8 @@ internal sealed partial class Launcher
             }
             return;
         }
-        // Bloom Lens: 1–5 pick the action right away
-        if (Mode == Mode.Lens && box.Text.Length == 0 && !ctrl && key is >= Key.D1 and <= Key.D5 && rows.Count >= key - Key.D1 + 1)
+        // Bloom Lens: 1–6 pick the action right away
+        if (Mode == Mode.Lens && box.Text.Length == 0 && !ctrl && key is >= Key.D1 and <= Key.D6 && rows.Count >= key - Key.D1 + 1)
         {
             Select(key - Key.D1, false);
             RunSelected(null);
@@ -235,12 +240,40 @@ internal sealed partial class Launcher
         }
     }
 
+    /// A shortcut field in a form (Ctrl+K › 단축키 지정): the keys pressed show as the combo instead of going in as text;
+    /// Backspace clears it (and on an empty field goes back), Esc and Enter are the form's.
+    private void FormKeys(KeyEventArgs e)
+    {
+        Key key = e.Key switch { Key.System => e.SystemKey, Key.ImeProcessed => e.ImeProcessedKey, _ => e.Key };
+        if (key is Key.Escape or Key.Tab) return;
+        e.Handled = true;
+        var mods = Keyboard.Modifiers;
+        if (key is Key.Back or Key.Delete && mods == ModifierKeys.None)
+        {
+            if (box.Text.Length == 0) FormBack();
+            else SetBox("");
+            return;
+        }
+        if (key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin) return;
+        if (Hotkeys.FromKey(key, mods) is { } combo)
+        {
+            form!.Error = null;
+            SetBox(Hotkeys.Label(combo));
+        }
+        else form!.Error = Engine.KeysHint;
+        Refresh(false);
+    }
+
     private void ChatKey(Key key, bool ctrl, bool shift, KeyEventArgs e)
     {
         switch (key)
         {
             case Key.Enter when !shift:
                 SendChat();
+                e.Handled = true;
+                break;
+            case Key.OemPeriod when ctrl:
+                StopChat();
                 e.Handled = true;
                 break;
             case Key.N when ctrl:

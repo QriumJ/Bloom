@@ -1,5 +1,6 @@
 using System.Linq;
 using Bloom.Ai;
+using Bloom.App;
 using Bloom.Core;
 using Bloom.Search;
 
@@ -27,6 +28,37 @@ internal sealed partial class Launcher
         host.Chats.Send(thread, text, page?.text is { } t ? ClipText(t, 15000) : null, page?.title, image, files);
         chat.Show(thread);
         UpdateChrome();
+    }
+
+    // ── 빠른 AI in the background ──────────────────────────────────────────────────────────────────
+    // Esc leaves a running answer to finish on its own (■ 정지 or Ctrl+. stops it); the home's search line shows it until
+    // it is looked at, Tab goes back to it, and a corner card says when it finished while Bloom was out of sight.
+    private bool quickBusy, quickUnseen;
+
+    /// The quick chat's conversation runs, or has an answer not looked at yet, while another view is open.
+    private bool QuickPending => thread is not null && (thread.Busy || quickUnseen) && Mode != App.Mode.Chat;
+
+    public void StopChat()
+    {
+        if (thread is { Busy: true } t) host.Chats.Stop(t);
+    }
+
+    /// Each update of the quick chat's conversation, in any view: only a start or an end changes anything.
+    private void QuickChanged(ChatThread t)
+    {
+        if (t.Busy == quickBusy) return;
+        quickBusy = t.Busy;
+        if (!quickBusy && (Mode != App.Mode.Chat || !IsVisible))
+        {
+            quickUnseen = true;
+            if (!IsVisible || !IsActive)
+            {
+                bool ok = t.Messages.LastOrDefault()?.Error != true;
+                Notices.Result(ok, Tr("Bloom · 빠른 AI", "Bloom · Quick AI"), ok ? Tr("답이 다 왔어요", "The answer is ready") : Tr("답을 받지 못했어요", "No answer came"),
+                    ClipText(t.Title, 40) + Tr(" · Bloom을 열고 Tab", " · open Bloom and press Tab"));
+            }
+        }
+        if (Mode != App.Mode.Chat && IsVisible) UpdateChrome(); // the home's chip
     }
 
     void IChatHost.ShowChat(ChatThread t) => ShowChat(t);
@@ -59,20 +91,21 @@ internal sealed partial class Launcher
 
     private string CurrentModel => Ai.AiModels.Normalize(thread?.Model ?? Ai.AiModels.DefaultModel());
 
-    /// Ctrl+M: every Claude and ChatGPT model in the action panel, the current one ticked.
+    /// Ctrl+M and the search line's model chip: every model (Claude and ChatGPT), then this model's thinking levels, the
+    /// current ones ticked, in one menu.
     public void PickModel()
     {
         string cur = CurrentModel;
         var ids = Ai.AiModels.Claude.Concat(Ai.GptCatalog.All.Select(m => Ai.AiModels.Gpt(m.Slug))).ToList();
         if (!ids.Contains(cur)) ids.Add(cur);
-        var list = ids.Select(m => new ActionItem
+        var list = ids.Select(m => new ActionItem { Title = Ai.AiModels.Who(m), Glyph = m == cur ? G.Check : G.Model, StayOpen = true, Run = () => SetModel(m) }).ToList();
+        if (Ai.AiModels.HasEffort(cur))
         {
-            Title = Ai.AiModels.Who(m),
-            Glyph = m == cur ? G.Check : G.Model,
-            StayOpen = true,
-            Run = () => SetModel(m),
-        }).ToList();
-        actions.Open(Tr("모델 고르기 · Claude 또는 ChatGPT", "Pick a model · Claude or ChatGPT"), list, ids.IndexOf(cur));
+            string now = thread is null ? Ai.AiModels.DefaultEffort(cur) : Chats.EffortOf(thread);
+            foreach (string level in Ai.AiModels.Efforts(cur))
+                list.Add(new ActionItem { Title = Tr("생각 수준 · ", "Thinking · ") + Ai.AiModels.EffortName(level), Glyph = level == now ? G.Check : G.Bulb, StayOpen = true, Run = () => SetEffort(level) });
+        }
+        actions.Open(Tr("모델 · 생각 수준", "Model · thinking level"), list, ids.IndexOf(cur));
     }
 
     /// Ctrl+Shift+M: Claude ↔ ChatGPT, each side with the model last used there.
@@ -108,9 +141,13 @@ internal sealed partial class Launcher
             return;
         }
         string now = thread is null ? Ai.AiModels.DefaultEffort(model) : Chats.EffortOf(thread);
-        string next = Ai.AiModels.Next(Ai.AiModels.Efforts(model), now);
-        Chats.SetEffort(thread, next);
-        ShowToast(Tr("생각 수준: ", "Thinking level: ") + Ai.AiModels.EffortName(next));
+        SetEffort(Ai.AiModels.Next(Ai.AiModels.Efforts(model), now));
+    }
+
+    private void SetEffort(string level)
+    {
+        Chats.SetEffort(thread, level);
+        ShowToast(Tr("생각 수준: ", "Thinking level: ") + Ai.AiModels.EffortName(level));
         UpdateChrome();
     }
 }

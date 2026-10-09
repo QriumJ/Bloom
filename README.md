@@ -67,8 +67,9 @@ You don't need the whole name. Sums are worked out as you type, and times are wr
 - **Window layout**: `left half`, `right third`, `top-left quarter`, `maximize`, `center`, `next screen` move the window in front. Halves meet edge to edge and the taskbar stays clear.
 - **Dates · world clock**: `in 100 days`, `days until christmas`, `days since 2026-03-01`, `2026-01-01 ~ 2026-12-25`, `new york time`, `tokyo 3pm`, `3pm in london`
 - **Install apps**: `install vlc` looks it up in winget and the Microsoft Store. Enter asks first, then installs it in the background and a card tells you how it went. Ctrl+K installs it in a terminal you can watch.
-- **Shortcuts for anything**: Ctrl+K › Set a shortcut gives an app, folder, file, site, command or window layout a global shortcut of its own (`ctrl+alt+m`). They're listed in Settings › Tools.
-- **Pin to the screen**: Bloom Lens' fifth choice keeps the picked area on top as a picture (see below).
+- **Shortcuts for anything**: Ctrl+K › Set a shortcut gives an app, folder, file, site, command or window layout a global shortcut of its own: just press the keys you want (say Ctrl+Alt+M). They're listed in Settings › Tools.
+- **Uninstall apps**: right-click an app (or Ctrl+K) › Uninstall…. Bloom asks once more, then opens that program's own uninstaller; a Store app is removed for your account.
+- **Pin to the screen · capture**: Bloom Lens' fifth and sixth choices (see below).
 - Each of these can be switched off in Settings › Features.
 
 ### AI with your own Claude Code · Codex login
@@ -78,6 +79,7 @@ You don't need the whole name. Sums are worked out as you type, and times are wr
 No API key. Answers come from the Claude Code or Codex CLI you have installed and signed in to on this PC.
 
 - **Ask at once**: type in the search line and press **Tab** to ask right there; Shift+Tab starts a new chat. Pick the model and the thinking level.
+  - Esc goes back home and the answer keeps going; the search line shows it and Tab takes you back. ■ Stop (or Ctrl+.) stops it.
 - **AI chat window** (Ctrl+Alt+C)
   - Continue past chats and keep them in groups (folders).
   - Attach files and pictures (drag and drop · Ctrl+O · Ctrl+V).
@@ -111,6 +113,7 @@ No API key. Answers come from the Claude Code or Codex CLI you have installed an
   - `3` Copy its text (Windows OCR)
   - `4` Translate live: Bloom keeps reading the area and translates it whenever it changes.
   - `5` Pin to the screen: the area stays on top as a picture. Drag it, size it with the wheel, Esc closes it.
+  - `6` Capture: the area goes to the clipboard as a picture, ready for Ctrl+V.
   - Translate (Ctrl+Alt+T) and copy text (Ctrl+Alt+O) have shortcuts of their own.
 - **Color picker**: take a color from the screen with the magnifier, or paste a color code.
   - See HEX · RGB · HSL and its contrast with white and black text.
@@ -182,14 +185,15 @@ A map of where a drive's or folder's space went, every folder and file a block a
 | `Ctrl+P` | Pin the launcher |
 | `Ctrl+E` | Edit the home |
 | `Ctrl+=` · `Ctrl+-` · `Ctrl+0` | Bigger · smaller · 100 % |
-| `Esc` | Back → clear the text → close |
+| `Esc` | Back → clear the text → close (the quick AI's answer keeps going) |
+| `Ctrl+.` | Stop the quick AI's answer |
 | `Ctrl+Alt+C` | AI chat window |
 | `Ctrl+Alt+A` | Quick AI actions |
 | `Ctrl+Alt+L` | Bloom Lens |
 | `Ctrl+Alt+T` · `Ctrl+Alt+O` | Translate the screen · copy text from the screen |
 | `Ctrl+Alt+V` | Clipboard history |
 
-The global shortcuts can be changed or switched off per feature in the settings. Window switching, emoji, the color picker, asking AI about the screen and live translation can have one too (off at first).
+The global shortcuts can be changed or switched off per feature in the settings: click one and press the keys, Backspace turns it off. Window switching, emoji, the color picker, asking AI about the screen, live translation and capture can have one too (off at first).
 
 ## About the AI features
 

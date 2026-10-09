@@ -41,12 +41,13 @@ internal sealed partial class Engine
         f.Fields.Add(new FormField
         {
             Label = Tr("단축키", "Shortcut"),
-            Hint = Tr("예) ctrl+alt+m · alt+shift+f5 — 어디서든 누르면 바로 실행돼요", "e.g. ctrl+alt+m · alt+shift+f5 — runs it from anywhere"),
-            Value = now ?? "",
+            Hint = Tr("쓸 키를 그대로 누르세요 — 예) Ctrl+Alt+M · 어디서든 누르면 바로 실행돼요", "Press the keys — e.g. Ctrl+Alt+M · runs it from anywhere"),
+            Value = now is null ? "" : Hotkeys.Label(now),
+            Keys = true,
             Check = v =>
             {
                 if (Hotkeys.Normal(v) is not { } combo)
-                    return (null, Tr("Ctrl · Alt · Shift · Win 중 하나 이상과 글자 · 숫자 · F1~F12 하나를 +로 이어 주세요", "Join Ctrl, Alt, Shift or Win with one letter, digit or F1–F12 using +"));
+                    return (null, KeysHint);
                 if (host.Shortcuts?.Owner(combo) is { } owner && owner != "item:" + entry.Id)
                     return (null, owner.StartsWith("item:", System.StringComparison.Ordinal)
                         ? Tr($"‘{ItemKeyTitle(owner)}’에 이미 지정한 단축키예요", $"Already the shortcut of ‘{ItemKeyTitle(owner)}’")
@@ -66,6 +67,9 @@ internal sealed partial class Engine
         };
         return f;
     }
+
+    /// What a shortcut field says when the keys can't be one.
+    public static string KeysHint => Tr("Ctrl · Alt · Shift · Win 중 하나 이상을 누른 채 글자 · 숫자 · F1~F12 · Space를 눌러 주세요", "Hold Ctrl, Alt, Shift or Win and press a letter, digit, F1–F12 or Space");
 
     private static string ItemKeyTitle(string name) =>
         Settings.Current.ItemKeys.Find(k => "item:" + k.Item.Id == name) is { } k ? Clip(k.Item.Title, 20) : name;

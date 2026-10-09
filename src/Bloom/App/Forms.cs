@@ -10,6 +10,8 @@ internal sealed class FormField
     public string Hint = ""; // placeholder in the search line
     public string Value = "";
     public bool Optional;
+    /// A shortcut pressed in rather than typed: the keys pressed with Ctrl / Alt / Shift / Win show as "Ctrl+Alt+M".
+    public bool Keys;
     /// The cleaned value, or an error to show (and stay on this field).
     public Func<string, (string? value, string? error)>? Check;
 }

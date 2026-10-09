@@ -28,23 +28,21 @@ internal sealed partial class Launcher
                 ph = attachedImage is not null ? Tr("이 화면에 대해 물어보세요 (비우고 Enter = 설명해 줘)", "Ask about this screen (empty + Enter = explain it)")
                     : attachedFiles.Count > 0 ? Tr("첨부한 파일에 대해 물어보세요", "Ask about the attached files")
                     : thread is { Messages.Count: > 0 } ? Tr("이어서 묻기…", "Ask a follow-up…") : Tr("무엇이든 물어보세요…", "Ask anything…");
-                // [Claude | ChatGPT] switches the side, [model ▾] opens the menu, [level] steps through
-                string curModel = CurrentModel;
-                hint.Children.Add(HeadChip(Ai.AiModels.IsChatGpt(curModel) ? "ChatGPT" : "Claude", SwitchProvider));
-                var modelChip = HeadChip(Engine.ModelName(curModel) + "  ▾", PickModel);
-                modelChip.Margin = new Thickness(6, 0, 0, 0);
-                hint.Children.Add(modelChip);
-                if (Ai.AiModels.HasEffort(curModel))
+                // few chips, so what is typed keeps the room: [■ 정지] while it answers, else [model · level ▾] (PickModel),
+                // then [세션 종료] while its CLI runs; 새 대화 is in the footer, 📎 at the bar's end
+                if (busy)
                 {
-                    var effortChip = HeadChip(Ai.AiModels.EffortName(thread is null ? Ai.AiModels.DefaultEffort(curModel) : Chats.EffortOf(thread)), CycleEffort);
-                    effortChip.Margin = new Thickness(6, 0, 0, 0);
-                    hint.Children.Add(effortChip);
+                    var stop = HeadChip("■  " + Tr("정지", "Stop"), StopChat, true);
+                    stop.ToolTip = Tr("답을 멈춰요 (Ctrl+.) · Esc는 홈으로 가고 답은 계속 써요", "Stops the answer (Ctrl+.) · Esc goes home and the answer goes on");
+                    hint.Children.Add(stop);
                 }
-                if (thread is { Messages.Count: > 0 })
+                else
                 {
-                    var freshChip = HeadChip(Tr("새 대화", "New chat"), () => ShowChat(host.Chats.New()));
-                    freshChip.Margin = new Thickness(12, 0, 0, 0);
-                    hint.Children.Add(freshChip);
+                    string curModel = CurrentModel;
+                    string level = Ai.AiModels.HasEffort(curModel) ? " · " + Ai.AiModels.EffortName(thread is null ? Ai.AiModels.DefaultEffort(curModel) : Chats.EffortOf(thread)) : "";
+                    var modelChip = HeadChip(Engine.ModelName(curModel) + level + "  ▾", PickModel);
+                    modelChip.ToolTip = Tr("모델 · 생각 수준 (Ctrl+M · Ctrl+E · Ctrl+Shift+M Claude ↔ ChatGPT)", "Model and thinking level (Ctrl+M · Ctrl+E · Ctrl+Shift+M Claude ↔ ChatGPT)");
+                    hint.Children.Add(modelChip);
                 }
                 if (thread is not null && host.Chats.IsLive(thread))
                 {
@@ -59,13 +57,15 @@ internal sealed partial class Launcher
                     endChip.ToolTip = Tr("이 대화의 CLI를 닫아 메모리를 돌려주고 새 대화로 넘어가요 · 지난 대화는 남아요", "Closes this chat's CLI to free its memory and starts a new chat · the last one stays");
                     hint.Children.Add(endChip);
                 }
-                Foot(busy ? Tr("중지", "Stop") : Tr("보내기", "Send"), busy ? "Esc" : "Enter");
+                quickUnseen = false;
+                if (busy) Foot(Tr("정지", "Stop"), "Ctrl+.", StopChat);
+                else Foot(Tr("보내기", "Send"), "Enter");
                 Divider();
-                Foot(Tr("첨부", "Attach"), "Ctrl+O");
+                Foot(Tr("홈", "Home"), "Esc");
                 Divider();
-                Foot(Tr("새 대화", "New chat"), "Ctrl+N");
+                Foot(Tr("새 대화", "New chat"), "Ctrl+N", () => ShowChat(host.Chats.New()));
                 Divider();
-                Foot(Tr("더보기", "More"), "Ctrl+K");
+                Foot(Tr("더보기", "More"), "Ctrl+K", OpenActions);
                 footContext.Text = thread is { Messages.Count: > 0 } ? ClipText(thread.Title, 34) : Tr("AI 채팅", "AI chat");
                 work.Working = busy;
                 break;
@@ -86,6 +86,13 @@ internal sealed partial class Launcher
                 ph = spec.Placeholder();
                 if (Mode == Mode.Files)
                     hint.Children.Add(HeadChip(Engine.FileKind(fileKind).name + "  ▾", PickFileKind));
+                if (Mode == Mode.Root && QuickPending)
+                {
+                    var t = thread!;
+                    var back = HeadChip("✦  " + (t.Busy ? Tr("빠른 AI 답 쓰는 중 · Tab", "Quick AI answering · Tab") : Tr("빠른 AI 답 왔어요 · Tab", "Quick AI answer ready · Tab")), () => ShowChat(t), true);
+                    back.ToolTip = ClipText(t.Title, 60);
+                    hint.Children.Add(back);
+                }
                 var item = Selected;
                 if (item?.Run is not null && item.PrimaryLabel.Length > 0)
                 {
@@ -101,6 +108,7 @@ internal sealed partial class Launcher
                 footContext.Text = spec.Context();
                 break;
         }
+        attachButton.Visibility = Mode == Mode.Chat ? Visibility.Visible : Visibility.Collapsed;
         lead.Content = leadEl;
         placeholder.Text = ph;
         placeholder.Visibility = box.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -108,13 +116,14 @@ internal sealed partial class Launcher
         chipText.Text = chipLabel ?? "";
     }
 
-    /// A small clickable chip at the right of the search line (the chat's model and level).
-    private static Border HeadChip(string label, Action click)
+    /// A small clickable chip at the right of the search line (the chat's model and level); `accent` for one that
+    /// stands for something going on (■ 정지, the quick AI still answering).
+    private static Border HeadChip(string label, Action click, bool accent = false)
     {
         var chip = new SmoothBorder
         {
-            Child = Theme.T(label, 12, Theme.P.TextDim, Theme.Medium, false),
-            Background = Theme.P.Tile,
+            Child = Theme.T(label, 12, accent ? Theme.P.AccentText : Theme.P.TextDim, Theme.Medium, false),
+            Background = accent ? Theme.P.AccentSoft : Theme.P.Tile,
             CornerRadius = new CornerRadius(6),
             Padding = new Thickness(8, 2, 8, 3),
             Cursor = Cursors.Hand,
@@ -144,12 +153,30 @@ internal sealed partial class Launcher
 
     private static string ClipText(string s, int n) => s.Length > n ? s[..n] + "…" : s;
 
-    private void Foot(string label, string keys)
+    /// A footer hint: its key caps and what they do; with `click` the pair is a button too (■ 정지).
+    private void Foot(string label, string keys, Action? click = null)
     {
-        footRight.Children.Add(Keys.Caps(keys));
+        var caps = Keys.Caps(keys);
         var t = Theme.T(label, 12, Theme.P.TextDim, Theme.Medium, false);
         t.Margin = new Thickness(6, 0, 0, 0);
-        footRight.Children.Add(t);
+        if (click is null)
+        {
+            footRight.Children.Add(caps);
+            footRight.Children.Add(t);
+            return;
+        }
+        var sp = new StackPanel { Orientation = Orientation.Horizontal };
+        sp.Children.Add(caps);
+        sp.Children.Add(t);
+        var b = new SmoothBorder { Child = sp, CornerRadius = new CornerRadius(6), Padding = new Thickness(2, 2, 6, 2), Background = Brushes.Transparent, Cursor = Cursors.Hand, VerticalAlignment = VerticalAlignment.Center };
+        b.MouseEnter += (_, _) => b.Background = Theme.P.Hover;
+        b.MouseLeave += (_, _) => b.Background = Brushes.Transparent;
+        b.MouseLeftButtonUp += (_, e) =>
+        {
+            click();
+            e.Handled = true;
+        };
+        footRight.Children.Add(b);
     }
 
     /// The home's layout button (footer, right end): 홈 편집 ↔ 편집 끝 (Ctrl+E).

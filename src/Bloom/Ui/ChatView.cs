@@ -555,13 +555,13 @@ internal sealed class ChatView : Grid, IComposerHost
             new() { Title = Tr("파일 · 사진 첨부", "Attach files or pictures"), Keys = "Ctrl+O", Glyph = G.Paste, StayOpen = true, Run = owner.PickFiles },
             new() { Title = Tr("새 대화", "New chat"), Keys = "Ctrl+N", Glyph = G.Add, StayOpen = true, Run = () => owner.ShowChat(host.Chats.New()) },
             new() { Title = Tr("대화 목록", "Chats"), Keys = "Ctrl+L", Glyph = G.History, StayOpen = true, Run = owner.ShowThreads },
-            new() { Title = Tr("모델 고르기 (Claude · ChatGPT)", "Pick a model (Claude, ChatGPT)"), Keys = "Ctrl+M", Glyph = G.Model, StayOpen = true, Run = owner.PickModel },
+            new() { Title = Tr("모델 · 생각 수준 고르기", "Pick the model and thinking level"), Keys = "Ctrl+M", Glyph = G.Model, StayOpen = true, Run = owner.PickModel },
             new() { Title = AiModels.IsChatGpt(t?.Model ?? AiModels.DefaultModel()) ? Tr("Claude로 바꾸기", "Switch to Claude") : Tr("ChatGPT로 바꾸기", "Switch to ChatGPT"), Keys = "Ctrl+Shift+M", Glyph = G.Chat, StayOpen = true, Run = owner.SwitchProvider },
             new() { Title = Tr("생각 수준 바꾸기", "Change thinking level"), Keys = "Ctrl+E", Glyph = G.Bulb, StayOpen = true, Run = owner.CycleEffort },
         };
         if (t?.Messages.LastOrDefault(x => x.Role == "assistant" && x.Text.Length > 0) is { } last)
             list.Add(new ActionItem { Title = Tr("마지막 답변 복사", "Copy the last answer"), Keys = "Ctrl+Shift+C", Glyph = G.Copy, StayOpen = true, Run = () => { Launch.Copy(last.Text); owner.ShowToast(Tr("답변을 복사했어요", "Answer copied")); } });
-        if (t?.Busy == true) list.Insert(0, new ActionItem { Title = Tr("답변 멈추기", "Stop the answer"), Keys = "Esc", Glyph = G.Stop, StayOpen = true, Run = () => host.Chats.Stop(t) });
+        if (t?.Busy == true) list.Insert(0, new ActionItem { Title = Tr("답변 멈추기", "Stop the answer"), Keys = "Ctrl+.", Glyph = G.Stop, StayOpen = true, Run = () => host.Chats.Stop(t) });
         if (t?.Messages.LastOrDefault()?.Asks.FirstOrDefault() is { } ask)
         {
             list.Insert(0, new ActionItem { Title = Tr("거절: ", "Decline: ") + ask.Says, Glyph = G.Close, StayOpen = true, Run = () => host.Chats.Answer(t, ask, false) });

@@ -2,66 +2,80 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
-## 0.9.3
+## 0.10.0
 
-- Picking a chat up again after its CLI was closed should cost much less AI usage. The clock is no longer part of the chat's instructions (the time now comes with each message), so a CLI started again can reuse what the AI service already cached instead of taking in the whole conversation again.
-- An unused chat closes its Claude or Codex CLI after 10 minutes again (0.9.2 made it 5). If 0.9.2 set it to 5 for you, it moves back to 10 once. You can still set your own time in Settings › AI chat.
+Everything since 0.8.3 in one place: what's new in this update first, then what came in 0.9.0 to 0.9.3.
 
-### 한국어
+#### New in this update
 
-- CLI가 닫힌 대화를 다시 이어 갈 때 AI 사용량이 훨씬 덜 들어요. 대화 지시문에서 현재 시각을 빼고 메시지마다 시각을 붙이도록 바꿔서, 다시 띄운 CLI가 AI 쪽에 저장된 캐시를 그대로 쓸 수 있어요. 대화 전체를 처음부터 다시 넣지 않아요.
-- 안 쓰는 대화의 Claude · Codex CLI를 다시 10분 뒤에 닫아요(0.9.2에서 5분으로 줄였어요). 0.9.2가 5분으로 정해 둔 경우 한 번 10분으로 돌려놔요. 시간은 설정 › AI 채팅에서 직접 정할 수 있어요.
+- Bloom Lens can capture. Pick an area and it goes to the clipboard as a picture, ready for Ctrl+V. It's `6` in the Lens menu, or search for "screen capture". You can give it its own shortcut in Settings › Bloom Lens (off at first).
+- Uninstall apps from Bloom. Right-click an app (or Ctrl+K) › Uninstall…. Bloom asks once more, then opens that program's own uninstaller. Store apps are removed for your account.
+- Set a shortcut by pressing it. Click a shortcut in Settings, or Ctrl+K › Set a shortcut, and press the keys you want. Backspace turns it off.
+- The quick AI keeps going when you leave. Esc takes you home and the answer carries on. The search line shows it until you look, Tab takes you back, and a card tells you when it's done if Bloom is hidden. ■ Stop or Ctrl+. stops it.
+- A tidier quick AI bar, so what you type has room. One chip for the model and thinking level, Stop and End session side by side, and a 📎 button for files. The pin and tools buttons left the bar; Ctrl+P and Ctrl+J still work.
 
-## 0.9.2
-
-- AI chats name themselves per task, like `[◆ Opus • Code ] Fix the login`. The title changes only when you start something new. You can switch it off in Settings › AI chat.
-- Pick several chats and groups and delete them at once: the ✓ next to the chat search, Ctrl+click, or ⋯ › Select.
-- A chat you leave alone now closes its Claude or Codex CLI after 5 minutes instead of 10, which gives the memory back. Set minutes or hours in Settings › AI chat or at first start. 0 keeps it open.
-- New choice: draw with the GPU (smooth) or the CPU (about 30 MB less memory). Pick it at first start or in Settings › Performance.
-- Bloom also gives memory back after you close the chat or settings window, and frees more of it than before.
-- Long lists open faster. The first rows show right away and the rest follow, and emoji are drawn in the background, so the emoji view no longer pauses.
-- Settings are grouped into Basics, Launcher, AI and Tools. Browser and Connections moved into Search.
-- After an update, Bloom shows what changed once. See it again in Settings › About.
-
-### 한국어
-
-- AI 대화 제목이 작업마다 `[◆ Opus • Code ] 로그인 수정`처럼 붙어요. 새 작업을 시작할 때만 바뀌어요. 설정 › AI 채팅에서 끌 수 있어요.
-- 대화와 그룹을 여러 개 골라 한꺼번에 지울 수 있어요. 대화 찾기 옆 ✓, Ctrl+클릭, ⋯ › 선택.
-- 안 쓰는 대화의 Claude · Codex CLI를 10분이 아니라 5분 뒤에 닫아서 메모리를 돌려줘요. 설정 › AI 채팅이나 처음 설정에서 분 · 시간으로 바꿀 수 있고, 0이면 닫지 않아요.
-- 새로 고를 수 있어요: GPU로 그리기(부드럽게) 또는 CPU로 그리기(메모리 약 30 MB 덜 씀). 처음 설정이나 설정 › 성능에서 골라요.
-- 채팅 창이나 설정 창을 닫은 뒤에도 메모리를 돌려주고, 전보다 더 많이 돌려줘요.
-- 긴 목록이 빨리 떠요. 앞쪽 줄이 바로 보이고 나머지가 이어서 붙어요. 이모지도 뒤에서 그려서 이모지 화면이 멈칫하지 않아요.
-- 설정을 기본 · 런처 · AI · 도구로 묶었어요. 브라우저와 연결은 검색으로 옮겼어요.
-- 업데이트한 뒤 처음 켜면 바뀐 점을 한 번 보여 줘요. 설정 › 정보에서 다시 볼 수 있어요.
-
-## 0.9.1
-
-- AI answers can be copied in pieces. Drag over any part of an answer, your own message or a code block, in the Tab quick chat or the AI chat window, then press Ctrl+C or right-click › Copy.
-- The AI chat window keeps up better while a long answer streams in.
-
-### 한국어
-
-- AI 답을 원하는 부분만 복사할 수 있어요. Tab 빠른 AI나 AI 채팅 창에서 답 · 내가 보낸 말 · 코드 블록을 드래그하고 Ctrl+C나 오른쪽 클릭 › 복사를 누르면 돼요.
-- 긴 답이 들어오는 동안 AI 채팅 창이 덜 버벅여요.
-
-## 0.9.0
+#### Search and windows
 
 - Type a path like `C:\Users`, `D:/work` or `%APPDATA%` and the folder comes first. Enter opens it, Tab goes into the folder you picked.
 - Window layout: `left half`, `right third`, `top-left quarter`, `maximize`, `center` and `next screen` move the window in front.
 - Dates and other cities' clocks: `in 100 days`, `days until christmas`, `days since 2026-03-01`, `new york time`, `tokyo 3pm`.
 - Give anything its own shortcut: Ctrl+K › Set a shortcut on an app, folder, file, site, command or layout. They're listed in Settings › Tools.
-- Bloom Lens has a fifth choice, Pin to the screen. The area stays on top as a picture you can drag, size and copy.
+- Bloom Lens can pin an area to the screen. It stays on top as a picture you can drag, size and copy.
 - Install apps with winget: type `install vlc`. Bloom asks first, installs it in the background and tells you how it went.
-- Each new one can be switched off in Settings › Features.
+
+#### AI chat
+
+- Copy any part of an answer. Drag over an answer, your own message or a code block, then Ctrl+C or right-click › Copy.
+- Chats name themselves per task, like `[◆ Opus • Code ] Fix the login`. You can switch it off in Settings › AI chat.
+- Pick several chats and groups and delete them at once: the ✓ next to the chat search, Ctrl+click, or ⋯ › Select.
+- A chat you leave alone closes its CLI after 10 minutes. Set your own time in Settings › AI chat; 0 keeps it open.
+- Picking a chat up again after its CLI closed costs much less AI usage, because the AI service can reuse what it already cached.
+
+#### Speed, memory and settings
+
+- Draw with the GPU (smooth) or the CPU (about 30 MB less memory), at first start or in Settings › Performance.
+- Bloom gives memory back after you close the chat or settings window.
+- Long lists open faster, and the emoji view no longer pauses.
+- Settings are grouped into Basics, Launcher, AI and Tools.
+- After an update, Bloom shows what changed once. See it again in Settings › About.
+- Each new feature can be switched off in Settings › Features.
 
 ### 한국어
+
+0.8.3 이후 바뀐 점을 한곳에 모았어요. 이번 업데이트에서 새로 생긴 것부터, 그다음 0.9.0~0.9.3에서 생긴 것이에요.
+
+#### 이번 업데이트에서 새로
+
+- Bloom Lens로 캡처할 수 있어요. 영역을 고르면 그림으로 클립보드에 복사돼서 바로 Ctrl+V로 붙여 넣으면 돼요. Lens 메뉴의 `6`번이고, "화면 캡처"로 찾아도 돼요. 설정 › Bloom Lens에서 단축키를 따로 줄 수 있어요(처음엔 꺼져 있어요).
+- Bloom에서 앱을 지울 수 있어요. 앱을 오른쪽 클릭(또는 Ctrl+K) › 제거…. 한 번 더 묻고 그 프로그램의 제거 창을 열어요. Store 앱은 내 계정에서 지워요.
+- 단축키는 키를 눌러서 정해요. 설정의 단축키 칸이나 Ctrl+K › 단축키 지정에서 쓸 키를 그대로 누르면 돼요. Backspace는 끄기예요.
+- 빠른 AI가 자리를 비워도 계속 일해요. Esc를 누르면 홈으로 가고 답은 계속 써요. 확인하기 전까지 검색창에 보이고, Tab으로 돌아가요. Bloom이 숨어 있으면 끝났을 때 카드로 알려 줘요. ■ 정지나 Ctrl+.로 멈춰요.
+- 빠른 AI 위쪽 바를 정리해서 적는 글이 잘 보여요. 모델과 생각 수준은 칩 하나로, 정지와 세션 종료는 나란히, 파일은 📎 버튼으로. 고정 · 도구 버튼은 바에서 뺐어요. Ctrl+P · Ctrl+J는 그대로 돼요.
+
+#### 검색 · 창
 
 - `C:\Users`, `D:/작업`, `%APPDATA%`처럼 경로를 적으면 그 폴더가 맨 위에 떠요. Enter로 열고, Tab으로 고른 폴더에 들어가요.
 - 창 배치: `왼쪽 절반`, `오른쪽 1/3`, `왼쪽 위 1/4`, `최대화`, `가운데로`, `다음 화면으로`로 앞에 있는 창을 옮겨요.
 - 날짜와 다른 도시 시간: `100일 뒤`, `크리스마스까지`, `2026-03-01부터`, `뉴욕 시간`, `도쿄 오후 3시`.
 - 무엇이든 단축키를 붙일 수 있어요. 앱 · 폴더 · 파일 · 사이트 · 명령 · 창 배치에서 Ctrl+K › 단축키 지정. 붙인 단축키는 설정 › 도구에 모여 있어요.
-- Bloom Lens에 5번 ‘화면에 고정’이 생겼어요. 고른 영역이 그림으로 맨 위에 떠 있고, 옮기고 크기를 바꾸고 복사할 수 있어요.
+- Bloom Lens로 고른 영역을 화면에 고정할 수 있어요. 그림으로 맨 위에 떠 있고, 옮기고 크기를 바꾸고 복사할 수 있어요.
 - winget으로 앱 설치: `설치 vlc`처럼 적으면 돼요. 먼저 묻고, 뒤에서 설치한 다음 결과를 알려 줘요.
+
+#### AI 채팅
+
+- AI 답을 원하는 부분만 복사할 수 있어요. 답 · 내가 보낸 말 · 코드 블록을 드래그하고 Ctrl+C나 오른쪽 클릭 › 복사.
+- 대화 제목이 작업마다 `[◆ Opus • Code ] 로그인 수정`처럼 붙어요. 설정 › AI 채팅에서 끌 수 있어요.
+- 대화와 그룹을 여러 개 골라 한꺼번에 지울 수 있어요. 대화 찾기 옆 ✓, Ctrl+클릭, ⋯ › 선택.
+- 안 쓰는 대화의 CLI는 10분 뒤에 닫아요. 설정 › AI 채팅에서 시간을 직접 정할 수 있고, 0이면 닫지 않아요.
+- CLI가 닫힌 대화를 다시 이어 갈 때 AI 사용량이 훨씬 덜 들어요. AI 쪽에 저장된 캐시를 그대로 다시 써요.
+
+#### 속도 · 메모리 · 설정
+
+- GPU로 그리기(부드럽게)와 CPU로 그리기(메모리 약 30 MB 덜 씀) 중에 고를 수 있어요. 처음 설정이나 설정 › 성능에서요.
+- 채팅 창이나 설정 창을 닫으면 메모리를 돌려줘요.
+- 긴 목록이 빨리 뜨고, 이모지 화면이 멈칫하지 않아요.
+- 설정을 기본 · 런처 · AI · 도구로 묶었어요.
+- 업데이트한 뒤 처음 켜면 바뀐 점을 한 번 보여 줘요. 설정 › 정보에서 다시 볼 수 있어요.
 - 새 기능은 모두 설정 › 기능에서 끌 수 있어요.
 
 ## 0.8.3

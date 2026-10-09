@@ -186,7 +186,7 @@ internal sealed partial class SettingsView
         Header(Tr("기본", "Default"));
         Choice(Tr("새 대화는", "New chats use"), Tr("대화 중에는 Ctrl+Shift+M으로 바꿔요 · 모델은 Ctrl+M", "Ctrl+Shift+M switches during a chat · Ctrl+M picks the model"), G.Sparkle,
             new[] { ("claude", "Claude"), ("chatgpt", "ChatGPT") }, s.AiProvider == "chatgpt" ? "chatgpt" : "claude", v => s.AiProvider = v, filter);
-        Shortcut("chat", Tr("AI 채팅 창 단축키", "AI chat window shortcut"), Tr("어디서든 대화 창을 열어요 · 앞에 있으면 내려가요", "Opens the chat window anywhere · down again when it's in front"), G.Chat, new[] { "ctrl+alt+c", "ctrl+alt+i" }, s.ChatHotkey, v => s.ChatHotkey = v, filter);
+        Shortcut("chat", Tr("AI 채팅 창 단축키", "AI chat window shortcut"), Tr("어디서든 대화 창을 열어요 · 앞에 있으면 내려가요", "Opens the chat window anywhere · down again when it's in front"), G.Chat, s.ChatHotkey, v => s.ChatHotkey = v, filter);
         var tabSw = Toggle(s.TabContinuesLastThread, v => s.TabContinuesLastThread = v, out var tabT);
         Add(Tr("Tab으로 지난 대화 이어가기", "Tab continues the last chat"), Tr("30분 안에 쓴 대화를 이어가요 · Shift+Tab은 언제나 새 대화", "Picks up a chat used in the last 30 min · Shift+Tab always starts a new one"), tabSw, G.Chat, tabT, null, filter);
         var titleSw = Toggle(s.AiTitles, v =>
@@ -324,7 +324,7 @@ internal sealed partial class SettingsView
                 s.ClipKeepMinutes = v;
                 clip.KeepChanged();
             }, filter);
-        Shortcut("clipboard", Tr("단축키", "Shortcut"), Tr("누르면 클립보드 기록이 바로 열려요", "Opens the clipboard history right away"), G.Keyboard, new[] { "ctrl+alt+v", "ctrl+shift+v" }, s.ClipHotkey, v => s.ClipHotkey = v, filter);
+        Shortcut("clipboard", Tr("단축키", "Shortcut"), Tr("누르면 클립보드 기록이 바로 열려요", "Opens the clipboard history right away"), G.Keyboard, s.ClipHotkey, v => s.ClipHotkey = v, filter);
         Header(Tr("정리", "Clean up"));
         Add(Tr("기록 모두 지우기", "Clear the history"), Tr("고정한 항목은 남겨요", "Pinned entries stay"), null, G.Delete, () =>
         {
@@ -335,13 +335,14 @@ internal sealed partial class SettingsView
 
     private void PageLens(Settings s, string filter)
     {
-        Page("screen", "Bloom Lens", G.Page, Tr("화면 영역을 고른 뒤 할 일을 골라요 — AI에게 묻기 · 번역 · 글자 복사 · 실시간 번역 (1~4)", "Pick a screen area, then what to do — ask AI, translate, copy text, live translation (1–4)"), filter);
+        Page("screen", "Bloom Lens", G.Page, Tr("화면 영역을 고른 뒤 할 일을 골라요 — AI에게 묻기 · 번역 · 글자 복사 · 실시간 번역 · 화면에 고정 · 캡처 (1~6)", "Pick a screen area, then what to do — ask AI, translate, copy text, live translation, pin, capture (1–6)"), filter);
         Header(Tr("단축키", "Shortcut"));
-        Shortcut("lens", "Bloom Lens", Tr("영역을 고르면 할 일 메뉴가 떠요", "After the area: a menu of what to do"), G.Page, new[] { "ctrl+alt+l", "ctrl+shift+l" }, s.LensHotkey, v => s.LensHotkey = v, filter);
-        Shortcut("ask", Tr("바로 AI에게 묻기", "Ask AI right away"), Tr("영역을 고르면 그 화면을 붙인 채팅이 열려요 (묻기마다 사용량 1회)", "After the area: a chat with that picture attached (1 use per question)"), G.Sparkle, new[] { "ctrl+alt+q", "ctrl+shift+q" }, s.AskHotkey, v => s.AskHotkey = v, filter);
-        Shortcut("ocr", Tr("바로 글자 복사", "Copy text right away"), Tr("영역을 고르면 글자를 읽어 복사해요 (PC 안에서만, 사용량 없음)", "After the area: reads and copies the text (on this PC, no usage)"), G.Copy, new[] { "ctrl+alt+o", "ctrl+shift+o" }, s.OcrHotkey, v => s.OcrHotkey = v, filter);
-        Shortcut("translate", Tr("바로 번역", "Translate right away"), Tr("영역을 고르면 읽어서 번역해요 (번역마다 사용량 1회)", "After the area: reads and translates it (1 use each)"), G.Globe, new[] { "ctrl+alt+t", "ctrl+shift+t" }, s.TranslateHotkey, v => s.TranslateHotkey = v, filter);
-        Shortcut("live", Tr("바로 실시간 번역", "Live translation right away"), Tr("영역을 계속 읽어 바뀔 때만 번역해요 (사용량 계속)", "Keeps reading the area and translates when it changes (ongoing usage)"), G.Refresh, new[] { "ctrl+alt+r", "ctrl+shift+r" }, s.LiveHotkey, v => s.LiveHotkey = v, filter);
+        Shortcut("lens", "Bloom Lens", Tr("영역을 고르면 할 일 메뉴가 떠요", "After the area: a menu of what to do"), G.Page, s.LensHotkey, v => s.LensHotkey = v, filter);
+        Shortcut("ask", Tr("바로 AI에게 묻기", "Ask AI right away"), Tr("영역을 고르면 그 화면을 붙인 채팅이 열려요 (묻기마다 사용량 1회)", "After the area: a chat with that picture attached (1 use per question)"), G.Sparkle, s.AskHotkey, v => s.AskHotkey = v, filter);
+        Shortcut("ocr", Tr("바로 글자 복사", "Copy text right away"), Tr("영역을 고르면 글자를 읽어 복사해요 (PC 안에서만, 사용량 없음)", "After the area: reads and copies the text (on this PC, no usage)"), G.Copy, s.OcrHotkey, v => s.OcrHotkey = v, filter);
+        Shortcut("translate", Tr("바로 번역", "Translate right away"), Tr("영역을 고르면 읽어서 번역해요 (번역마다 사용량 1회)", "After the area: reads and translates it (1 use each)"), G.Globe, s.TranslateHotkey, v => s.TranslateHotkey = v, filter);
+        Shortcut("live", Tr("바로 실시간 번역", "Live translation right away"), Tr("영역을 계속 읽어 바뀔 때만 번역해요 (사용량 계속)", "Keeps reading the area and translates when it changes (ongoing usage)"), G.Refresh, s.LiveHotkey, v => s.LiveHotkey = v, filter);
+        Shortcut("capture", Tr("바로 캡처", "Capture right away"), Tr("영역을 고르면 그림으로 복사해요 — Ctrl+V로 붙여넣기", "After the area: copies it as a picture — paste with Ctrl+V"), G.Camera, s.CaptureHotkey, v => s.CaptureHotkey = v, filter);
         Header(Tr("글자 읽기", "Reading text"));
         var ocCopy = Toggle(s.OcrCopy, v => s.OcrCopy = v, out var ocT);
         Add(Tr("읽은 글자 바로 복사", "Copy the text at once"), Tr("끄면 런처에서 고른 뒤에 복사해요", "Off: copy it from the launcher"), ocCopy, G.Copy, ocT, null, filter);
@@ -371,22 +372,16 @@ internal sealed partial class SettingsView
     {
         Page("tools", Tr("도구", "Tools"), G.Stopwatch, Tr("창 전환 · 이모지 · AI 빠른 동작 · 타이머 · 컬러 피커의 단축키와 설정", "Shortcuts and options for switching windows, emoji, AI actions, timers and the colour picker"), filter);
         Header(Tr("창 · 이모지 · AI 빠른 동작", "Windows · emoji · AI actions"));
-        Shortcut("windows", Tr("창 전환 단축키", "Switch windows shortcut"), Tr("열린 창 목록이 바로 떠요", "Opens the list of open windows"), G.NewWindow, new[] { "ctrl+alt+w", "ctrl+alt+s" }, s.WindowsHotkey, v => s.WindowsHotkey = v, filter);
-        Shortcut("emoji", Tr("이모지 · 기호 단축키", "Emoji & symbols shortcut"), Tr("찾아서 Enter면 앞의 창에 붙여 넣어요", "Find one, Enter pastes it into the window in front"), '\uE76E', new[] { "ctrl+alt+e", "ctrl+shift+e" }, s.EmojiHotkey, v => s.EmojiHotkey = v, filter);
-        Shortcut("quick", Tr("AI 빠른 동작 단축키", "AI actions shortcut"), Tr("아무 앱에서 글을 선택하고 누르면 요약 · 번역 · 다듬기 (동작마다 사용량 1회 · 엔진은 Bloom Lens > 번역)", "Select text in any app and press it: summarize, translate, polish (1 use per action · engine: Bloom Lens > Translation)"), G.Sparkle, new[] { "ctrl+alt+a", "ctrl+shift+a" }, s.QuickHotkey, v => s.QuickHotkey = v, filter);
+        Shortcut("windows", Tr("창 전환 단축키", "Switch windows shortcut"), Tr("열린 창 목록이 바로 떠요", "Opens the list of open windows"), G.NewWindow, s.WindowsHotkey, v => s.WindowsHotkey = v, filter);
+        Shortcut("emoji", Tr("이모지 · 기호 단축키", "Emoji & symbols shortcut"), Tr("찾아서 Enter면 앞의 창에 붙여 넣어요", "Find one, Enter pastes it into the window in front"), '\uE76E', s.EmojiHotkey, v => s.EmojiHotkey = v, filter);
+        Shortcut("quick", Tr("AI 빠른 동작 단축키", "AI actions shortcut"), Tr("아무 앱에서 글을 선택하고 누르면 요약 · 번역 · 다듬기 (동작마다 사용량 1회 · 엔진은 Bloom Lens > 번역)", "Select text in any app and press it: summarize, translate, polish (1 use per action · engine: Bloom Lens > Translation)"), G.Sparkle, s.QuickHotkey, v => s.QuickHotkey = v, filter);
         Header(Tr("항목 단축키", "Item shortcuts"));
         if (ItemKeys.All.Count == 0)
             Add(Tr("아직 없어요", "None yet"), Tr("런처에서 앱 · 폴더 · 명령 · 창 배치를 고르고 Ctrl+K › 단축키 지정", "Pick an app, folder, command or layout in the launcher, then Ctrl+K › Set a shortcut"), null, G.Keyboard, null, null, filter);
         foreach (var k in ItemKeys.All.ToList())
         {
             var item = k.Item;
-            string taken = host.Shortcuts?.Status("item:" + item.Id) == "taken" ? Tr(" · 다른 앱이 쓰고 있어요", " · another app uses it") : "";
-            Add(item.Title, Hotkeys.Label(k.Combo) + taken + Tr(" · Enter로 지우기", " · Enter removes it"), null, G.Keyboard, () =>
-            {
-                ItemKeys.Set(item, null);
-                host.ApplyHotkeys();
-                Dispatcher.BeginInvoke(() => Build(lastFilter));
-            }, null, filter);
+            Shortcut("item:" + item.Id, item.Title, Tr("눌러서 바꾸기 · Backspace로 지우기", "Click to change · Backspace removes it"), G.Keyboard, k.Combo, v => ItemKeys.Set(item, v == "off" ? null : v), filter);
         }
         Header(Tr("도구 창", "Tool windows"));
         foreach (var (key, name, glyph) in ToolDock.Kinds)
@@ -399,7 +394,7 @@ internal sealed partial class SettingsView
         Add(Tr("소리로도 알리기", "Play a sound too"), Tr("끝나면 오른쪽 아래 카드와 함께 Windows 알람 소리 (30초까지)", "With the card at the bottom right, Windows' alarm sound (up to 30 s)"), tSound, G.Stopwatch, tSoundT, null, filter);
         Add(Tr("타이머 · 알림 열기", "Open timers and reminders"), Timers.Current.Items.Count > 0 ? Tr($"진행 중 {Timers.Current.Items.Count}개", $"{Timers.Current.Items.Count} running") : Tr("진행 중인 것 없음", "Nothing running"), null, G.Stopwatch, () => host.OpenView(App.Mode.Timers), null, filter);
         Header(Tr("컬러 피커", "Color picker"));
-        Shortcut("color", Tr("컬러 피커 단축키", "Color picker shortcut"), Tr("어디서든 화면 색 찍기", "Pick a colour anywhere"), G.Eyedrop, new[] { "ctrl+alt+p", "ctrl+shift+p" }, s.ColorHotkey, v => s.ColorHotkey = v, filter);
+        Shortcut("color", Tr("컬러 피커 단축키", "Color picker shortcut"), Tr("어디서든 화면 색 찍기", "Pick a colour anywhere"), G.Eyedrop, s.ColorHotkey, v => s.ColorHotkey = v, filter);
         var cCopy = Toggle(s.ColorCopy, v => s.ColorCopy = v, out var cCopyT);
         Add(Tr("찍은 색 바로 복사", "Copy the colour at once"), Tr("HEX(#ff5a8a)로 복사해요", "Copies it as HEX (#ff5a8a)"), cCopy, G.Copy, cCopyT, null, filter);
         Add(Tr("최근 색 지우기", "Clear recent colours"), Tr($"{ColorBook.Current.Recent.Count}개", $"{ColorBook.Current.Recent.Count}"), null, G.Delete, () =>

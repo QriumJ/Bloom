@@ -160,9 +160,12 @@ internal sealed partial class Launcher : Window, IChatHost
         Grid.SetColumn(hint, 3);
         bar.Children.Add(hint);
         var corner = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
-        toolsButton = BarButton(G.NewWindow, Tr("도구 붙이기 (Ctrl+J)", "Attach tools (Ctrl+J)"), OpenTools);
-        corner.Children.Add(toolsButton);
+        // the bar's right end: 📎 in the quick AI; 📌 only while the launcher is pinned (Ctrl+P), a click lets it go
+        attachButton = BarButton(G.Attach, Tr("파일 · 사진 첨부 — Ctrl+O, 붙여넣기나 끌어 놓기도 돼요", "Attach files or pictures — Ctrl+O, pasting or dropping works too"), PickFiles);
+        attachButton.Visibility = Visibility.Collapsed;
+        corner.Children.Add(attachButton);
         pinButton = BarButton('', Tr("화면에 고정 (Ctrl+P) — 다른 곳을 눌러도 남아요 · 아래 바를 끌면 옮겨져요", "Keep on screen (Ctrl+P) — stays when you click elsewhere · drag the bottom bar to move it"), () => SetPinned(!Pinned));
+        pinButton.Visibility = Visibility.Collapsed;
         corner.Children.Add(pinButton);
         Grid.SetColumn(corner, 4);
         bar.Children.Add(corner);
@@ -375,7 +378,6 @@ internal sealed partial class Launcher : Window, IChatHost
             Cloak(true);
             Show();
             host.Tools.LauncherShown(); // the attached tools come with it
-            toolsButton.Visibility = Features.On("notes") ? Visibility.Visible : Visibility.Collapsed;
         }
         Activate();
         Win32.ForceForeground(Handle);
@@ -429,6 +431,7 @@ internal sealed partial class Launcher : Window, IChatHost
         actions.Close();
         SetPinned(false);
         Hide();
+        KeysField();
         host.Tools.LauncherHidden();
         ShowPreview(null); // a playing preview stops with the window
         trim.Stop();
@@ -483,7 +486,7 @@ internal sealed partial class Launcher : Window, IChatHost
     /// tool); Esc still hides it, and hiding lets the pin go.
     public bool Pinned { get; private set; }
 
-    private readonly SmoothBorder pinButton, toolsButton;
+    private readonly SmoothBorder pinButton, attachButton;
 
     public void SetPinned(bool on)
     {
@@ -492,9 +495,10 @@ internal sealed partial class Launcher : Window, IChatHost
         g.Text = on ? "" : "";
         g.Foreground = on ? Theme.P.Accent : Theme.P.TextFaint;
         pinButton.Background = on ? Theme.P.AccentSoft : Brushes.Transparent;
+        pinButton.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    /// The 도구 menu (Ctrl+J, the bar button): each tool opens beside the launcher, or closes; asked again while it is
+    /// The 도구 menu (Ctrl+J): each tool opens beside the launcher, or closes; asked again while it is
     /// open, the menu closes.
     public void OpenTools()
     {

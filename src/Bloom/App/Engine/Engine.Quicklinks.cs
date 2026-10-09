@@ -171,7 +171,7 @@ internal sealed partial class Engine
                 Kind = ItemKind.Info,
                 Title = field.Label,
                 Subtitle = value.Length > 0 ? value : field.Optional ? Tr("(선택)", "(optional)") : "",
-                Accessory = now ? Tr("입력 중", "Typing") : i < f.Step ? Tr("완료", "Done") : null,
+                Accessory = now ? (field.Keys ? Tr("키 누르기", "Press keys") : Tr("입력 중", "Typing")) : i < f.Step ? Tr("완료", "Done") : null,
                 Icon = IconSpec.Of(now ? G.Keyboard : i < f.Step ? G.Check : G.Info, now),
                 PrimaryLabel = i == f.Fields.Count - 1 ? Tr("저장", "Save") : Tr("다음", "Next"),
                 Run = null,

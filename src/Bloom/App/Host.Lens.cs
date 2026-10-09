@@ -37,6 +37,7 @@ internal sealed partial class Host
                 "translate" => Tr("번역할 영역을 끌어서 고르세요", "Drag over the area to translate"),
                 "text" => Tr("글자를 읽을 영역을 끌어서 고르세요", "Drag over the area to read"),
                 "pin" => Tr("화면에 고정할 영역을 끌어서 고르세요", "Drag over the area to pin"),
+                "capture" => Tr("캡처할 영역을 끌어서 고르세요", "Drag over the area to capture"),
                 _ => Tr("영역을 끌어서 고르세요 — 고른 뒤 할 일을 골라요", "Drag over an area — then pick what to do"),
             };
             var pick = await Ocr.ScreenGrab.Pick(hint);
@@ -59,7 +60,7 @@ internal sealed partial class Host
         }
     }
 
-    /// One of the five things to do with the last area.
+    /// One of the six things to do with the last area.
     public async Task LensDo(string kind)
     {
         if (LastLens is not { } l) return;
@@ -78,6 +79,10 @@ internal sealed partial class Host
                 case "pin":
                     Window.Dismiss();
                     new Ocr.PinWindow(this, l).Show();
+                    return;
+                case "capture":
+                    Window.Dismiss(); // back to the app it is pasted into
+                    Capture(l);
                     return;
             }
             var (px, w, h, _) = Ocr.ScreenGrab.ForOcr(l.Bgra, l.Rect.Width, l.Rect.Height);
@@ -104,6 +109,16 @@ internal sealed partial class Host
         {
             Log.Error("lens " + kind, e);
         }
+    }
+
+    /// 캡처: the area as a picture on the clipboard (the bitmap + its PNG), told by a corner card.
+    private static void Capture(LensShot l)
+    {
+        var picture = BitmapSource.Create(l.Rect.Width, l.Rect.Height, 96, 96, PixelFormats.Bgra32, null, l.Bgra, l.Rect.Width * 4);
+        picture.Freeze();
+        bool ok = Launch.CopyImage(picture, l.Png);
+        Notices.Result(ok, "Bloom Lens", ok ? Tr("캡처를 복사했어요", "Capture copied") : Tr("클립보드에 넣지 못했어요", "Couldn't put it on the clipboard"),
+            ok ? Tr($"{l.Rect.Width} × {l.Rect.Height} · Ctrl+V로 붙여넣으세요", $"{l.Rect.Width} × {l.Rect.Height} · paste it with Ctrl+V") : Tr("다른 앱이 클립보드를 쓰고 있어요 — 다시 해 주세요", "Another app holds the clipboard — try again"));
     }
 
     /// The picked area as a PNG under Local\lens (the last 30 are kept; a chat that sent one shows it).

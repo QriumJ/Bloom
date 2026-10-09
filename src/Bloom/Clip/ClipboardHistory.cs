@@ -16,6 +16,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Bloom.Core;
 using Bloom.Native;
+using Bloom.Search;
 
 namespace Bloom.Clip;
 
@@ -421,11 +422,7 @@ internal sealed class ClipboardHistory : IDisposable
                         bmp.UriSource = new Uri(path);
                         bmp.EndInit();
                         bmp.Freeze();
-                        var obj = new DataObject();
-                        obj.SetImage(bmp);
-                        obj.SetData("PNG", new MemoryStream(File.ReadAllBytes(path))); // transparency for apps that read it
-                        Clipboard.SetDataObject(obj, true);
-                        break;
+                        return Launch.CopyImage(bmp, path);
                     default:
                         Clipboard.SetDataObject(e.Text ?? "", true);
                         break;

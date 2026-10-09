@@ -25,7 +25,11 @@ internal sealed partial class Launcher
         if (mode != Mode.Chat) Refresh(false);
         UpdateChrome();
         if (IsVisible) FocusBox();
+        KeysField();
     }
+
+    /// While a shortcut field is open, Bloom lets go of its own shortcuts so they can be pressed in (Hotkeys.Pause).
+    private void KeysField() => host.Shortcuts?.Pause(IsVisible && Mode == Mode.Form && form?.Current.Keys == true);
 
     private void SetMode(Mode mode)
     {
@@ -56,6 +60,8 @@ internal sealed partial class Launcher
     public void ShowChat(ChatThread t, string? draft = null, (string title, string url, string text)? page = null, string? image = null)
     {
         thread = t;
+        quickBusy = t.Busy;
+        quickUnseen = false;
         attachment = page;
         attachedImage = image;
         Go(Mode.Chat, draft ?? "");
@@ -72,8 +78,9 @@ internal sealed partial class Launcher
 
     public void ChatChanged(ChatThread t)
     {
-        if (Mode != Mode.Chat || !ReferenceEquals(t, thread)) return;
-        chatDirty = true;
+        if (!ReferenceEquals(t, thread)) return;
+        QuickChanged(t);
+        if (Mode == Mode.Chat) chatDirty = true;
     }
 
     public void DataChanged()
@@ -228,6 +235,7 @@ internal sealed partial class Launcher
         if (f.Step + 1 >= f.Fields.Count)
         {
             form = null;
+            KeysField(); // Bloom's shortcuts back before Done registers the new one
             f.Done(f);
             return;
         }
@@ -235,6 +243,7 @@ internal sealed partial class Launcher
         f.Prepare?.Invoke(f, f.Step);
         SetBox(f.Current.Value);
         Refresh(false);
+        KeysField();
     }
 
     private void FormBack()
@@ -250,6 +259,7 @@ internal sealed partial class Launcher
         f.Error = null;
         SetBox(f.Current.Value);
         Refresh(false);
+        KeysField();
     }
 
     private void SetBox(string text)

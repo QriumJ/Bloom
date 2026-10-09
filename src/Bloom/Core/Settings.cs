@@ -58,6 +58,7 @@ internal sealed class Settings
     public string LensHotkey { get; set; } = "ctrl+alt+l"; // Bloom Lens: pick an area → what to do with it
     public string AskHotkey { get; set; } = "off"; // Bloom Lens straight to "AI에게 묻기"
     public string LiveHotkey { get; set; } = "off"; // Bloom Lens straight to live translation
+    public string CaptureHotkey { get; set; } = "off"; // Bloom Lens straight to "캡처" (the picture to the clipboard)
     public string OcrHotkey { get; set; } = "ctrl+alt+o"; // Bloom Lens straight to "글자 복사"
     public string TranslateHotkey { get; set; } = "ctrl+alt+t"; // Bloom Lens straight to "번역"
     public string OcrLanguage { get; set; } = "auto"; // auto (the user's languages) | an installed recognizer tag

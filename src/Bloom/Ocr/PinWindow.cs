@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -130,17 +129,7 @@ internal sealed class PinWindow : Window
         Win32.SetWindowPos(h, Win32.HWND_TOPMOST, x, y, Math.Max(8, (int)Math.Round(area.Width * scale)), Math.Max(8, (int)Math.Round(area.Height * scale)), Win32.SWP_NOACTIVATE);
     }
 
-    private void Copy()
-    {
-        try
-        {
-            Clipboard.SetImage(picture);
-        }
-        catch (COMException e)
-        {
-            Log.Error("pin copy", e); // another app holds the clipboard
-        }
-    }
+    private void Copy() => Launch.CopyImage(picture, png);
 
     private void Save()
     {
