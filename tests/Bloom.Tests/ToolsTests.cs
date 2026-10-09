@@ -45,11 +45,22 @@ internal static class ToolsTests
     {
         Check.Eq(Hotkeys.FromKey(Key.M, ModifierKeys.Control | ModifierKeys.Alt), "ctrl+alt+m", "ctrl+alt+m");
         Check.Eq(Hotkeys.FromKey(Key.F5, ModifierKeys.Shift | ModifierKeys.Alt), "alt+shift+f5", "modifiers in one order");
-        Check.Eq(Hotkeys.FromKey(Key.NumPad3, ModifierKeys.Control), "ctrl+3", "the number pad's digit");
+        Check.Eq(Hotkeys.FromKey(Key.NumPad3, ModifierKeys.Control), "ctrl+num3", "the number pad's own digit");
+        Check.Eq(Hotkeys.FromKey(Key.Snapshot, ModifierKeys.None), "printscreen", "PrintScreen alone");
+        Check.Eq(Hotkeys.FromKey(Key.F13, ModifierKeys.None), "f13", "F13 alone");
+        Check.Eq(Hotkeys.FromKey(Key.OemComma, ModifierKeys.Control), "ctrl+,", "punctuation with a modifier");
+        Check.Eq(Hotkeys.FromKey(Key.MediaPlayPause, ModifierKeys.None), "mediaplaypause", "a media key alone");
+        Check.True(Hotkeys.FromKey(Key.Space, ModifierKeys.None) is null, "a typing key alone");
+        Check.True(Hotkeys.FromKey(Key.LeftCtrl, ModifierKeys.Control) is null, "a modifier alone");
+        foreach (var k in new[] { Key.Snapshot, Key.Pause, Key.Insert, Key.OemQuestion, Key.Multiply, Key.PageDown, Key.VolumeUp })
+            Check.True(KeyNames.Name(k) is { } n && KeyNames.Of(n) == k, k + " keeps its name");
         Check.True(Hotkeys.FromKey(Key.M, ModifierKeys.None) is null, "a key alone");
-        Check.True(Hotkeys.FromKey(Key.OemComma, ModifierKeys.Control) is null, "a key Windows can't take here");
         Check.True(Hotkeys.Parse(Hotkeys.FromKey(Key.Space, ModifierKeys.Control)!) is not null, "what is pressed registers");
         Check.Eq(Hotkeys.Label("ctrl+alt+m"), "Ctrl+Alt+M", "shown as pressed");
+        Check.Eq(Hotkeys.Label("shift+printscreen"), "Shift+PrintScreen", "PrintScreen's label");
+        Check.Eq(Hotkeys.Label("ctrl+numplus"), "Ctrl+Num +", "the number pad's plus");
+        Check.Eq(Hotkeys.Normal("PrtSc"), "printscreen", "typed PrtSc");
+        Check.True(Hotkeys.Normal("m") is null, "a letter alone, typed");
     }
 
     public static void UninstallCommands()

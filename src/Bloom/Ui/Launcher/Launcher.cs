@@ -114,7 +114,11 @@ internal sealed partial class Launcher : Window, IChatHost
         };
 
         // ── search line ──
-        var bar = new Grid { Margin = new Thickness(20, 0, 16, 0) };
+        var barHandle = HandleUnder(); // the row's side margins drag too
+        layout.Children.Add(barHandle);
+        MakeHandle(barHandle);
+        var bar = new Grid { Margin = new Thickness(20, 0, 16, 0), Background = Brushes.Transparent };
+        MakeHandle(bar);
         bar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         bar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -160,11 +164,12 @@ internal sealed partial class Launcher : Window, IChatHost
         Grid.SetColumn(hint, 3);
         bar.Children.Add(hint);
         var corner = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
-        // the bar's right end: 📎 in the quick AI; 📌 only while the launcher is pinned (Ctrl+P), a click lets it go
+        // the bar's right end: 📎 in the quick AI, ⚙ 설정 always; 📌 only while the launcher is pinned (Ctrl+P), a click lets it go
         attachButton = BarButton(G.Attach, Tr("파일 · 사진 첨부 — Ctrl+O, 붙여넣기나 끌어 놓기도 돼요", "Attach files or pictures — Ctrl+O, pasting or dropping works too"), PickFiles);
         attachButton.Visibility = Visibility.Collapsed;
         corner.Children.Add(attachButton);
-        pinButton = BarButton('', Tr("화면에 고정 (Ctrl+P) — 다른 곳을 눌러도 남아요 · 아래 바를 끌면 옮겨져요", "Keep on screen (Ctrl+P) — stays when you click elsewhere · drag the bottom bar to move it"), () => SetPinned(!Pinned));
+        corner.Children.Add(BarButton(G.Settings, Tr("설정 (Ctrl+,)", "Settings (Ctrl+,)"), host.OpenSettings));
+        pinButton = BarButton('', Tr("화면에 고정 (Ctrl+P) — 다른 곳을 눌러도 남아요 · 검색줄이나 아래 바를 끌면 옮겨져요", "Keep on screen (Ctrl+P) — stays when you click elsewhere · drag the search line or the bottom bar to move it"), () => SetPinned(!Pinned));
         pinButton.Visibility = Visibility.Collapsed;
         corner.Children.Add(pinButton);
         Grid.SetColumn(corner, 4);
@@ -231,25 +236,10 @@ internal sealed partial class Launcher : Window, IChatHost
         foot.Children.Add(footRight);
         Grid.SetRow(foot, 4);
         layout.Children.Add(foot);
-        // the footer is the handle: dragged, the launcher moves (its attached tools with it) and stays there; a double
-        // click puts it back in the middle
+        // the footer and the search line are the handles (Launcher.Move.cs)
         foot.Background = Brushes.Transparent;
-        foot.MouseLeftButtonDown += (_, e) =>
-        {
-            if (OnButton(e.OriginalSource as DependencyObject, foot)) return;
-            e.Handled = true;
-            if (e.ClickCount == 2)
-            {
-                movedTo = null;
-                Place();
-                host.Tools.Layout();
-                return;
-            }
-            DragMove();
-            Win32.GetWindowRect(Handle, out var r);
-            movedTo = new Win32.POINT { X = r.Left, Y = r.Top };
-            host.Tools.Layout();
-        };
+        MakeHandle(foot);
+        WireBoxDrag();
         LocationChanged += (_, _) =>
         {
             if (IsVisible) host.Tools.Layout(); // the attached tools follow while it is dragged
@@ -259,6 +249,10 @@ internal sealed partial class Launcher : Window, IChatHost
         box.TextChanged += (_, _) => OnText();
         box.PreviewKeyDown += OnBoxKey;
         PreviewKeyDown += OnKey;
+        PreviewKeyUp += (_, e) =>
+        {
+            if (Mode == Mode.Form && form?.Current.Keys == true) FormKeys(e, up: true); // PrintScreen arrives going up
+        };
         Deactivated += (_, _) => OnDeactivated();
         Activated += (_, _) =>
         {
@@ -543,7 +537,7 @@ internal sealed partial class Launcher : Window, IChatHost
         Keyboard.Focus(box);
     }
 
-    /// Where the launcher was dragged to (physical pixels), kept until Bloom restarts or the footer is double-clicked.
+    /// Where the launcher was dragged to (physical pixels), kept until Bloom restarts or a handle is double-clicked.
     private Win32.POINT? movedTo;
 
     /// A click on something in `root` that takes clicks itself (a hand cursor on it or above it).

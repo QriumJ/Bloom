@@ -50,11 +50,19 @@ internal sealed class KeyRecorder : SmoothBorder
             Start();
             e.Handled = true;
         };
-        AddHandler(PreviewKeyDownEvent, new KeyEventHandler(OnKey), true);
-        PreviewKeyUp += (_, _) =>
+        AddHandler(PreviewKeyDownEvent, new KeyEventHandler((_, e) =>
         {
-            if (IsListening) Show(Hotkeys.Held(Keyboard.Modifiers));
-        };
+            if (!IsListening) return;
+            e.Handled = true;
+            if (Hotkeys.Pressed(e) is var key && key != Key.Snapshot) Press(key);
+        }), true);
+        AddHandler(PreviewKeyUpEvent, new KeyEventHandler((_, e) =>
+        {
+            if (!IsListening) return;
+            e.Handled = true;
+            if (Hotkeys.Pressed(e) == Key.Snapshot) Press(Key.Snapshot); // PrintScreen comes only as a key going up
+            else Show(error is null ? Hotkeys.Held(Keyboard.Modifiers) : "");
+        }), true);
         LostKeyboardFocus += (_, _) => Stop();
         Show(null);
     }
@@ -70,11 +78,8 @@ internal sealed class KeyRecorder : SmoothBorder
         Show("");
     }
 
-    private void OnKey(object sender, KeyEventArgs e)
+    private void Press(Key key)
     {
-        if (!IsListening) return;
-        e.Handled = true;
-        Key key = e.Key switch { Key.System => e.SystemKey, Key.ImeProcessed => e.ImeProcessedKey, _ => e.Key };
         var mods = Keyboard.Modifiers;
         bool none = mods == ModifierKeys.None && !Keyboard.IsKeyDown(Key.LWin) && !Keyboard.IsKeyDown(Key.RWin);
         if (none && key == Key.Escape)
@@ -104,7 +109,7 @@ internal sealed class KeyRecorder : SmoothBorder
             Finish(combo);
             return;
         }
-        error = none ? Tr("Ctrl · Alt · Shift와 함께", "With Ctrl, Alt or Shift") : Tr("이 키는 못 써요", "Can't use this key");
+        error = none ? Tr("Ctrl · Alt · Shift · Win과 함께", "With Ctrl, Alt, Shift or Win") : Tr("이 키는 못 써요", "Can't use this key");
         Show("");
     }
 

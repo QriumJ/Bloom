@@ -69,7 +69,7 @@ internal sealed partial class Engine
     }
 
     /// What a shortcut field says when the keys can't be one.
-    public static string KeysHint => Tr("Ctrl · Alt · Shift · Win 중 하나 이상을 누른 채 글자 · 숫자 · F1~F12 · Space를 눌러 주세요", "Hold Ctrl, Alt, Shift or Win and press a letter, digit, F1–F12 or Space");
+    public static string KeysHint => Tr("Ctrl · Alt · Shift · Win 중 하나와 함께 눌러 주세요 — F키 · PrintScreen · Pause처럼 글자를 치지 않는 키는 혼자도 돼요", "Press it with Ctrl, Alt, Shift or Win — keys that type nothing (F keys, PrintScreen, Pause) work alone too");
 
     private static string ItemKeyTitle(string name) =>
         Settings.Current.ItemKeys.Find(k => "item:" + k.Item.Id == name) is { } k ? Clip(k.Item.Title, 20) : name;

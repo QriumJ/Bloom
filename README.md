@@ -137,8 +137,9 @@ No API key. Answers come from the Claude Code or Codex CLI you have installed an
 - **Calculator**: the same sums as the search line. Enter copies the answer and keeps it in the list; the bin in its head clears the list.
 - **Clipboard history** (Ctrl+Alt+V): the text, images and files you copied. Click one to copy it again; pin the ones you keep.
 - **Pin · move · size the launcher**
-  - 📌 (Ctrl+P) keeps the launcher on screen.
-  - Drag the bottom bar to move it anywhere; double-click the bar to put it back in the middle.
+  - Ctrl+P keeps the launcher on screen (📌 shows while it does).
+  - Drag the search line (anywhere past the text) or the bottom bar to move it, to another monitor too; double-click either to put it back in the middle.
+  - ⚙ at the end of the search line opens the settings (Ctrl+,).
   - Ctrl+= / Ctrl+- / Ctrl+0 scale Bloom from 80 to 150 % — the launcher, tools, AI chat and settings together.
 
 ### Bloom Space Cleaner
@@ -193,7 +194,7 @@ A map of where a drive's or folder's space went, every folder and file a block a
 | `Ctrl+Alt+T` · `Ctrl+Alt+O` | Translate the screen · copy text from the screen |
 | `Ctrl+Alt+V` | Clipboard history |
 
-The global shortcuts can be changed or switched off per feature in the settings: click one and press the keys, Backspace turns it off. Window switching, emoji, the color picker, asking AI about the screen, live translation and capture can have one too (off at first).
+The global shortcuts can be changed or switched off per feature in the settings: click one and press the keys, Backspace turns it off. Any key works with Ctrl, Alt, Shift or Win; keys that type nothing (F1–F24, PrintScreen, Pause, media keys) work alone too. Window switching, emoji, the color picker, asking AI about the screen, live translation and capture can have one too (off at first).
 
 ## About the AI features
 

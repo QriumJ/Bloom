@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Input;
 using System.Windows.Interop;
 using Bloom.Native;
@@ -89,44 +90,54 @@ internal sealed class Hotkeys : IDisposable
             if (name.StartsWith(prefix, StringComparison.Ordinal) && !keep.Contains(name)) Set(name, "off", () => { });
     }
 
-    /// "Ctrl + Alt + M", "alt+shift+f5", "컨트롤+알트+M" → "ctrl+alt+m" (modifiers in one order); null when it isn't a
-    /// combo Windows can register (at least one modifier and one key).
+    /// "Ctrl + Alt + M", "alt+shift+f5", "컨트롤+알트+M", "PrtSc" → "ctrl+alt+m" (modifiers in one order); null when it
+    /// isn't a combo Windows can register (one key, and a modifier unless the key types nothing: KeyNames.Alone).
     public static string? Normal(string typed)
     {
         var parts = new List<string>();
         foreach (string raw in typed.ToLowerInvariant().Replace(" ", "", StringComparison.Ordinal).Split('+', StringSplitOptions.RemoveEmptyEntries))
-            parts.Add(raw switch { "control" or "ctl" or "컨트롤" => "ctrl", "알트" => "alt", "시프트" => "shift", "windows" or "윈도우" or "윈도" => "win", "스페이스" or "spacebar" => "space", _ => raw });
+            parts.Add(raw switch
+            {
+                "control" or "ctl" or "컨트롤" => "ctrl",
+                "알트" => "alt",
+                "시프트" => "shift",
+                "windows" or "윈도우" or "윈도" => "win",
+                "스페이스" or "spacebar" => "space",
+                "prtsc" or "prtscn" or "printscr" or "print" => "printscreen",
+                "del" => "delete",
+                "ins" => "insert",
+                "pgup" => "pageup",
+                "pgdn" => "pagedown",
+                "escape" => "esc",
+                "return" => "enter",
+                _ => raw,
+            });
         string[] order = { "ctrl", "alt", "shift", "win" };
         var mods = Array.FindAll(order, parts.Contains);
         var keys = parts.FindAll(p => Array.IndexOf(order, p) < 0);
-        if (mods.Length == 0 || keys.Count != 1) return null;
-        string combo = string.Join("+", mods) + "+" + keys[0];
+        if (keys.Count != 1) return null;
+        string combo = string.Join("+", mods.Append(keys[0]));
         return Parse(combo) is null ? null : combo;
     }
 
-    /// A key pressed with the modifiers held → "ctrl+alt+m", or null when Windows can't register it (no modifier, a
-    /// modifier alone, a key Parse doesn't take). Win is read from the keys themselves (WPF's modifiers leave it out).
+    /// A key pressed with the modifiers held → "ctrl+alt+m", "printscreen", or null when Windows can't register it (a
+    /// modifier alone, a typing key without a modifier). Win is read from the keys themselves (WPF's modifiers leave it out).
     public static string? FromKey(Key key, ModifierKeys mods)
     {
-        string? k = key switch
-        {
-            >= Key.A and <= Key.Z => ((char)('a' + (key - Key.A))).ToString(),
-            >= Key.D0 and <= Key.D9 => ((char)('0' + (key - Key.D0))).ToString(),
-            >= Key.NumPad0 and <= Key.NumPad9 => ((char)('0' + (key - Key.NumPad0))).ToString(),
-            >= Key.F1 and <= Key.F12 => "f" + (key - Key.F1 + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
-            Key.Space => "space",
-            _ => null,
-        };
-        if (k is null) return null;
+        if (KeyNames.Name(key) is not { } k) return null;
         var parts = new List<string>();
         if ((mods & ModifierKeys.Control) != 0) parts.Add("ctrl");
         if ((mods & ModifierKeys.Alt) != 0) parts.Add("alt");
         if ((mods & ModifierKeys.Shift) != 0) parts.Add("shift");
         if ((mods & ModifierKeys.Windows) != 0 || Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin)) parts.Add("win");
-        if (parts.Count == 0) return null;
+        if (parts.Count == 0 && !KeyNames.Alone(k)) return null;
         parts.Add(k);
         return string.Join("+", parts);
     }
+
+    /// The key a key event is really about (Alt combos come as System, the IME's as ImeProcessed). PrintScreen reaches
+    /// WPF only as a key going up, so a shortcut being pressed in takes it there (and only there, never twice).
+    public static Key Pressed(KeyEventArgs e) => e.Key switch { Key.System => e.SystemKey, Key.ImeProcessed => e.ImeProcessedKey, Key.DeadCharProcessed => e.DeadCharProcessedKey, _ => e.Key };
 
     /// The modifiers held right now as a label to show while a shortcut is pressed in: "Ctrl+Alt+".
     public static string Held(ModifierKeys mods)
@@ -139,11 +150,13 @@ internal sealed class Hotkeys : IDisposable
         return s;
     }
 
-    /// "ctrl+alt+o" → (MOD_CONTROL | MOD_ALT, 'O'); letters, digits and F1–F12.
+    /// "ctrl+alt+o" → (MOD_CONTROL | MOD_ALT, 'O'), "printscreen" → (0, VK_SNAPSHOT): any key KeyNames knows, with a
+    /// modifier unless it types nothing.
     public static (uint mods, uint vk)? Parse(string combo)
     {
         if (string.IsNullOrWhiteSpace(combo) || combo == "off") return null;
         uint mods = 0, vk = 0;
+        string? key = null;
         foreach (string part in combo.ToLowerInvariant().Split('+'))
         {
             switch (part)
@@ -152,17 +165,20 @@ internal sealed class Hotkeys : IDisposable
                 case "alt": mods |= Win32.MOD_ALT; break;
                 case "shift": mods |= Win32.MOD_SHIFT; break;
                 case "win": mods |= Win32.MOD_WIN; break;
-                case "space": vk = 0x20; break;
-                case { Length: 1 } c when char.IsLetterOrDigit(c[0]): vk = char.ToUpperInvariant(c[0]); break;
-                case { Length: >= 2 } f when f[0] == 'f' && int.TryParse(f[1..], out int n) && n is >= 1 and <= 12: vk = (uint)(0x6F + n); break;
-                default: return null;
+                default:
+                    if (key is not null || KeyNames.Of(part) is not { } k) return null;
+                    key = part;
+                    vk = (uint)KeyInterop.VirtualKeyFromKey(k);
+                    break;
             }
         }
-        return vk == 0 || mods == 0 ? null : (mods, vk);
+        if (key is null || vk == 0 || mods == 0 && !KeyNames.Alone(key)) return null;
+        return (mods, vk);
     }
 
-    /// "ctrl+alt+o" → "Ctrl+Alt+O"
-    public static string Label(string combo) => combo == "off" ? Tr("끔", "Off") : string.Join("+", Array.ConvertAll(combo.Split('+'), p => p.Length == 1 ? p.ToUpperInvariant() : char.ToUpperInvariant(p[0]) + p[1..]));
+    /// "ctrl+alt+o" → "Ctrl+Alt+O", "printscreen" → "PrintScreen"
+    public static string Label(string combo) => combo == "off" ? Tr("끔", "Off")
+        : string.Join("+", Array.ConvertAll(combo.Split('+'), p => p switch { "ctrl" => "Ctrl", "alt" => "Alt", "shift" => "Shift", "win" => "Win", _ => KeyNames.Label(p) }));
 
     public void Dispose()
     {

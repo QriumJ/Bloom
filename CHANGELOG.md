@@ -2,6 +2,22 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.10.1
+
+- Drag the launcher by its search line, not only the bottom bar. Past the text the line drags; on the text it still places the caret and selects.
+- A ⚙ at the end of the search line opens the settings.
+- Notes, timers and the other tool windows can be dragged onto another monitor. They used to keep snapping back to the edge of the screen they were on.
+- Shortcuts take any key: PrintScreen, Pause, F13–F24, the number pad, punctuation, media keys. Keys that type nothing work on their own; the rest need Ctrl, Alt, Shift or Win.
+- The color picker always starts on the screen: the magnifier and the color code follow the mouse, and the color view opens after you click.
+
+### 한국어
+
+- 아래쪽 바뿐 아니라 검색줄을 끌어서도 런처를 옮길 수 있어요. 글자가 없는 곳을 끌면 옮겨지고, 글자 위에서는 그대로 커서를 두거나 선택해요.
+- 검색줄 끝의 ⚙로 설정을 바로 열어요.
+- 메모 · 타이머 같은 도구 창을 다른 모니터로 옮길 수 있어요. 전에는 화면 가장자리에 계속 다시 붙었어요.
+- 단축키에 어떤 키든 쓸 수 있어요. PrintScreen, Pause, F13~F24, 숫자 패드, 기호, 미디어 키까지요. 글자를 치지 않는 키는 혼자서도 되고, 나머지는 Ctrl · Alt · Shift · Win과 함께 눌러요.
+- 컬러 피커는 항상 화면에서 시작해요. 마우스를 따라 돋보기와 색 코드가 보이고, 클릭하면 색 화면이 열려요.
+
 ## 0.10.0
 
 Everything since 0.8.3 in one place: what's new in this update first, then what came in 0.9.0 to 0.9.3.

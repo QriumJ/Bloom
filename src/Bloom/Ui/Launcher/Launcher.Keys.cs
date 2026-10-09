@@ -242,11 +242,12 @@ internal sealed partial class Launcher
 
     /// A shortcut field in a form (Ctrl+K › 단축키 지정): the keys pressed show as the combo instead of going in as text;
     /// Backspace clears it (and on an empty field goes back), Esc and Enter are the form's.
-    private void FormKeys(KeyEventArgs e)
+    private void FormKeys(KeyEventArgs e, bool up = false)
     {
-        Key key = e.Key switch { Key.System => e.SystemKey, Key.ImeProcessed => e.ImeProcessedKey, _ => e.Key };
+        Key key = Hotkeys.Pressed(e);
         if (key is Key.Escape or Key.Tab) return;
         e.Handled = true;
+        if ((key == Key.Snapshot) != up) return; // PrintScreen only as a key going up, the rest only going down
         var mods = Keyboard.Modifiers;
         if (key is Key.Back or Key.Delete && mods == ModifierKeys.None)
         {

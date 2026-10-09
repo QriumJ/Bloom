@@ -99,8 +99,7 @@ internal sealed partial class Host
                 OpenView(Mode.Timers);
                 break;
             case "cmd:color":
-                if (ColorBook.Now is null) StartColor();
-                else OpenView(Mode.Color);
+                StartColor(); // the screen first (magnifier + code under the arrow); the colour view after the click
                 break;
             case "cmd:export":
                 Window.Dismiss();

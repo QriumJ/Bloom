@@ -121,6 +121,8 @@ internal sealed class ToolWindow : Window
         };
     }
 
+    private Win32.POINT grab; // where the mouse holds the window, from its top-left corner, while it is dragged
+
     // the attach button: attached, 떼기 (a window coming out); floating, 붙이기 (docked on the right) — not a pin, so it
     // never looks like 항상 위
     private const char Undock = '\uE8A7', DockOn = '\uE90D';
@@ -128,12 +130,27 @@ internal sealed class ToolWindow : Window
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
         // a drag or a resize starts: the attached tools laid out along an edge stay where they are from now on
-        if (msg == Win32.WM_ENTERSIZEMOVE && Edge is not null) dock.Freeze();
+        if (msg == Win32.WM_ENTERSIZEMOVE)
+        {
+            if (Edge is not null) dock.Freeze();
+            Win32.GetCursorPos(out var c);
+            var start = Rect;
+            grab = new Win32.POINT { X = c.X - start.Left, Y = c.Y - start.Top };
+        }
         if (msg is Win32.WM_MOVING or Win32.WM_SIZING)
         {
-            // while dragged or sized: the edges that move pull to the edges nearby (other tools, the launcher, the screen)
+            // while dragged or sized: the edges that move pull to the edges nearby (other tools, the launcher, the screen).
+            // A drag works from where the mouse is, not from the rectangle Windows offers: that one starts from the last
+            // snapped place, so a slow drag kept snapping back to a screen's edge and never reached the next monitor.
             var r = System.Runtime.InteropServices.Marshal.PtrToStructure<Win32.RECT>(lParam);
-            if (msg == Win32.WM_MOVING ? dock.Magnet(this, ref r) : dock.MagnetEdges(this, (int)wParam.ToInt64(), ref r))
+            if (msg == Win32.WM_MOVING)
+            {
+                Win32.GetCursorPos(out var c);
+                int w = r.Right - r.Left, h = r.Bottom - r.Top;
+                r = new Win32.RECT { Left = c.X - grab.X, Top = c.Y - grab.Y, Right = c.X - grab.X + w, Bottom = c.Y - grab.Y + h };
+                dock.Magnet(this, ref r);
+            }
+            if (msg == Win32.WM_MOVING || dock.MagnetEdges(this, (int)wParam.ToInt64(), ref r))
             {
                 System.Runtime.InteropServices.Marshal.StructureToPtr(r, lParam, false);
                 handled = true;
