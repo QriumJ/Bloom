@@ -15,7 +15,7 @@ namespace Bloom.Ui;
 
 /// A conversation: in the launcher under the search line (the composer there), or in the AI chat window. Only the
 /// message being streamed is re-rendered; the rest stays as built.
-internal sealed class ChatView : Grid
+internal sealed class ChatView : Grid, IComposerHost
 {
     private readonly Host host;
     private readonly IChatHost owner;
@@ -37,6 +37,10 @@ internal sealed class ChatView : Grid
         SetRow(pending, 1);
         Children.Add(pending);
     }
+
+    public void FocusComposer() => owner.FocusComposer();
+
+    public void ShowToast(string text) => owner.ShowToast(text);
 
     /// The AI chat window's conversation keeps a readable line length however wide the window gets (centered).
     public double ReadWidth
@@ -197,6 +201,7 @@ internal sealed class ChatView : Grid
         // messages that just arrived rise in (the question flowing in from the search line)
         int fresh = ReferenceEquals(t, shown) ? builtCount : t.Messages.Count;
         shown = t;
+        updateFor = null; // a change still waiting belongs to what was shown before (or is drawn now)
         built.Clear();
         builtText.Clear();
         stack.Children.Clear();
@@ -257,7 +262,25 @@ internal sealed class ChatView : Grid
     }
 
     /// Re-renders the messages whose text or status changed (in practice: the last one).
+    /// A streamed answer changes with every few words: the changes of one moment are drawn once, after the dispatcher
+    /// has taken in all the pieces that arrived (Background priority), not once per piece. The launcher already paces
+    /// its calls (chatTick, 50 ms); the chat window calls on every piece.
     public void Update(ChatThread t)
+    {
+        updateFor = t;
+        if (updateQueued) return;
+        updateQueued = true;
+        Dispatcher.BeginInvoke(() =>
+        {
+            updateQueued = false;
+            if (updateFor is { } u) UpdateNow(u);
+        }, System.Windows.Threading.DispatcherPriority.Background);
+    }
+
+    private ChatThread? updateFor;
+    private bool updateQueued;
+
+    private void UpdateNow(ChatThread t)
     {
         if (!ReferenceEquals(t, shown) || stack.Children.Count == 0 || t.Messages.Count != built.Count)
         {
@@ -372,9 +395,7 @@ internal sealed class ChatView : Grid
                 };
                 col.Children.Add(chip);
             }
-            var tb = Markdown.Para(14, Theme.Regular);
-            tb.Margin = new Thickness(0);
-            tb.Text = Hangul.KeepAll(m.Text);
+            var tb = ReadText.Plain(m.Text, 14, Theme.Regular, fit: true);
             col.Children.Add(new SmoothBorder
             {
                 Background = Theme.P.UserBubble,
@@ -396,10 +417,7 @@ internal sealed class ChatView : Grid
         {
             if (m.Error)
             {
-                var err = Markdown.Para(13.5, Theme.Regular);
-                err.Foreground = Theme.P.Danger;
-                err.Text = Hangul.KeepAll(m.Text);
-                answer.Children.Add(err);
+                answer.Children.Add(ReadText.Plain(m.Text, 13.5, Theme.Regular, Theme.P.Danger));
             }
             else answer.Children.Add(Markdown.Render(m.Text, url => Browser.Web.Open(url)));
         }

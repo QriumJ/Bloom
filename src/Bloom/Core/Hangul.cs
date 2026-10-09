@@ -83,8 +83,10 @@ internal static class Hangul
         return sb.ToString().ToLowerInvariant();
     }
 
+    private const char Joiner = '\u2060'; // WORD JOINER
+
     /// Korean words keep together when wrapped (CSS keep-all): a WORD JOINER between syllables.
-    /// Display only — copied text always comes from the original string.
+    /// Display only — copied text comes from the original string, or goes through Unjoin (text selected on screen).
     public static string KeepAll(string s)
     {
         if (s.Length < 2) return s;
@@ -95,10 +97,13 @@ internal static class Hangul
             if (i > 0 && IsSyllable(c) && IsSyllable(s[i - 1]))
             {
                 sb ??= new StringBuilder(s, 0, i, s.Length + 16);
-                sb.Append('⁠');
+                sb.Append(Joiner);
             }
             sb?.Append(c);
         }
         return sb?.ToString() ?? s;
     }
+
+    /// KeepAll undone: shown text back to what was written (a selection copied from a conversation).
+    public static string Unjoin(string s) => s.Replace(Joiner.ToString(), "", System.StringComparison.Ordinal);
 }

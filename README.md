@@ -82,6 +82,7 @@ No API key. Answers come from the Claude Code or Codex CLI you have installed an
   - Continue past chats and keep them in groups (folders).
   - Attach files and pictures (drag and drop · Ctrl+O · Ctrl+V).
   - Open or save the files the AI makes.
+- **Copy any part**: drag over an answer, your message or a code block (in the quick chat too) and press Ctrl+C or right-click › Copy.
 - **Hand off PC tasks**: "move the quote PDF I got yesterday into Documents", "volume 30", "find last week's videos in Downloads".
   - Anything that changes something is asked about on a card in the chat, every time (Allow · Always in this chat · Decline).
   - What was done stays under the answer as ✓ / ✕.

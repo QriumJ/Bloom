@@ -31,6 +31,8 @@ internal sealed partial class Launcher
 
     void IChatHost.ShowChat(ChatThread t) => ShowChat(t);
 
+    void IChatHost.FocusComposer() => FocusBox();
+
     /// Ctrl+Shift+O: this conversation in the AI chat window, with what was typed and attached so far.
     public void OpenInWindow()
     {

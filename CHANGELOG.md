@@ -2,6 +2,16 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.9.1
+
+- AI answers can be copied in pieces. Drag over any part of an answer, your own message or a code block, in the Tab quick chat or the AI chat window, then press Ctrl+C or right-click › Copy.
+- The AI chat window keeps up better while a long answer streams in.
+
+### 한국어
+
+- AI 답을 원하는 부분만 복사할 수 있어요. Tab 빠른 AI나 AI 채팅 창에서 답 · 내가 보낸 말 · 코드 블록을 드래그하고 Ctrl+C나 오른쪽 클릭 › 복사를 누르면 돼요.
+- 긴 답이 들어오는 동안 AI 채팅 창이 덜 버벅여요.
+
 ## 0.9.0
 
 - Type a path like `C:\Users`, `D:/work` or `%APPDATA%` and the folder comes first. Enter opens it, Tab goes into the folder you picked.

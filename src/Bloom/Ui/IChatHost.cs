@@ -24,4 +24,7 @@ internal interface IChatHost
     void CycleEffort();
 
     void ShowToast(string text);
+
+    /// The keyboard back to where questions are typed (after text in the conversation was selected and copied).
+    void FocusComposer();
 }

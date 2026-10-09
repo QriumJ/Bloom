@@ -283,6 +283,12 @@ internal sealed partial class ChatWindow : Window, IChatHost
         Header();
     }
 
+    public void FocusComposer()
+    {
+        input.Focus();
+        Keyboard.Focus(input);
+    }
+
     public void ShowToast(string text)
     {
         toast.Text = text;

@@ -6,14 +6,16 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Bloom.Core;
 
 namespace Bloom.Ui;
 
 /// A small Markdown renderer for chat answers: headings, paragraphs, lists, quotes, rules, pipe
-/// tables, fenced code (with a copy button), **bold**, *italic*, `code`, ~~strike~~ and links.
-/// Korean words are kept together when lines wrap (display only; copying uses the source text).
+/// tables, fenced code (with a copy button), **bold**, *italic*, `code`, ~~strike~~ and links — one document per
+/// answer, so text can be dragged over and copied anywhere in it (Controls\ReadText.cs).
+/// Korean words are kept together when lines wrap (display only; copying leaves the joiners out).
 internal static class Markdown
 {
     private static readonly Regex ListItem = new(@"^(\s*)([-*+]|\d{1,3}[.)])\s+(.*)$");
@@ -21,9 +23,17 @@ internal static class Markdown
     private static readonly Regex RuleLine = new(@"^\s*([-*_])(\s*\1){2,}\s*$");
     private static readonly Regex TableSep = new(@"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$");
 
-    public static FrameworkElement Render(string md, Action<string> openLink, double size = 14)
+    /// The whole answer as one selectable document: drag across paragraphs, lists and tables to copy.
+    public static ReadText Render(string md, Action<string> openLink, double size = 14)
     {
-        var root = new StackPanel();
+        var doc = ReadText.Doc(size);
+        Blocks(md, openLink, size, doc.Blocks);
+        if (doc.Blocks.LastBlock is { } last) last.Margin = new Thickness(last.Margin.Left, last.Margin.Top, last.Margin.Right, 0);
+        return new ReadText(doc);
+    }
+
+    private static void Blocks(string md, Action<string> openLink, double size, BlockCollection into)
+    {
         string[] lines = md.Replace("\r\n", "\n").Split('\n');
         int i = 0;
         while (i < lines.Length)
@@ -43,7 +53,7 @@ internal static class Markdown
                     i++;
                 }
                 i++; // closing fence (or the end while streaming)
-                root.Children.Add(CodeBlock(code.ToString(), lang));
+                into.Add(new BlockUIContainer(CodeBlock(code.ToString(), lang)) { Margin = new Thickness(0, 2, 0, 10) });
                 continue;
             }
             if (trim.Length == 0)
@@ -55,16 +65,16 @@ internal static class Markdown
             if (h.Success)
             {
                 int level = h.Groups[1].Value.Length;
-                var tb = Para(size + (level <= 1 ? 3 : level == 2 ? 1.5 : 0.5), Theme.Semi);
-                Inline(h.Groups[2].Value, tb.Inlines, openLink);
-                tb.Margin = new Thickness(0, root.Children.Count == 0 ? 0 : 6, 0, 6);
-                root.Children.Add(tb);
+                var p = ReadText.Paragraph(size + (level <= 1 ? 3 : level == 2 ? 1.5 : 0.5), Theme.Semi);
+                Inline(h.Groups[2].Value, p.Inlines, openLink);
+                p.Margin = new Thickness(0, into.Count == 0 ? 0 : 6, 0, 6);
+                into.Add(p);
                 i++;
                 continue;
             }
             if (RuleLine.IsMatch(line))
             {
-                root.Children.Add(new SmoothBorder { Height = 1, Background = Theme.P.Line, Margin = new Thickness(0, 6, 0, 10) });
+                into.Add(new BlockUIContainer(new SmoothBorder { Height = 1, Background = Theme.P.Line }) { Margin = new Thickness(0, 6, 0, 10) });
                 i++;
                 continue;
             }
@@ -76,7 +86,7 @@ internal static class Markdown
                     if (!TableSep.IsMatch(lines[i])) rows.Add(lines[i]);
                     i++;
                 }
-                root.Children.Add(Table(rows, openLink, size));
+                into.Add(Table(rows, openLink, size));
                 continue;
             }
             if (trim.StartsWith('>'))
@@ -89,28 +99,29 @@ internal static class Markdown
                     quote.Append(q).Append('\n');
                     i++;
                 }
-                var inner = Render(quote.ToString().TrimEnd(), openLink, size);
-                root.Children.Add(new SmoothBorder
+                var section = new Section
                 {
                     BorderBrush = Theme.P.Line,
                     BorderThickness = new Thickness(2, 0, 0, 0),
                     Padding = new Thickness(12, 2, 0, 2),
                     Margin = new Thickness(0, 0, 0, 8),
-                    Child = inner,
-                });
+                };
+                Blocks(quote.ToString().TrimEnd(), openLink, size, section.Blocks);
+                if (section.Blocks.LastBlock is { } lastQ) lastQ.Margin = new Thickness(lastQ.Margin.Left, lastQ.Margin.Top, lastQ.Margin.Right, 0);
+                into.Add(section);
                 continue;
             }
             if (ListItem.IsMatch(line))
             {
-                var list = new StackPanel { Margin = new Thickness(0, 0, 0, 8) };
                 int number = 0;
+                Paragraph? prev = null;
                 while (i < lines.Length)
                 {
                     var m = ListItem.Match(lines[i]);
                     if (!m.Success)
                     {
                         // a wrapped continuation line belongs to the previous item
-                        if (lines[i].StartsWith("  ", StringComparison.Ordinal) && lines[i].Trim().Length > 0 && list.Children.Count > 0 && list.Children[^1] is Grid last && last.Children[1] is TextBlock prev)
+                        if (lines[i].StartsWith("  ", StringComparison.Ordinal) && lines[i].Trim().Length > 0 && prev is not null)
                         {
                             prev.Inlines.Add(new LineBreak());
                             Inline(lines[i].Trim(), prev.Inlines, openLink);
@@ -123,25 +134,16 @@ internal static class Markdown
                     string marker = m.Groups[2].Value;
                     bool ordered = char.IsDigit(marker[0]);
                     number = ordered ? int.TryParse(marker.TrimEnd('.', ')'), out int n) ? n : number + 1 : number;
-                    var row = new Grid { Margin = new Thickness(Math.Min(indent, 4) * 18, 0, 0, 3) };
-                    row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(ordered ? 22 : 16) });
-                    row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                    var bullet = Theme.T(ordered ? number + "." : indent > 0 ? "◦" : "•", size, Theme.P.TextFaint, Theme.Regular, false);
-                    bullet.VerticalAlignment = VerticalAlignment.Top;
-                    row.Children.Add(bullet);
-                    var body = Para(size, Theme.Regular);
-                    body.Margin = new Thickness(0);
-                    Inline(m.Groups[3].Value, body.Inlines, openLink);
-                    Grid.SetColumn(body, 1);
-                    row.Children.Add(body);
-                    list.Children.Add(row);
+                    prev = Item(ordered ? number + "." : indent > 0 ? "◦" : "•", ordered ? 22 : 16, Math.Min(indent, 4) * 18, size);
+                    Inline(m.Groups[3].Value, prev.Inlines, openLink);
+                    into.Add(prev);
                     i++;
                 }
-                root.Children.Add(list);
+                if (prev is not null) prev.Margin = new Thickness(prev.Margin.Left, 0, 0, 11); // the item's 3 + the list's own 8 after it
                 continue;
             }
             // paragraph: until a blank line or another block
-            var para = Para(size, Theme.Regular);
+            var para = ReadText.Paragraph(size, Theme.Regular);
             bool firstLine = true;
             while (i < lines.Length)
             {
@@ -153,11 +155,22 @@ internal static class Markdown
                 firstLine = false;
                 i++;
             }
-            root.Children.Add(para);
+            into.Add(para);
         }
-        if (root.Children.Count > 0 && root.Children[^1] is FrameworkElement lastEl)
-            lastEl.Margin = new Thickness(lastEl.Margin.Left, lastEl.Margin.Top, lastEl.Margin.Right, 0);
-        return root;
+    }
+
+    /// One list item: the marker in a column of its own (`width`), the text hanging beside it when it wraps.
+    private static Paragraph Item(string marker, double width, double indent, double size)
+    {
+        var p = ReadText.Paragraph(size, Theme.Regular);
+        p.Margin = new Thickness(indent + width, 0, 0, 3);
+        p.TextIndent = -width;
+        var mark = Theme.T(marker, size, Theme.P.TextFaint, Theme.Regular, false);
+        mark.Width = width;
+        // an inline element sits on the baseline by its bottom edge: the part under the marker's own baseline hangs below
+        mark.Margin = new Thickness(0, 0, 0, -(Theme.Sans.LineSpacing - Theme.Sans.Baseline) * size);
+        p.Inlines.Add(new InlineUIContainer(mark) { BaselineAlignment = BaselineAlignment.Baseline });
+        return p;
     }
 
     public static TextBlock Para(double size, FontWeight weight) => new()
@@ -171,20 +184,26 @@ internal static class Markdown
         Margin = new Thickness(0, 0, 0, 8),
     };
 
-    private static FrameworkElement CodeBlock(string code, string lang)
+    /// Fenced code: monospace on its own tint, with 복사 for all of it. It is drawn as a plain TextBlock and becomes
+    /// selectable (a ReadText, laid out the same) when the mouse first comes over it: a text box of its own inside the
+    /// answer's costs about 20 KB of memory, which most code blocks are never dragged over to need.
+    private static SmoothBorder CodeBlock(string code, string lang)
     {
         var grid = new Grid();
-        var text = new TextBlock
+        var holder = new Border
         {
-            Text = code,
-            FontFamily = Theme.Mono,
-            FontSize = 12.5,
-            Foreground = Theme.P.Text,
-            TextWrapping = TextWrapping.Wrap,
-            LineHeight = 19,
             Margin = new Thickness(0, lang.Length > 0 ? 18 : 0, 0, 0),
+            Background = Brushes.Transparent, // the mouse finds it between the lines too
+            Child = new TextBlock { Text = code, FontFamily = Theme.Mono, FontSize = 12.5, Foreground = Theme.P.Text, TextWrapping = TextWrapping.Wrap, LineHeight = 19 },
         };
-        grid.Children.Add(text);
+        holder.MouseEnter += Selectable;
+        void Selectable(object sender, MouseEventArgs e)
+        {
+            holder.MouseEnter -= Selectable;
+            var p = new Paragraph(new Run(code)) { FontFamily = Theme.Mono, FontSize = 12.5, LineHeight = 19, Margin = new Thickness(0) };
+            holder.Child = new ReadText(ReadText.Doc(12.5, p));
+        }
+        grid.Children.Add(holder);
         if (lang.Length > 0)
         {
             var l = Theme.T(lang, 11, Theme.P.TextFaint, Theme.Medium);
@@ -223,12 +242,11 @@ internal static class Markdown
             Background = Theme.P.Code,
             CornerRadius = new CornerRadius(8),
             Padding = new Thickness(12, 9, 12, 10),
-            Margin = new Thickness(0, 2, 0, 10),
             Child = grid,
         };
     }
 
-    private static FrameworkElement Table(List<string> rows, Action<string> openLink, double size)
+    private static Table Table(List<string> rows, Action<string> openLink, double size)
     {
         var cells = new List<string[]>();
         int cols = 0;
@@ -242,30 +260,24 @@ internal static class Markdown
             cols = Math.Max(cols, parts.Length);
             cells.Add(parts);
         }
-        var grid = new Grid { Margin = new Thickness(0, 2, 0, 10) };
-        for (int c = 0; c < cols; c++) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var table = new Table { CellSpacing = 0, Margin = new Thickness(0, 2, 0, 10) };
+        for (int c = 0; c < cols; c++) table.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) });
+        var group = new TableRowGroup();
+        table.RowGroups.Add(group);
         for (int r = 0; r < cells.Count; r++)
         {
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var row = new TableRow();
             for (int c = 0; c < cols; c++)
             {
-                var tb = Para(size - 1, r == 0 ? Theme.Semi : Theme.Regular);
-                tb.Margin = new Thickness(0);
-                tb.LineHeight = Math.Round((size - 1) * 1.5);
-                if (c < cells[r].Length) Inline(cells[r][c], tb.Inlines, openLink);
-                var cell = new SmoothBorder
-                {
-                    Child = tb,
-                    Padding = new Thickness(0, 6, 10, 6),
-                    BorderBrush = Theme.P.Line,
-                    BorderThickness = new Thickness(0, 0, 0, 1),
-                };
-                Grid.SetRow(cell, r);
-                Grid.SetColumn(cell, c);
-                grid.Children.Add(cell);
+                var p = ReadText.Paragraph(size - 1, r == 0 ? Theme.Semi : Theme.Regular);
+                p.Margin = new Thickness(0);
+                p.LineHeight = Math.Round((size - 1) * 1.5);
+                if (c < cells[r].Length) Inline(cells[r][c], p.Inlines, openLink);
+                row.Cells.Add(new TableCell(p) { Padding = new Thickness(0, 6, 10, 6), BorderBrush = Theme.P.Line, BorderThickness = new Thickness(0, 0, 0, 1) });
             }
+            group.Rows.Add(row);
         }
-        return grid;
+        return table;
     }
 
     // ── inline ──────────────────────────────────────────────────────────────────────────────────
@@ -293,7 +305,7 @@ internal static class Markdown
             }
             else if (m.Groups["c"].Success)
             {
-                into.Add(new Run(" " + m.Groups["c"].Value + " ") { FontFamily = Theme.Mono, FontSize = 12.5, Background = Theme.P.Code });
+                into.Add(new Run(" " + m.Groups["c"].Value + " ") { FontFamily = Theme.Mono, FontSize = 12.5, Background = Theme.P.Code });
             }
             else if (m.Groups["lt"].Success)
             {
