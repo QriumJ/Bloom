@@ -99,22 +99,32 @@ internal sealed class ClaudeSession : IChatSession
         return null;
     }
 
+    /// The chats' instructions. They stay the same from start to start (no clock in them: the time comes with each
+    /// message, LocalTime), so a CLI started again for the same conversation reads its prompt cache instead of writing it
+    /// all again (~140k tokens a restart while the clock was in here).
     public static string SystemPrompt(string? outDir = null, string intro = "You are the quick assistant inside Bloom, a Windows launcher the user opens with the Win key. ", bool pc = false, bool titles = false)
     {
-        var now = DateTime.Now;
         return intro
             + (titles ? ChatTitles.Instruction : "")
             + "Reply in the user's language (Korean when they write Korean). Be concise: lead with the answer, then only the detail that helps. "
             + "Use Markdown when it helps (short lists, tables, fenced code with a language). "
             + "You may use web search for current facts, prices, news or anything time-sensitive; mention sources briefly when you do. "
-            + "When the message starts with a <page> block, it is the page the user has open in their browser; answer about it. "
+            + "Each message has a <local_time> line: the user's local date and time when they sent it. "
+            + "A <page> block in the message is the page the user has open in their browser; answer about it. "
             + "An <earlier_conversation> block is this conversation so far, held with another model. "
             + (outDir is null ? "" : "Files: an <attachments> block lists files the user attached, as paths relative to your working folder; read them with your file tool. "
             + $"When the user asks for a file (a document, code, a table, a list, an SVG picture...), write it into {outDir}/ with a fitting name and say its name in one line; "
             + "it appears in the chat as a file the user can open or save. Never write anywhere else. ")
             + (pc ? "The bloom tools act on the user's PC (find first, then act); each action waits for the user's OK. If declined, don't retry. Do only what was asked; say in one line what you did. "
-                + (App.Mcp.BloomTools.GroupOn("bloom") ? "Notes, timers, reminders and events are Bloom's own: use the bloom tool's note, timer and event for them, never a file or another app. " : "") : "")
-            + $"Local time: {now:yyyy-MM-dd HH:mm} ({now:dddd}), {TimeZoneInfo.Local.Id}.";
+                + (App.Mcp.BloomTools.GroupOn("bloom") ? "Notes, timers, reminders and events are Bloom's own: use the bloom tool's note, timer and event for them, never a file or another app. " : "") : "");
+    }
+
+    /// The line each chat message starts with: the local time it was sent ("<local_time>2026-10-09 14:05 (Friday), Korea
+    /// Standard Time</local_time>").
+    public static string LocalTime()
+    {
+        var now = DateTime.Now;
+        return $"<local_time>{now:yyyy-MM-dd HH:mm} ({now:dddd}), {TimeZoneInfo.Local.Id}</local_time>";
     }
 
     public bool Start(string? resume, out string? error)

@@ -165,7 +165,7 @@ internal sealed partial class Chats
         Updated?.Invoke(t);
 
         var s = SessionFor(t, out string? error, out bool fresh);
-        string prompt = page is null ? text : $"<page title=\"{Esc(pageTitle ?? "")}\">\n{page}\n</page>\n\n{text}";
+        string prompt = ClaudeSession.LocalTime() + "\n" + (page is null ? text : $"<page title=\"{Esc(pageTitle ?? "")}\">\n{page}\n</page>\n\n{text}");
         if (attached is { Count: > 0 })
             prompt += AiModels.Provider(t.Model) == "chatgpt" ? Inline(attached) : "\n\n<attachments>\n" + string.Join("\n", attached.Select(f => "- " + FilesRel(t) + "/in/" + Path.GetFileName(f))) + "\n</attachments>";
         if (fresh) prompt = Earlier(t) + prompt;

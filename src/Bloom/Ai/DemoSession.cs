@@ -132,7 +132,7 @@ internal static class DemoAnswers
     public static string Chat(string prompt)
     {
         string q = prompt;
-        foreach (string end in new[] { "</earlier_conversation>", "</page>" })
+        foreach (string end in new[] { "</earlier_conversation>", "</local_time>", "</page>" })
             if (q.LastIndexOf(end, StringComparison.Ordinal) is int at and >= 0) q = q[(at + end.Length)..];
         if (q.IndexOf("\n\n<attachments>", StringComparison.Ordinal) is int files and >= 0) q = q[..files];
         q = q.ToLowerInvariant();

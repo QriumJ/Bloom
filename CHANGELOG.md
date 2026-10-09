@@ -4,11 +4,13 @@ Each release on GitHub shows its section from this file (the workflow looks for 
 
 ## 0.9.3
 
-- An unused chat closes its Claude or Codex CLI after 10 minutes again (0.9.2 made it 5). Starting the CLI again costs AI usage, so the shorter wait could use more. If 0.9.2 set it to 5 for you, it moves back to 10 once. You can still set your own time in Settings › AI chat.
+- Picking a chat up again after its CLI was closed should cost much less AI usage. The clock is no longer part of the chat's instructions (the time now comes with each message), so a CLI started again can reuse what the AI service already cached instead of taking in the whole conversation again.
+- An unused chat closes its Claude or Codex CLI after 10 minutes again (0.9.2 made it 5). If 0.9.2 set it to 5 for you, it moves back to 10 once. You can still set your own time in Settings › AI chat.
 
 ### 한국어
 
-- 안 쓰는 대화의 Claude · Codex CLI를 다시 10분 뒤에 닫아요(0.9.2에서 5분으로 줄였어요). CLI를 다시 띄우면 AI 사용량이 들어서, 짧게 닫으면 오히려 더 쓸 수 있었어요. 0.9.2가 5분으로 정해 둔 경우 한 번 10분으로 돌려놔요. 시간은 설정 › AI 채팅에서 직접 정할 수 있어요.
+- CLI가 닫힌 대화를 다시 이어 갈 때 AI 사용량이 훨씬 덜 들어요. 대화 지시문에서 현재 시각을 빼고 메시지마다 시각을 붙이도록 바꿔서, 다시 띄운 CLI가 AI 쪽에 저장된 캐시를 그대로 쓸 수 있어요. 대화 전체를 처음부터 다시 넣지 않아요.
+- 안 쓰는 대화의 Claude · Codex CLI를 다시 10분 뒤에 닫아요(0.9.2에서 5분으로 줄였어요). 0.9.2가 5분으로 정해 둔 경우 한 번 10분으로 돌려놔요. 시간은 설정 › AI 채팅에서 직접 정할 수 있어요.
 
 ## 0.9.2
 
