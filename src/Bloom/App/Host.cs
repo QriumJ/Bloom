@@ -60,6 +60,7 @@ internal sealed partial class Host
         Timers.Load();
         Notes.Load();
         ColorBook.Load();
+        if (!Settings.Current.GpuDrawing) System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly; // 설정 › 성능: about 30 MB less without the GPU driver
         Theme.InitScale();
         Theme.Apply(Settings.Current.Theme);
 
@@ -183,21 +184,48 @@ internal sealed partial class Host
             if (Settings.Current.Onboarded != true) ShowOnboarding();
             else if (Opt.Settings) OpenSettings();
             else if (Opt.Show) Summon();
+            if (!Opt.Demo && Opt.MeasureSeconds is null && ReleaseNotes.JustUpdated())
+            {
+                // the first start on a new version: 바뀐 점 a moment later, without taking the focus
+                var soon = new DispatcherTimer(DispatcherPriority.Background, ui) { Interval = TimeSpan.FromSeconds(3) };
+                soon.Tick += (_, _) =>
+                {
+                    soon.Stop();
+                    ShowWhatsNew(quiet: true);
+                };
+                soon.Start();
+            }
         }
         else _ = Captures.Run(this, Opt.CaptureDir);
         Log.Write($"started {(Paths.IsDev ? "dev " + Paths.Data : "")} pid {Environment.ProcessId}");
     }
 
-    /// QA (`--qa-measure <s>`): how much memory this run holds after `seconds` of ordinary running → memory.txt in the
-    /// data folder, then quit. Private bytes is the number to compare (the working set is trimmed while hidden).
+    /// 바뀐 점: this version's notes from the changelog (설정 › 정보, and once after an update with `quiet`: no focus).
+    public void ShowWhatsNew(bool quiet = false)
+    {
+        string v = ReleaseNotes.Current;
+        var w = new WhatsNewWindow(v, ReleaseNotes.For(v) ?? Tr("이번 버전의 변경 기록이 없어요.", "There are no notes for this version.")) { ShowActivated = !quiet };
+        w.Closed += (_, _) => Window.TrimSoon();
+        w.Show();
+    }
+
+    /// QA (`--qa-measure <s>`): how much memory (and CPU time) this run holds after `seconds` of ordinary running, then
+    /// again after the idle trim (MemoryTrim) → memory.txt in the data folder, then quit. Private bytes is the number to
+    /// compare (the working set is trimmed while hidden).
     private void MeasureLater(int seconds)
     {
         var wait = new DispatcherTimer(DispatcherPriority.Background, ui) { Interval = TimeSpan.FromSeconds(seconds) };
         wait.Tick += (_, _) =>
         {
             wait.Stop();
-            using var me = System.Diagnostics.Process.GetCurrentProcess();
-            System.IO.File.WriteAllText(Paths.In("memory.txt"), $"private {me.PrivateMemorySize64 / 1048576.0:0.0} MB · working set {me.WorkingSet64 / 1048576.0:0.0} MB · managed {GC.GetTotalMemory(false) / 1048576.0:0.0} MB\n");
+            static string Line()
+            {
+                using var me = System.Diagnostics.Process.GetCurrentProcess();
+                return $"private {me.PrivateMemorySize64 / 1048576.0:0.0} MB · working set {me.WorkingSet64 / 1048576.0:0.0} MB · managed {GC.GetTotalMemory(false) / 1048576.0:0.0} MB (allocated since start {GC.GetTotalAllocatedBytes() / 1048576.0:0} MB, {GC.CollectionCount(0)} GCs) · cpu {me.TotalProcessorTime.TotalSeconds:0.00} s";
+            }
+            string before = Line();
+            MemoryTrim.Now(); // what the idle trim gives back
+            System.IO.File.WriteAllText(Paths.In("memory.txt"), before + "\n" + "after trim: " + Line() + "\n");
             Quit();
         };
         wait.Start();
@@ -298,11 +326,7 @@ internal sealed partial class Host
                 // a drive's map is hundreds of MB: give it back now, not at the next idle trim
                 // (after a moment: WPF lets go of a closed window's visuals on its next passes; Aggressive also
                 // hands the emptied GC segments back to Windows, not only the working set)
-                _ = Task.Delay(2000).ContinueWith(_ =>
-                {
-                    GC.Collect(2, GCCollectionMode.Aggressive, true, true);
-                    Win32.SetProcessWorkingSetSize(System.Diagnostics.Process.GetCurrentProcess().Handle, new IntPtr(-1), new IntPtr(-1));
-                }, TaskScheduler.Default);
+                _ = Task.Delay(2000).ContinueWith(_ => MemoryTrim.Now(aggressive: true), TaskScheduler.Default);
             };
             spaceWindow.Show();
         }
@@ -388,7 +412,11 @@ internal sealed partial class Host
         if (settingsWindow is null)
         {
             settingsWindow = new SettingsWindow(this);
-            settingsWindow.Closed += (_, _) => settingsWindow = null;
+            settingsWindow.Closed += (_, _) =>
+            {
+                settingsWindow = null;
+                Window.TrimSoon();
+            };
             settingsWindow.Activated += (_, _) => settingsWindow?.Refresh();
             settingsWindow.Show();
         }
@@ -418,11 +446,17 @@ internal sealed partial class Host
         Chats.Send(t, text);
     }
 
-    public void DeleteThread(ChatThread t)
+    public void DeleteThread(ChatThread t) => DeleteThreads(new[] { t });
+
+    /// Several at once (the chat window's 선택): the lists redraw once.
+    public void DeleteThreads(IReadOnlyList<ChatThread> list)
     {
-        Chats.Delete(t);
-        Window.Forget(t);
-        chatWindow?.Removed(t);
+        foreach (var t in list)
+        {
+            Chats.Delete(t);
+            Window.Forget(t);
+        }
+        chatWindow?.Removed(list);
         if (Window.Mode == Mode.Threads) Window.Refresh(false);
     }
 
@@ -435,7 +469,11 @@ internal sealed partial class Host
         {
             var last = Settings.Current.TabContinuesLastThread ? Recent(Chats.Latest) : null;
             chatWindow = new ChatWindow(this, t ?? last ?? Chats.New());
-            chatWindow.Closed += (_, _) => chatWindow = null;
+            chatWindow.Closed += (_, _) =>
+            {
+                chatWindow = null;
+                Window.TrimSoon();
+            };
             chatWindow.Show();
         }
         else if (t is not null) chatWindow.Open(t);

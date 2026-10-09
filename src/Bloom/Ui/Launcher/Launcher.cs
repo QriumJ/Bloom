@@ -443,8 +443,15 @@ internal sealed partial class Launcher : Window, IChatHost
     {
         trim.Stop();
         if (IsVisible) return;
-        GC.Collect(2, GCCollectionMode.Optimized, true, true);
-        Win32.SetProcessWorkingSetSize(System.Diagnostics.Process.GetCurrentProcess().Handle, new IntPtr(-1), new IntPtr(-1));
+        Core.MemoryTrim.Now();
+    }
+
+    /// A minute from now, while the launcher stays hidden (another window of Bloom's was closed).
+    public void TrimSoon()
+    {
+        if (IsVisible) return;
+        trim.Stop();
+        trim.Start();
     }
 
     private void OnDeactivated()

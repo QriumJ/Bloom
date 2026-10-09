@@ -213,10 +213,10 @@ internal sealed partial class ChatWindow : Window, IChatHost
         if (more is { Count: > 0 }) Attach(more);
     }
 
-    /// A conversation was deleted (here or in the launcher): off the list, and if it was open, the last one opens.
-    public void Removed(ChatThread t)
+    /// Conversations were deleted (here or in the launcher): off the list, and if the open one went, the last one opens.
+    public void Removed(IReadOnlyList<ChatThread> gone)
     {
-        if (ReferenceEquals(t, thread)) Open(host.Chats.Latest ?? host.Chats.New());
+        if (gone.Contains(thread)) Open(host.Chats.Latest ?? host.Chats.New());
         else BuildList();
     }
 
@@ -379,6 +379,11 @@ internal sealed partial class ChatWindow : Window, IChatHost
             e.Handled = true;
             return;
         }
+        if (SelectKey(key, ctrl))
+        {
+            e.Handled = true;
+            return;
+        }
         Action? run = key switch
         {
             Key.Escape when thread.Busy => () => host.Chats.Stop(thread),
@@ -489,15 +494,18 @@ internal sealed partial class ChatWindow : Window, IChatHost
         return b;
     }
 
-    /// A small labelled button (세션 종료, 모두 종료).
-    private static SmoothBorder TextButton(char glyph, string label, Action click)
+    /// A small labelled button (세션 종료, 모두 종료); `tint` colours its words and glyph (삭제 in rose-red).
+    private static SmoothBorder TextButton(char? glyph, string label, Action click, Brush? tint = null)
     {
-        var g = Theme.Glyph(glyph, 11, Theme.P.TextDim);
-        g.VerticalAlignment = VerticalAlignment.Center;
-        g.Margin = new Thickness(0, 1, 6, 0);
         var sp = new StackPanel { Orientation = Orientation.Horizontal };
-        sp.Children.Add(g);
-        sp.Children.Add(Theme.T(label, 12, Theme.P.Text, Theme.Medium, false));
+        if (glyph is { } c)
+        {
+            var g = Theme.Glyph(c, 11, tint ?? Theme.P.TextDim);
+            g.VerticalAlignment = VerticalAlignment.Center;
+            g.Margin = new Thickness(0, 1, 6, 0);
+            sp.Children.Add(g);
+        }
+        sp.Children.Add(Theme.T(label, 12, tint ?? Theme.P.Text, Theme.Medium, false));
         var b = new SmoothBorder
         {
             Background = Theme.P.Key,

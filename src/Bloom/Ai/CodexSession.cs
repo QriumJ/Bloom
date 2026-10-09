@@ -332,7 +332,7 @@ internal sealed class CodexSession : IChatSession
                 + (pc is not null ? " (the bloom tool is the way to act on the PC). " + pc : ". ")
                 + "Files the user attached come in the message: text files inside <attachment name=\"…\"> blocks, pictures as images. "
                 + "When the user asks for a file, put its whole content in a fenced code block whose info string is file:<name> "
-                + "(for example ```file:summary.md), one block per file; Bloom saves each as a file the user can open or save. ", pc is not null));
+                + "(for example ```file:summary.md), one block per file; Bloom saves each as a file the user can open or save. ", pc is not null, Settings.Current.AiTitles));
         }
         catch (Exception e)
         {

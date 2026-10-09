@@ -99,10 +99,11 @@ internal sealed class ClaudeSession : IChatSession
         return null;
     }
 
-    public static string SystemPrompt(string? outDir = null, string intro = "You are the quick assistant inside Bloom, a Windows launcher the user opens with the Win key. ", bool pc = false)
+    public static string SystemPrompt(string? outDir = null, string intro = "You are the quick assistant inside Bloom, a Windows launcher the user opens with the Win key. ", bool pc = false, bool titles = false)
     {
         var now = DateTime.Now;
         return intro
+            + (titles ? ChatTitles.Instruction : "")
             + "Reply in the user's language (Korean when they write Korean). Be concise: lead with the answer, then only the detail that helps. "
             + "Use Markdown when it helps (short lists, tables, fenced code with a language). "
             + "You may use web search for current facts, prices, news or anything time-sensitive; mention sources briefly when you do. "
@@ -150,7 +151,7 @@ internal sealed class ClaudeSession : IChatSession
         foreach (string a in new[]
         {
             "-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose", "--include-partial-messages",
-            "--model", Model, "--system-prompt", SystemPrompt(files + "/out", pc: pc is not null),
+            "--model", Model, "--system-prompt", SystemPrompt(files + "/out", pc: pc is not null, titles: Settings.Current.AiTitles),
             "--tools", "WebSearch,WebFetch,Read,Write", "--allowedTools", allowed,
             "--strict-mcp-config", "--disable-slash-commands", "--name", name,
             "--settings", fast ? "{\"disableAllHooks\":true,\"alwaysThinkingEnabled\":false}" : "{\"disableAllHooks\":true}",

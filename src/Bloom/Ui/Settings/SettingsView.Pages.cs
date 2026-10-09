@@ -10,7 +10,7 @@ using Bloom.Search;
 
 namespace Bloom.Ui;
 
-/// The settings pages, one method each (their order here is the sidebar's).
+/// The settings pages, one method each; Build lists them in the sidebar's order and sections.
 internal sealed partial class SettingsView
 {
     private void PageGeneral(Settings s, string filter)
@@ -24,11 +24,7 @@ internal sealed partial class SettingsView
                 s.Language = v;
                 Settings.Save();
                 if (!Lang.Pending(v)) return; // "auto" that lands on the language already shown
-                Dispatcher.BeginInvoke(() =>
-                {
-                    var answer = MessageBox.Show(Window.GetWindow(this), Tr("Bloom을 다시 시작해서 언어를 바꿀까요?", "Restart Bloom now to switch the language?"), "Bloom", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                    if (answer == MessageBoxResult.Yes) host.Restart("--settings");
-                });
+                AskRestart(Tr("Bloom을 다시 시작해서 언어를 바꿀까요?", "Restart Bloom now to switch the language?"));
             }, filter);
         Header(Tr("열기", "Open"));
         var winSw = Toggle(s.WinKey, v => { s.WinKey = v; host.ApplyHotkeys(); }, out var winT);
@@ -153,6 +149,11 @@ internal sealed partial class SettingsView
         Header(Tr("함께 찾기", "Also search"));
         var filesSw = Toggle(s.FilesInRoot, v => s.FilesInRoot = v, out var filesT);
         Add(Tr("파일도 함께 찾기", "Files too"), host.Everything.Running ? Tr("Everything 결과를 위에서 5개까지", "Up to 5 Everything results") : Tr("Everything이 꺼져 있어요 — 대신 최근 파일에서 찾아요", "Everything is not running — recent files are searched instead"), filesSw, G.Search, filesT, null, filter);
+        bool ev = host.Everything.Running;
+        Add("Everything", ev ? Tr("실행 중 · 파일 이름으로 PC 전체를 바로 찾아요", "Running · finds any file on the PC by name") : Tr("꺼져 있어요 — Enter로 실행", "Not running — Enter starts it"), Status(ev), G.Search, ev ? null : () =>
+        {
+            if (EverythingClient.ExePath() is { } exe) Launch.Open(exe, "-startup");
+        }, null, filter);
         var winsSw = Toggle(s.WindowsInRoot, v => s.WindowsInRoot = v, out var winsT);
         Add(Tr("열린 창도 함께 찾기", "Open windows too"), Tr("제목이 맞는 창을 결과 아래에 3개까지 · Enter로 그 창으로", "Up to 3 windows whose title matches, under the results · Enter switches to it"), winsSw, G.NewWindow, winsT, null, filter);
         Header(Tr("학습", "Learning"));
@@ -168,6 +169,7 @@ internal sealed partial class SettingsView
         Menu(Tr("검색 · 링크를 열 브라우저", "Browser for searches and links"), Tr("이 PC에 설치된 브라우저 중에서 · 웹 검색과 링크를 이 브라우저로 바로 넘겨요", "From the browsers on this PC · web searches and links open in it"), G.Globe,
             Web.Choices.Select(c => (c.value, c.label, (string?)null)).ToArray(), Web.Picked?.Key ?? "default", v => s.WebBrowser = v, filter);
         Choice(Tr("검색 엔진", "Search engine"), null, G.Search, Web.Engines.Select(e => (e.key, e.name)).ToArray(), s.SearchEngine, v => s.SearchEngine = v, filter);
+        Add(Tr("사이트 바로 가기", "Site shortcuts"), Tr($"단축어 + 스페이스 + 검색어 (예: yt 고양이) · {Quicklinks.Current.Items.Count}개 · Enter로 런처에서 관리", $"Keyword + space + words (e.g. yt cats) · {Quicklinks.Current.Items.Count} · Enter manages them in the launcher"), null, G.Link, () => host.OpenView(App.Mode.Quicklinks), null, filter);
         Header(Tr("이름", "Names"));
         int renamed = AppNames.Count;
         Add(Tr("Bloom에서 바꾼 앱 이름", "App names changed in Bloom"), renamed == 0 ? Tr("앱에서 Ctrl+K → 이름 바꾸기 (Bloom 안에서만, 원래 이름으로도 찾아져요)", "On an app: Ctrl+K → Rename (in Bloom only; the original name still finds it)") : Tr($"{renamed}개 · Enter로 모두 원래 이름으로", $"{renamed} · Enter puts all the original names back"), null, G.Tag, renamed == 0 ? null : () =>
@@ -187,6 +189,13 @@ internal sealed partial class SettingsView
         Shortcut("chat", Tr("AI 채팅 창 단축키", "AI chat window shortcut"), Tr("어디서든 대화 창을 열어요 · 앞에 있으면 내려가요", "Opens the chat window anywhere · down again when it's in front"), G.Chat, new[] { "ctrl+alt+c", "ctrl+alt+i" }, s.ChatHotkey, v => s.ChatHotkey = v, filter);
         var tabSw = Toggle(s.TabContinuesLastThread, v => s.TabContinuesLastThread = v, out var tabT);
         Add(Tr("Tab으로 지난 대화 이어가기", "Tab continues the last chat"), Tr("30분 안에 쓴 대화를 이어가요 · Shift+Tab은 언제나 새 대화", "Picks up a chat used in the last 30 min · Shift+Tab always starts a new one"), tabSw, G.Chat, tabT, null, filter);
+        var titleSw = Toggle(s.AiTitles, v =>
+        {
+            s.AiTitles = v;
+            host.Chats.EndAll(); // Claude reads its instructions when the session starts
+        }, out var titleT);
+        Duration(Tr("쉬는 대화 닫기", "Close idle chats after"), IdleText, G.Clock, s.AiIdleMinutes, 24 * 60, DurationField.MinutesHours, v => s.AiIdleMinutes = v, filter);
+        Add(Tr("AI가 대화 제목 정하기", "AI names the chat"), Tr("[◆ Opus • Code ] 로그인 수정처럼 모델 · 분야 · 작업 · 새 작업을 시작할 때만 바뀌어요", "Model, field and task, like [◆ Opus • Code ] Fix the login · changes only when a new task starts"), titleSw, G.Tag, titleT, null, filter);
 
         Header("Claude");
         Choice(Tr("Claude 모델", "Claude model"), Tr("새 대화의 기본값 · 대화 중에는 Ctrl+M", "For new chats · Ctrl+M during a chat"), G.Model,
@@ -300,15 +309,6 @@ internal sealed partial class SettingsView
                 Add(f.name, f.about, sw, f.glyph, t, null, filter);
             }
         }
-        Header(Tr("백그라운드에서 도는 기능", "Running in the background"));
-        var clSw = Toggle(s.ClipHistory, v => { s.ClipHistory = v; host.ApplyHotkeys(); }, out var clT);
-        Add(Tr("클립보드 기록", "Clipboard history"), Tr("복사한 글 · 그림 · 파일을 모아 둬요 · 메모리 약 +2 MB부터", "Keeps what you copy · from about +2 MB of memory"), clSw, G.Paste, clT, null, filter);
-        var noSw = Toggle(s.Notices, v =>
-        {
-            s.Notices = v;
-            Notices.Apply();
-        }, out var noT);
-        Add(Tr("작업 알림", "Work notifications"), Tr("Claude Code · Codex 작업과 AI 한도를 카드로 알려요 · 메모리 약 +1 MB", "Claude Code and Codex work and AI limits as cards · about +1 MB of memory"), noSw, G.Bell, noT, null, filter);
     }
 
     private void PageClipboard(Settings s, string filter)
@@ -318,14 +318,12 @@ internal sealed partial class SettingsView
         var clip = host.Clipboard;
         var clSw = Toggle(s.ClipHistory, v => { s.ClipHistory = v; host.ApplyHotkeys(); }, out var clT);
         Add(Tr("클립보드 기록", "Clipboard history"), s.ClipHistory ? Tr($"켜짐 · {clip.Items.Count}개 · 메모리 약 +2 MB부터, 그림이 많을수록 늘어요 · 비밀번호 관리자가 숨긴 복사는 남기지 않아요", $"On · {clip.Items.Count} · from about +2 MB of memory, more with pictures · copies that password managers hide are never kept") : Tr("꺼짐 — 복사한 것을 모으지 않아요 · 켜면 메모리 약 +2 MB부터", "Off — nothing you copy is kept · on: from about +2 MB"), clSw, G.Paste, clT, null, filter);
-        var keep = NumberField(s.ClipKeepMinutes, 525_600, Tr("분", "min"), v =>
-        {
-            s.ClipKeepMinutes = v;
-            Settings.Save();
-            clip.KeepChanged();
-        });
-        Add(Tr("보관 기간", "Keep for"), KeepText(s.ClipKeepMinutes) + Tr(" · 0이면 계속 · 고정한 항목은 늘 남아요 · 최대 500개", " · 0 = for good · pinned ones always stay · 500 at most"),
-            keep.view, G.History, keep.focus, null, filter);
+        Duration(Tr("보관 기간", "Keep for"), v => (v <= 0 ? Tr("계속 남겨요", "Kept for good") : Tr($"{Words(v)} 동안 남겨요", $"Kept for {Words(v)}")) + Tr(" · 0이면 계속 · 고정한 항목은 늘 남아요 · 최대 500개", " · 0 = for good · pinned ones always stay · 500 at most"),
+            G.History, s.ClipKeepMinutes, 525_600, DurationField.MinutesHoursDays, v =>
+            {
+                s.ClipKeepMinutes = v;
+                clip.KeepChanged();
+            }, filter);
         Shortcut("clipboard", Tr("단축키", "Shortcut"), Tr("누르면 클립보드 기록이 바로 열려요", "Opens the clipboard history right away"), G.Keyboard, new[] { "ctrl+alt+v", "ctrl+shift+v" }, s.ClipHotkey, v => s.ClipHotkey = v, filter);
         Header(Tr("정리", "Clean up"));
         Add(Tr("기록 모두 지우기", "Clear the history"), Tr("고정한 항목은 남겨요", "Pinned entries stay"), null, G.Delete, () =>
@@ -411,24 +409,6 @@ internal sealed partial class SettingsView
         }, null, filter);
     }
 
-    private void PageQuicklinks(Settings s, string filter)
-    {
-        Page("quicklinks", Tr("브라우저", "Browser"), G.Link, Tr("사이트 바로 가기 — 단축어 + 스페이스 + 검색어로 바로 검색해요 (예: yt 고양이)", "Site shortcuts — keyword + space + words searches right away (e.g. yt cats)"), filter);
-        Header("");
-        Add(Tr("바로 가기 관리", "Manage shortcuts"), Tr($"{Quicklinks.Current.Items.Count}개 · Enter로 런처에서 열기", $"{Quicklinks.Current.Items.Count} · Enter opens them in the launcher"), null, G.Link, () => host.OpenView(App.Mode.Quicklinks), null, filter);
-    }
-
-    private void PageConnections(Settings s, string filter)
-    {
-        Page("connections", Tr("연결", "Connections"), G.Plug, Tr("Bloom이 함께 쓰는 프로그램", "Programs Bloom works with"), filter);
-        Header("");
-        bool ev = host.Everything.Running;
-        Add("Everything", ev ? Tr("실행 중", "Running") : Tr("꺼져 있어요 — Enter로 실행", "Not running — Enter starts it"), Status(ev), G.Search, ev ? null : () =>
-        {
-            if (EverythingClient.ExePath() is { } exe) Launch.Open(exe, "-startup");
-        }, null, filter);
-    }
-
     private void PageNotices(Settings s, string filter)
     {
         Page("notices", Tr("알림", "Notifications"), G.Bell, Tr("Claude Code · Codex 작업과 AI 한도를 화면 구석에 카드로 알려요 — 세션 기록만 읽고, 전체 화면 게임 · 발표 중에는 띄우지 않아요", "Claude Code and Codex work and AI limits as cards in a screen corner — it only reads their session logs, and stays quiet over full-screen games and presentations"), filter);
@@ -489,6 +469,14 @@ internal sealed partial class SettingsView
                 s.Transparency = v;
                 Theme.Apply(s.Theme);
             }, filter);
+        var gpuSw = Toggle(s.GpuDrawing, v =>
+        {
+            s.GpuDrawing = v;
+            AskRestart(Tr("Bloom을 다시 시작해서 그리는 방식을 바꿀까요?", "Restart Bloom now to switch how it draws?"));
+        }, out var gpuT);
+        Add(Tr("GPU로 그리기", "Draw with the GPU"), s.GpuDrawing == (System.Windows.Media.RenderOptions.ProcessRenderMode != System.Windows.Interop.RenderMode.SoftwareOnly)
+            ? Tr("끄면 그래픽 드라이버를 쓰지 않아 메모리를 약 30 MB 덜 써요 · 움직임이 많은 화면은 CPU를 조금 더 써요", "Off: no graphics driver, about 30 MB less memory · busy, moving screens use a little more CPU")
+            : Tr("다시 시작하면 바뀌어요", "Changes when Bloom restarts"), gpuSw, G.Screen, gpuT, null, filter);
         Header(Tr("메모리", "Memory"));
         using var me = System.Diagnostics.Process.GetCurrentProcess();
         Add(Tr("지금 Bloom이 쓰는 메모리", "Memory Bloom uses now"), Tr($"{me.PrivateMemorySize64 / 1048576.0:0} MB · 모두 끈 기준 약 80 MB, 켤 때 늘어나는 양은 각 설정에 적혀 있어요", $"{me.PrivateMemorySize64 / 1048576.0:0} MB · about 80 MB with everything off; each setting says what it adds"), null, G.Speed, () => Build(lastFilter), null, filter);
@@ -505,21 +493,32 @@ internal sealed partial class SettingsView
         Header(Tr("버전", "Version"));
         string ver = typeof(SettingsView).Assembly.GetName().Version?.ToString(3) ?? "";
         Add($"Bloom {ver}", Tr("가벼운 네이티브(WPF) 런처", "A light native (WPF) launcher"), null, G.Info, null, null, filter);
+        Add(Tr("이번 버전에서 바뀐 점", "What's new in this version"), Tr("업데이트한 뒤 처음 켤 때도 한 번 보여 줘요 · Enter로 보기", "Also shown once at the first start after an update · Enter shows it"), null, G.Document, () => host.ShowWhatsNew(), null, filter);
         UpdateRows(s, filter);
         Add(Tr("Bloom 둘러보기", "Bloom tour"), Tr("처음 설정과 사용법 안내를 다시 보기", "See the first-run setup and the guide again"), null, G.Info, () => host.ShowOnboarding(), null, filter);
     }
 
-    /// 보관 기간 in words: "1일 2시간", "45분", 0 = for good.
-    private static string KeepText(int minutes)
+    /// A switch that only takes hold at the next start (언어, GPU로 그리기): asks whether to restart now.
+    private void AskRestart(string question) => Dispatcher.BeginInvoke(() =>
     {
-        if (minutes <= 0) return Tr("계속 남겨요", "Kept for good");
+        if (MessageBox.Show(Window.GetWindow(this), question, "Bloom", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes) host.Restart("--settings");
+        else Build(lastFilter); // the line under it says it changes at the restart
+    });
+
+    /// Minutes in words for the lines under a time: "1일 2시간", "45분".
+    private static string Words(int minutes)
+    {
         var parts = new System.Collections.Generic.List<string>();
         if (minutes / 1440 > 0) parts.Add(Tr($"{minutes / 1440}일", $"{minutes / 1440} d"));
         if (minutes / 60 % 24 > 0) parts.Add(Tr($"{minutes / 60 % 24}시간", $"{minutes / 60 % 24} h"));
         if (minutes % 60 > 0) parts.Add(Tr($"{minutes % 60}분", $"{minutes % 60} min"));
-        string text = string.Join(" ", parts);
-        return Tr($"{text} 동안 남겨요", $"Kept for {text}");
+        return string.Join(" ", parts);
     }
+
+    /// 쉬는 대화 닫기's line: when a chat's CLI closes and what that means.
+    private static string IdleText(int minutes) => minutes <= 0
+        ? Tr("닫지 않아요 — 대화마다 CLI가 계속 떠 있어요 (하나에 150~300 MB)", "Never — each chat's CLI stays open (150–300 MB each)")
+        : Tr($"{Words(minutes)} 동안 안 쓴 대화의 CLI를 닫아 메모리를 돌려줘요 · 대화는 남고, 다음 첫 답이 몇 초 늦어요 · 0이면 닫지 않아요", $"A chat unused for {Words(minutes)} closes its CLI to free memory · the chat stays, the next first answer takes a few seconds longer · 0 = never");
 
     /// 업데이트 확인: what the last look found (a click looks now, or restarts into a downloaded version); a copy not
     /// installed with the setup file opens the releases page instead. Under it, whether Bloom looks once at each start.

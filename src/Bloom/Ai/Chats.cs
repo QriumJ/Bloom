@@ -49,8 +49,8 @@ internal sealed class ChatGroup
     public bool Folded { get; set; }
 }
 
-/// Conversations (one JSON file each under chats\) and their CLI sessions. A session that has been
-/// idle for 10 minutes is closed to give its memory back; the next message resumes it by id. A new
+/// Conversations (one JSON file each under chats\) and their CLI sessions. A session left unused for
+/// Settings.AiIdleMinutes (5 by default, 0 = never) is closed to give its memory back; the next message resumes it by id. A new
 /// model or level restarts the session (resumed when the provider stays); a switch between Claude
 /// and ChatGPT starts a new one that gets the conversation so far with the next message.
 internal sealed partial class Chats
@@ -173,6 +173,8 @@ internal sealed partial class Chats
         if (image is not null) images.Add(image);
         if (attached is not null) images.AddRange(attached.Where(f => ImageType(f) is not null));
         turnStarted[t.Id] = DateTime.UtcNow.AddSeconds(-1);
+        if (Settings.Current.AiTitles) leads[t.Id] = new ChatTitles.Lead();
+        else leads.Remove(t.Id);
         if (s is null || !s.Send(prompt, images))
         {
             Finish(t, answer, false, error ?? Tr("CLI에 메시지를 보내지 못했어요.", "Couldn't send the message to the CLI."));
@@ -189,6 +191,17 @@ internal sealed partial class Chats
     public const long MaxFileBytes = 50L * 1024 * 1024;
 
     private readonly Dictionary<string, DateTime> turnStarted = new();
+
+    private readonly Dictionary<string, ChatTitles.Lead> leads = new(); // the start of each answer, for its title line
+
+    /// The answer's text without its title line; a finished title line renames the conversation.
+    private string Shown(ChatThread t, string piece)
+    {
+        if (!leads.TryGetValue(t.Id, out var lead)) return piece;
+        string shown = lead.Take(piece, out string? field, out string? task);
+        if (task is not null) t.Title = ChatTitles.Compose(t.Model, field ?? "", task);
+        return shown;
+    }
 
     /// The thread's folder as the sessions see it (relative to Local\ai) and on disk.
     public static string FilesRel(ChatThread t) => "files/" + t.Id;
@@ -343,6 +356,8 @@ internal sealed partial class Chats
         s.TextDelta += d => ui.BeginInvoke(() =>
         {
             if (Current() is not { } m) return;
+            d = Shown(t, d);
+            if (d.Length == 0) return;
             if (needBreak && m.Text.Length > 0 && !m.Text.EndsWith('\n')) m.Text += "\n\n";
             needBreak = false;
             m.Text += d;
@@ -352,6 +367,8 @@ internal sealed partial class Chats
         s.AssistantText += whole => ui.BeginInvoke(() =>
         {
             if (Current() is not { } m) return;
+            whole = Shown(t, whole);
+            if (whole.Length == 0) return;
             if (m.Text.Length > 0 && !m.Text.EndsWith('\n')) m.Text += "\n\n";
             m.Text += whole;
             Updated?.Invoke(t);
@@ -387,6 +404,7 @@ internal sealed partial class Chats
         m.Streaming = false;
         m.Status = null;
         m.Asks.Clear();
+        if (leads.Remove(t.Id, out var lead)) m.Text += lead.Flush();
         if (AiModels.Provider(t.Model) == "chatgpt") SaveFencedFiles(t, m);
         m.Files = MadeSince(t);
         if (!ok)
@@ -422,6 +440,8 @@ internal sealed partial class Chats
             SessionsChanged?.Invoke();
         }
         Threads.Remove(t);
+        leads.Remove(t.Id);
+        turnStarted.Remove(t.Id);
         try
         {
             File.Delete(Path.Combine(dir, t.Id + ".json"));
@@ -456,9 +476,9 @@ internal sealed partial class Chats
 
     private void ReapIdle()
     {
-        int before = sessions.Count;
+        int before = sessions.Count, idleMinutes = Settings.Current.AiIdleMinutes;
         foreach (var (id, s) in sessions.ToList())
-            if (!s.Busy && DateTime.UtcNow - s.LastUsed > TimeSpan.FromMinutes(10))
+            if (idleMinutes > 0 && !s.Busy && DateTime.UtcNow - s.LastUsed > TimeSpan.FromMinutes(idleMinutes))
             {
                 s.Dispose();
                 sessions.Remove(id);

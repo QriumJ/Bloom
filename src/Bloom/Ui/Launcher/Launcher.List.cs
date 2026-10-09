@@ -91,86 +91,63 @@ internal sealed partial class Launcher
         }
     }
 
+    /// Rows built at once; a longer list gets the rest right after, at Background priority, so it shows without a wait
+    /// (a row costs 1–2 ms: the emoji view's 88 took ~200 ms in one go). The kept row is always among the first ones.
+    private const int FirstRows = 24;
+
+    private int renderVersion;
+
     private void Render(List<Section> secs, string? keepId, bool keepScroll = false)
     {
         double offset = scroll.VerticalOffset;
+        int v = ++renderVersion;
         list.Children.Clear();
         rows.Clear();
         strip = null;
         inStrip = false;
         int keep = -1, keepStrip = -1;
+        // the list as steps in order (a section's start, then its rows), so the late rows land where they belong
+        var steps = new List<(Action run, bool row)>();
+        Panel into = list;
+        int need = FirstRows, counted = 0;
         foreach (var s in secs)
         {
             if (s.Widget is null && s.Items.Count == 0) continue;
-            // a home block goes into its own box, which shows ▲ ▼ 숨기기 while the mouse is over it
-            Panel into = list;
-            if (s.HomeKey is { } homeKey)
+            var sec = s;
+            steps.Add((() =>
             {
-                var inner = new StackPanel();
-                var block = new Grid { Background = Brushes.Transparent };
-                block.Children.Add(inner);
-                var tools = HomeTools(homeKey);
-                // only while 홈 편집 is on (the footer button / Ctrl+E), never on a mere hover
-                tools.Visibility = HomeEditing || ShowHomeToolsForQa ? Visibility.Visible : Visibility.Collapsed;
-                block.Children.Add(tools);
-                list.Children.Add(block);
-                into = inner;
-            }
-            if (s.Widget is { } widget)
-            {
-                if (s.Title is not null) into.Children.Add(Section2.Header(s.Title, s.Note, s.Reload));
-                into.Children.Add(widget());
-                continue;
-            }
-            if (s.Strip)
-            {
-                var st = new FavStrip(s.Items);
-                st.Clicked = i =>
-                {
-                    SelectStrip(i);
-                    RunSelected(null);
-                };
-                st.RightClicked = i =>
-                {
-                    SelectStrip(i);
-                    OpenActions();
-                };
-                var row = s.Items;
-                st.Reordered = (from, before) =>
-                {
-                    SelectStrip(from); // the moved one stays selected after the refresh
-                    Favorites.MoveBefore(row[from].Id, before < row.Count ? row[before].Id : null);
-                    Refresh(true);
-                };
-                if (keepId is not null) keepStrip = s.Items.FindIndex(x => x.Id == keepId);
-                strip = st;
-                into.Children.Add(st);
-                continue;
-            }
-            if (s.Title is not null) into.Children.Add(Section2.Header(s.Title, s.Note));
+                into = StartSection(sec, keepId, out int ks);
+                if (ks >= 0) keepStrip = ks;
+            }, false));
+            if (s.Widget is not null || s.Strip) continue;
             foreach (var item in s.Items)
             {
-                Row r = item.Kind == ItemKind.Calc ? Row.Calc(item) : Split || Mode == Mode.Calendar ? Row.Compact(item, Mode is Mode.Clipboard or Mode.Calendar) : Row.Result(item);
-                var row = r;
-                r.Clicked = () =>
+                if (keepId is not null && item.Id == keepId && need == FirstRows) need = Math.Max(FirstRows, counted + 1);
+                counted++;
+                var it = item;
+                steps.Add((() =>
                 {
-                    Select(rows.IndexOf(row), false);
-                    RunSelected(null);
-                };
-                r.RightClicked = () =>
-                {
-                    Select(rows.IndexOf(row), false);
-                    OpenActions();
-                };
-                r.SideClicked = act =>
-                {
-                    Select(rows.IndexOf(row), false);
-                    RunAction(act);
-                };
-                if (keepId is not null && item.Id == keepId && keep < 0) keep = rows.Count;
-                rows.Add(r);
-                into.Children.Add(r);
+                    if (keepId is not null && it.Id == keepId && keep < 0) keep = rows.Count;
+                    into.Children.Add(AddRow(it));
+                }, true));
             }
+        }
+        int made = 0, next = 0;
+        for (; next < steps.Count; next++)
+        {
+            if (steps[next].row && made >= need) break;
+            steps[next].run();
+            if (steps[next].row) made++;
+        }
+        if (next < steps.Count)
+        {
+            int from = next;
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, () =>
+            {
+                if (v != renderVersion) return; // a newer list is showing
+                for (int i = from; i < steps.Count; i++) steps[i].run();
+                if (keepScroll) scroll.ScrollToVerticalOffset(offset);
+            });
         }
         if (rows.Count == 0 && strip is null)
         {
@@ -190,6 +167,82 @@ internal sealed partial class Launcher
         if (keepScroll) scroll.ScrollToVerticalOffset(offset);
         else if (keep < 0) scroll.ScrollToTop();
         UpdateChrome();
+    }
+
+    /// A section's start in the list: a home block's own box (▲ ▼ 숨기기 while 홈 편집 is on), a widget, the favorites
+    /// strip or a header. Returns the panel its rows go into; `keepStrip`: the kept item's place in the strip (or -1).
+    private Panel StartSection(Section s, string? keepId, out int keepStrip)
+    {
+        keepStrip = -1;
+        Panel into = list;
+        if (s.HomeKey is { } homeKey)
+        {
+            var inner = new StackPanel();
+            var block = new Grid { Background = Brushes.Transparent };
+            block.Children.Add(inner);
+            var tools = HomeTools(homeKey);
+            // only while 홈 편집 is on (the footer button / Ctrl+E), never on a mere hover
+            tools.Visibility = HomeEditing || ShowHomeToolsForQa ? Visibility.Visible : Visibility.Collapsed;
+            block.Children.Add(tools);
+            list.Children.Add(block);
+            into = inner;
+        }
+        if (s.Widget is { } widget)
+        {
+            if (s.Title is not null) into.Children.Add(Section2.Header(s.Title, s.Note, s.Reload));
+            into.Children.Add(widget());
+            return into;
+        }
+        if (s.Strip)
+        {
+            var st = new FavStrip(s.Items);
+            st.Clicked = i =>
+            {
+                SelectStrip(i);
+                RunSelected(null);
+            };
+            st.RightClicked = i =>
+            {
+                SelectStrip(i);
+                OpenActions();
+            };
+            var row = s.Items;
+            st.Reordered = (from, before) =>
+            {
+                SelectStrip(from); // the moved one stays selected after the refresh
+                Favorites.MoveBefore(row[from].Id, before < row.Count ? row[before].Id : null);
+                Refresh(true);
+            };
+            if (keepId is not null) keepStrip = s.Items.FindIndex(x => x.Id == keepId);
+            strip = st;
+            into.Children.Add(st);
+            return into;
+        }
+        if (s.Title is not null) into.Children.Add(Section2.Header(s.Title, s.Note));
+        return into;
+    }
+
+    /// One result row, wired to select and run; added to `rows` (the keyboard's order).
+    private Row AddRow(ResultItem item)
+    {
+        Row r = item.Kind == ItemKind.Calc ? Row.Calc(item) : Split || Mode == Mode.Calendar ? Row.Compact(item, Mode is Mode.Clipboard or Mode.Calendar) : Row.Result(item);
+        r.Clicked = () =>
+        {
+            Select(rows.IndexOf(r), false);
+            RunSelected(null);
+        };
+        r.RightClicked = () =>
+        {
+            Select(rows.IndexOf(r), false);
+            OpenActions();
+        };
+        r.SideClicked = act =>
+        {
+            Select(rows.IndexOf(r), false);
+            RunAction(act);
+        };
+        rows.Add(r);
+        return r;
     }
 
     private void Select(int index, bool bring = true)

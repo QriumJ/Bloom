@@ -42,13 +42,13 @@ internal sealed partial class ChatWindow
     {
         bool open = !group.Folded || filtering;
         var g = new Grid();
-        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
+        g.ColumnDefinitions.Add(new ColumnDefinition { Width = selecting ? GridLength.Auto : new GridLength(20) });
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var chevron = Theme.Glyph(open ? '' : '', 9, Theme.P.TextFaint);
         chevron.VerticalAlignment = VerticalAlignment.Center;
-        g.Children.Add(chevron);
+        g.Children.Add(selecting ? Box(picked.Contains(GroupKey(group))) : chevron);
         FrameworkElement name;
         if (renamingId == group.Id)
         {
@@ -123,7 +123,7 @@ internal sealed partial class ChatWindow
         header.MouseEnter += (_, _) =>
         {
             if (!ReferenceEquals(header, dropMark)) header.Background = Theme.P.Hover;
-            buttons.Visibility = renaming is null ? Visibility.Visible : Visibility.Collapsed;
+            buttons.Visibility = renaming is null && !selecting ? Visibility.Visible : Visibility.Collapsed;
         };
         header.MouseLeave += (_, _) =>
         {
@@ -133,7 +133,9 @@ internal sealed partial class ChatWindow
         header.MouseLeftButtonUp += (_, e) =>
         {
             if (renaming is not null) return;
-            if (!filtering) host.Chats.Fold(group, !group.Folded);
+            if (selecting) Toggle(group);
+            else if (PickClick) StartSelect(g: group);
+            else if (!filtering) host.Chats.Fold(group, !group.Folded);
             e.Handled = true;
         };
         header.MouseRightButtonUp += (_, e) =>
@@ -190,6 +192,7 @@ internal sealed partial class ChatWindow
     {
         new() { Title = Tr("이 그룹에서 새 대화", "New chat in this group"), Glyph = G.Add, Run = () => Open(NewIn(group)) },
         new() { Title = Tr("이름 바꾸기", "Rename"), Glyph = Rename, Run = () => StartRename(group) },
+        new() { Title = Tr("선택 — 여러 개 골라 지우기", "Select — delete several"), Glyph = G.Check, Run = () => StartSelect(g: group) },
         new() { Title = "" },
         new()
         {
@@ -225,6 +228,7 @@ internal sealed partial class ChatWindow
             },
         });
         if (t.Group is not null) list.Add(new ActionItem { Title = Tr("그룹에서 빼기", "Take out of the group"), Glyph = Out, Run = () => host.Chats.MoveTo(t, null) });
+        if (host.Chats.Threads.Contains(t)) list.Add(new ActionItem { Title = Tr("선택 — 여러 개 골라 지우기", "Select — delete several"), Glyph = G.Check, Run = () => StartSelect(t) });
         if (host.Chats.IsLive(t) || host.Chats.Threads.Contains(t)) list.Add(new ActionItem { Title = "" });
         if (host.Chats.IsLive(t)) list.Add(new ActionItem { Title = Tr("세션 종료 — 대화는 남아요", "End session — the chat stays"), Glyph = G.Stop, Run = () => EndSession(t) });
         if (host.Chats.Threads.Contains(t))

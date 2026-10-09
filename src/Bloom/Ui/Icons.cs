@@ -14,8 +14,8 @@ using Bloom.Search;
 
 namespace Bloom.Ui;
 
-/// Shell icons (IShellItemImageFactory) extracted on one STA worker and cached in memory. Rows ask
-/// for an icon and get it immediately when cached, or a moment later.
+/// Shell icons (IShellItemImageFactory) extracted on one STA worker and cached in memory, and colour emoji drawn there too
+/// (ColorEmoji, ~3 ms each). Rows ask for an icon and get it immediately when cached, or a moment later.
 internal static class Icons
 {
     private static readonly ConcurrentDictionary<string, ImageSource?> Cache = new();
@@ -85,6 +85,18 @@ internal static class Icons
             ImageSource? img = null;
             try
             {
+                if (job.Key.StartsWith(EmojiPrefix, StringComparison.Ordinal))
+                {
+                    // emoji:<px>:<1 dark | 0 light>:<text> — ColorEmoji keeps its own cache
+                    var parts = job.Key.Split(':', 4);
+                    img = ColorEmoji.Render(job.Path, int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture), parts[2] == "1");
+                    var drawn = job.Done;
+                    ui?.BeginInvoke(DispatcherPriority.Background, () =>
+                    {
+                        foreach (var cb in drawn) cb(img);
+                    });
+                    continue;
+                }
                 bool thumb = job.Key.StartsWith(ThumbPrefix, StringComparison.Ordinal);
                 bool large = job.Key.StartsWith(LargePrefix, StringComparison.Ordinal);
                 int tone;
@@ -125,7 +137,11 @@ internal static class Icons
     /// Cache keys starting with this ask for the picture's thumbnail instead of its icon.
     public const string ThumbPrefix = "thumb:";
 
-    private const string LargePrefix = "large:";
+    private const string LargePrefix = "large:", EmojiPrefix = "emoji:";
+
+    /// A colour emoji drawn on the worker (the lists build at once and the emoji come in as they are drawn).
+    public static void RequestEmoji(string text, int px, bool dark, Action<ImageSource?> done) =>
+        Work.Add($"{EmojiPrefix}{px}:{(dark ? 1 : 0)}:{text}", text, done);
 
     /// The preview pane's picture: the shell's thumbnail when the file has one, else its big icon (not cached).
     /// `iconOnly`: folders (their thumbnail is the icon on a white square).
@@ -266,7 +282,7 @@ internal static class Icons
         return Tile(spec.Glyph, spec.Accent, size);
     }
 
-    private static Image Img(ImageSource src, double size)
+    private static Image Img(ImageSource? src, double size)
     {
         var image = new Image { Source = src, Width = size, Height = size, Stretch = Stretch.Uniform, VerticalAlignment = VerticalAlignment.Center };
         RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
@@ -440,10 +456,16 @@ internal static class Icons
     public static FrameworkElement SymbolTile(string text, bool emoji, double size, bool plain = false)
     {
         FrameworkElement inner;
-        if (emoji && ColorEmoji.Render(text, (int)Math.Ceiling(size * (plain ? 1.5 : 2))) is { } bmp)
+        if (emoji && !ColorEmoji.Broken)
         {
-            inner = Img(bmp, plain ? size : size * 0.8);
-            inner.HorizontalAlignment = HorizontalAlignment.Center;
+            // drawn at once when cached, else on the icons worker and set when it is ready (no wait while a list builds)
+            int px = (int)Math.Ceiling(size * (plain ? 1.5 : 2));
+            bool dark = Theme.P.Dark;
+            var image = Img(null, plain ? size : size * 0.8);
+            image.HorizontalAlignment = HorizontalAlignment.Center;
+            if (ColorEmoji.TryCached(text, px, dark, out var bmp)) image.Source = bmp;
+            else RequestEmoji(text, px, dark, i => image.Source = i);
+            inner = image;
         }
         else
             inner = new TextBlock

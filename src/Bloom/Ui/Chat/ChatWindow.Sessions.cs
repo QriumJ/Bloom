@@ -70,6 +70,7 @@ internal sealed partial class ChatWindow
         var bar = new Grid { Margin = new Thickness(10, 0, 0, 0) };
         bar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        bar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var glyph = Theme.Glyph(G.Search, 13, Theme.P.TextFaint);
         glyph.Margin = new Thickness(0, 0, 9, 0);
         glyph.VerticalAlignment = VerticalAlignment.Center;
@@ -96,6 +97,14 @@ internal sealed partial class ChatWindow
         boxHost.Children.Add(find);
         Grid.SetColumn(boxHost, 1);
         bar.Children.Add(boxHost);
+        var pick = SmallButton(G.Check, Tr("여러 개 골라서 지우기 (Ctrl+클릭)", "Pick several to delete (Ctrl+click)"), _ =>
+        {
+            if (selecting) EndSelect();
+            else StartSelect();
+        });
+        pick.Margin = new Thickness(4, 0, 4, 0);
+        Grid.SetColumn(pick, 2);
+        bar.Children.Add(pick);
         var findCard = new SmoothBorder
         {
             Height = 36,
@@ -271,6 +280,16 @@ internal sealed partial class ChatWindow
         }
         Grid.SetColumn(buttons, 1);
         g.Children.Add(buttons);
+        FrameworkElement content = g;
+        if (selecting && host.Chats.Threads.Contains(t))
+        {
+            var row = new DockPanel();
+            var box = Box(picked.Contains(t.Id));
+            DockPanel.SetDock(box, Dock.Left);
+            row.Children.Add(box);
+            row.Children.Add(g);
+            content = row;
+        }
 
         var item = new SmoothBorder
         {
@@ -280,13 +299,13 @@ internal sealed partial class ChatWindow
             Padding = new Thickness(12, 0, 6, 0),
             Background = on ? Theme.P.AccentSoft : Brushes.Transparent,
             Cursor = Cursors.Hand,
-            Child = g,
+            Child = content,
             Tag = group,
         };
         item.MouseEnter += (_, _) =>
         {
             if (!on) item.Background = Theme.P.Hover;
-            buttons.Visibility = Visibility.Visible;
+            if (!selecting) buttons.Visibility = Visibility.Visible;
         };
         item.MouseLeave += (_, _) =>
         {
@@ -298,7 +317,7 @@ internal sealed partial class ChatWindow
         item.PreviewMouseLeftButtonDown += (_, e) => press = e.GetPosition(item);
         item.PreviewMouseMove += (_, e) =>
         {
-            if (press is not { } p || e.LeftButton != MouseButtonState.Pressed || !host.Chats.Threads.Contains(t)) return;
+            if (press is not { } p || selecting || e.LeftButton != MouseButtonState.Pressed || !host.Chats.Threads.Contains(t)) return;
             var at = e.GetPosition(item);
             if (Math.Abs(at.X - p.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(at.Y - p.Y) < SystemParameters.MinimumVerticalDragDistance) return;
             press = null;
@@ -311,7 +330,9 @@ internal sealed partial class ChatWindow
         {
             if (press is null) return;
             press = null;
-            Open(t);
+            if (selecting) Toggle(t);
+            else if (PickClick) StartSelect(t);
+            else Open(t);
             e.Handled = true;
         };
         item.MouseRightButtonUp += (_, e) =>
@@ -341,6 +362,11 @@ internal sealed partial class ChatWindow
     /// Under the list: how many CLI sessions are open, and 모두 종료.
     private void Running()
     {
+        if (selecting)
+        {
+            SelectBar();
+            return;
+        }
         var live = host.Chats.Threads.Where(host.Chats.IsLive).ToList();
         if (live.Count == 0)
         {

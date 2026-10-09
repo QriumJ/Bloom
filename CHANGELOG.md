@@ -2,6 +2,28 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.9.2
+
+- AI chats name themselves per task, like `[◆ Opus • Code ] Fix the login`. The title changes only when you start something new. You can switch it off in Settings › AI chat.
+- Pick several chats and groups and delete them at once: the ✓ next to the chat search, Ctrl+click, or ⋯ › Select.
+- A chat you leave alone now closes its Claude or Codex CLI after 5 minutes instead of 10, which gives the memory back. Set minutes or hours in Settings › AI chat or at first start. 0 keeps it open.
+- New choice: draw with the GPU (smooth) or the CPU (about 30 MB less memory). Pick it at first start or in Settings › Performance.
+- Bloom also gives memory back after you close the chat or settings window, and frees more of it than before.
+- Long lists open faster. The first rows show right away and the rest follow, and emoji are drawn in the background, so the emoji view no longer pauses.
+- Settings are grouped into Basics, Launcher, AI and Tools. Browser and Connections moved into Search.
+- After an update, Bloom shows what changed once. See it again in Settings › About.
+
+### 한국어
+
+- AI 대화 제목이 작업마다 `[◆ Opus • Code ] 로그인 수정`처럼 붙어요. 새 작업을 시작할 때만 바뀌어요. 설정 › AI 채팅에서 끌 수 있어요.
+- 대화와 그룹을 여러 개 골라 한꺼번에 지울 수 있어요. 대화 찾기 옆 ✓, Ctrl+클릭, ⋯ › 선택.
+- 안 쓰는 대화의 Claude · Codex CLI를 10분이 아니라 5분 뒤에 닫아서 메모리를 돌려줘요. 설정 › AI 채팅이나 처음 설정에서 분 · 시간으로 바꿀 수 있고, 0이면 닫지 않아요.
+- 새로 고를 수 있어요: GPU로 그리기(부드럽게) 또는 CPU로 그리기(메모리 약 30 MB 덜 씀). 처음 설정이나 설정 › 성능에서 골라요.
+- 채팅 창이나 설정 창을 닫은 뒤에도 메모리를 돌려주고, 전보다 더 많이 돌려줘요.
+- 긴 목록이 빨리 떠요. 앞쪽 줄이 바로 보이고 나머지가 이어서 붙어요. 이모지도 뒤에서 그려서 이모지 화면이 멈칫하지 않아요.
+- 설정을 기본 · 런처 · AI · 도구로 묶었어요. 브라우저와 연결은 검색으로 옮겼어요.
+- 업데이트한 뒤 처음 켜면 바뀐 점을 한 번 보여 줘요. 설정 › 정보에서 다시 볼 수 있어요.
+
 ## 0.9.1
 
 - AI answers can be copied in pieces. Drag over any part of an answer, your own message or a code block, in the Tab quick chat or the AI chat window, then press Ctrl+C or right-click › Copy.

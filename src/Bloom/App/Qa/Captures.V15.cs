@@ -76,7 +76,7 @@ internal static partial class Captures
         }
         Made("업무", "Work", false, open, threads[1]);
         Made("여행", "Trips", true, threads[2]);
-        Made("공부", "Study", false, threads[3]);
+        var study = Made("공부", "Study", false, threads[3]);
         var cw = new ChatWindow(host, open) { WindowStartupLocation = WindowStartupLocation.Manual, Left = -32000, Top = -32000, ShowActivated = false };
         try
         {
@@ -110,6 +110,13 @@ internal static partial class Captures
             cw.RenameForQa(fresh, true);
             await Cap("dark-cw6-new-group");
             cw.RenameForQa(fresh, false);
+            host.Chats.DeleteGroup(fresh);
+            cw.SelectForQa(threads[4], study);
+            await Cap("dark-cw7-select");
+            cw.SelectForQa(null, null);
+            cw.SelectForQa(threads[4], study, arm: true);
+            await Cap("dark-cw8-select-armed");
+            cw.SelectForQa(null, null);
         }
         finally
         {
@@ -310,10 +317,11 @@ internal static partial class Captures
             : "팀 여러분, 빌드가 아직 준비되지 않았고 QA에서 버그가 세 개 나와서 출시를 다음 주 금요일로 미루는 게 좋을 것 같습니다.";
         await Shot(w, dir, $"{l}-x15-quick-result", Mode.Quick, "", 700);
 
-        // settings: language (general), search learning + windows, tools shortcuts
+        // settings: the sections on the left, language (general), search (+ Everything, site shortcuts), AI (idle chats'
+        // time), clipboard (keep for), tools shortcuts
         var sw = new SettingsWindow(host) { WindowStartupLocation = WindowStartupLocation.Manual, Left = -32000, Top = -32000, ShowActivated = false };
         sw.Show();
-        foreach (string page in new[] { "general", "search", "tools" })
+        foreach (string page in new[] { "general", "search", "ai", "clipboard", "tools" })
         {
             sw.Page(page);
             await Task.Delay(350);
@@ -327,6 +335,22 @@ internal static partial class Captures
         ob.Go(0);
         await Task.Delay(300);
         await ob.Dispatcher.InvokeAsync(() => ob.Capture(Path.Combine(dir, $"{l}-x17-welcome.png")), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        ob.Go(3); // the look: theme, colour, GPU or CPU drawing
+        await Task.Delay(300);
+        await ob.Dispatcher.InvokeAsync(() => ob.Capture(Path.Combine(dir, $"{l}-x19-looks.png")), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        if (ob.StepCount > 8) // the AI step is there (Claude Code or Codex found): which AI, and when an idle chat's CLI closes
+        {
+            ob.Go(6);
+            await Task.Delay(300);
+            await ob.Dispatcher.InvokeAsync(() => ob.Capture(Path.Combine(dir, $"{l}-x18-ai.png")), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        }
         ob.Close();
+
+        // 바뀐 점 after an update
+        var news = new WhatsNewWindow(ReleaseNotes.Current, ReleaseNotes.For(ReleaseNotes.Current) ?? "-") { WindowStartupLocation = WindowStartupLocation.Manual, Left = -32000, Top = -32000, ShowActivated = false };
+        news.Show();
+        await Task.Delay(300);
+        await news.Dispatcher.InvokeAsync(() => Shots.Save((FrameworkElement)news.Content, Path.Combine(dir, $"{l}-x20-whats-new.png")), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        news.Close();
     }
 }

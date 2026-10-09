@@ -352,7 +352,7 @@ internal static partial class Captures
         await Shot(w, dir, "dark-b02-address", Mode.Root, "github.com", 700);
         var sw = new SettingsWindow(host) { WindowStartupLocation = WindowStartupLocation.Manual, Left = -32000, Top = -32000, ShowActivated = false };
         sw.Show();
-        foreach (var page in new[] { "general", "home", "search", "ai", "clipboard", "screen", "quicklinks", "connections", "about", "search" })
+        foreach (var page in new[] { "general", "home", "search", "ai", "clipboard", "screen", "mcp", "tools", "about", "search" })
         {
             sw.Page(page);
             await Task.Delay(350);

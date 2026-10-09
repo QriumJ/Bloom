@@ -32,6 +32,10 @@ internal sealed class Settings
     public string? GptModel { get; set; } // ChatGPT: a Codex model slug; null = Codex's own default
     public string GptEffort { get; set; } = "low"; // ChatGPT: the model's reasoning levels (low … ultra)
     public bool TabContinuesLastThread { get; set; } = true;
+    public string? SeenVersion { get; set; } // the version Bloom last started as: a newer one shows 바뀐 점 once (ReleaseNotes)
+    public bool GpuDrawing { get; set; } = true; // WPF draws with the GPU; off = software drawing, ~30 MB less (measured 10-09), read at start
+    public int AiIdleMinutes { get; set; } = 5; // a chat's CLI closes after this long unused (its memory back); 0 = stays open
+    public bool AiTitles { get; set; } = true; // the AI names each task "[◆ Opus • Code ] …" (ChatTitles)
     public bool AiTools { get; set; } = true; // Claude chats get Bloom's MCP tools (actions asked in the chat first)
     public bool AiToolsGpt { get; set; } = true; // ChatGPT (Codex) chats get them too (Bloom asks in the chat itself)
     public List<string> AiToolsOff { get; set; } = new(); // BloomTools groups the AI may not use: look | open | files | clip

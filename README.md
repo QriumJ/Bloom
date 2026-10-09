@@ -23,7 +23,7 @@
 - Windows 10/11, 64-bit. If the PC doesn't have the .NET 10 Desktop Runtime, the setup installs it (Windows asks for permission for that part).
 - Bloom installs for your account only, into `%LOCALAPPDATA%\BloomLauncher`, with a Start-menu shortcut. Remove it in Windows Settings › Apps; your settings stay in `%APPDATA%\Bloom`.
 - Bloom isn't code-signed yet, so SmartScreen may say "Windows protected your PC". Choose **More info › Run anyway**.
-- **Updates**: once, a little after it starts, Bloom looks at this repository's latest release. A new version downloads in the background and goes in the next time Bloom starts. Settings › About has **Check for updates** (and **Restart to update** once one is ready) and a switch for the look at start.
+- **Updates**: once, a little after it starts, Bloom looks at this repository's latest release. A new version downloads in the background and goes in the next time Bloom starts. Settings › About has **Check for updates** (and **Restart to update** once one is ready) and a switch for the look at start. After an update Bloom shows what changed once (again any time in Settings › About).
 
 ## Features
 
@@ -82,6 +82,9 @@ No API key. Answers come from the Claude Code or Codex CLI you have installed an
   - Continue past chats and keep them in groups (folders).
   - Attach files and pictures (drag and drop · Ctrl+O · Ctrl+V).
   - Open or save the files the AI makes.
+  - Chats name themselves per task, like `[◆ Opus • Code ] Fix the login` (model · field · task); the title changes only when a new task starts.
+  - Pick several chats and groups and delete them at once: ✓ by the chat search, Ctrl+click, or ⋯ › Select.
+  - A chat left alone closes its CLI after 5 minutes to give the memory back; set minutes or hours (or 0 = never) in Settings › AI chat.
 - **Copy any part**: drag over an answer, your message or a code block (in the quick chat too) and press Ctrl+C or right-click › Copy.
 - **Hand off PC tasks**: "move the quote PDF I got yesterday into Documents", "volume 30", "find last week's videos in Downloads".
   - Anything that changes something is asked about on a card in the chat, every time (Allow · Always in this chat · Decline).
@@ -160,6 +163,7 @@ A map of where a drive's or folder's space went, every folder and file a block a
 - **Look · performance**
   - Dark, light or system theme, and accent color presets
   - Animations on · reduced · off, how many per second (30 · 60 · max), glass off
+  - Draw with the GPU (smooth) or the CPU (about 30 MB less memory; a slow CPU may stutter on busy screens), picked at first start or in Settings › Performance
   - Features that use memory say in the settings how much they add.
 - **Language · first start · moving**
   - 한국어 / English (auto follows Windows); Bloom restarts after a change.

@@ -30,7 +30,7 @@ internal static partial class Captures
         // the red heart drawn a few ways (it came out as black line art)
         var forms = new[] { ("40", 40), ("64", 64), ("96", 96), ("128", 128), ("168", 168), ("200", 200) };
         foreach (var (name, px) in forms)
-            if (ColorEmoji.Render("\u2764\uFE0F", px) is { } bmp)
+            if (ColorEmoji.Render("\u2764\uFE0F", px, Theme.P.Dark) is { } bmp)
             {
                 var png = new PngBitmapEncoder();
                 png.Frames.Add(BitmapFrame.Create(bmp));

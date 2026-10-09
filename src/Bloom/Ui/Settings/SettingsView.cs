@@ -19,7 +19,7 @@ internal sealed partial class SettingsView : ScrollViewer
     public readonly StackPanel Nav = new() { Margin = new Thickness(0, 2, 0, 12) };
     private readonly List<(Row row, Action? toggle, Func<int, bool>? step)> rows = new();
     private readonly List<Dropdown> dropdowns = new();
-    private readonly List<(string key, string title, char glyph)> pages = new();
+    private readonly List<(string key, string title, char glyph, string section)> pages = new();
     private readonly Dictionary<string, int> hits = new();
     private readonly Dictionary<int, string> homeKeys = new(); // row index → home block (Ctrl+↑↓ moves it)
     private int sel;
@@ -30,8 +30,8 @@ internal sealed partial class SettingsView : ScrollViewer
     /// The open category; kept for the next time the window opens.
     private static string current = "general";
 
-    // where Build is: the category and group the next lines go into
-    private string pageKey = "", pageTitle = "", groupTitle = "";
+    // where Build is: the sidebar section, the category and group the next lines go into
+    private string section = "", pageKey = "", pageTitle = "", groupTitle = "";
     private bool pageShown;
     private StackPanel? card;
 
@@ -86,7 +86,7 @@ internal sealed partial class SettingsView : ScrollViewer
     /// A category: a title and one line under it on its page, an entry in the list on the left.
     private void Page(string key, string title, char glyph, string blurb, string filter)
     {
-        pages.Add((key, title, glyph));
+        pages.Add((key, title, glyph, section));
         pageKey = key;
         pageTitle = title;
         groupTitle = "";
@@ -213,68 +213,18 @@ internal sealed partial class SettingsView : ScrollViewer
         }, filter);
     }
 
-    /// A number typed in with its unit after it (보관 기간's 분): digits only, from 0 to `max`. Enter or leaving the field
-    /// keeps it, Esc puts the old one back; the row's Enter (or a click) puts the caret in it.
-    private (FrameworkElement view, Action focus) NumberField(int value, int max, string unit, Action<int> set)
+    /// A length of time on its row (보관 기간, 쉬는 대화 닫기): DurationField, the row's Enter (or a click) puts the caret
+    /// in it; the line under it (`sub` of the value) follows a change.
+    private void Duration(string title, Func<int, string> sub, char glyph, int value, int max, (string key, string label, int minutes)[] units, Action<int> set, string filter)
     {
-        string shown = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        var box = DigitBox.Make(shown, 6, 14, Theme.Medium, 44);
-        bool done = false;
-        void Keep()
+        var field = new DurationField(value, max, units) { Done = () => FocusFilter?.Invoke() };
+        field.Changed += v =>
         {
-            if (done) return;
-            done = true;
-            int v = int.TryParse(box.Text, out int n) ? Math.Clamp(n, 0, max) : value;
-            if (v == value)
-            {
-                box.Text = shown; // "007" or nothing reads as it was
-                return;
-            }
             set(v);
-            Dispatcher.BeginInvoke(() => Build(lastFilter)); // the line under it follows
-        }
-        box.Tag = (Func<Key, bool>)(key =>
-        {
-            switch (key)
-            {
-                case Key.Enter:
-                    Keep();
-                    FocusFilter?.Invoke();
-                    return true;
-                case Key.Escape:
-                    done = true;
-                    box.Text = shown;
-                    FocusFilter?.Invoke();
-                    return true;
-                default:
-                    return false; // the caret moves, the digits go in
-            }
-        });
-        box.LostKeyboardFocus += (_, _) => Keep();
-        var label = Theme.T(unit, 13, Theme.P.TextDim, Theme.Medium, false);
-        label.VerticalAlignment = VerticalAlignment.Center;
-        label.Margin = new Thickness(5, 1, 0, 0);
-        var well = new SmoothBorder
-        {
-            Background = Theme.P.Well,
-            CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(10, 5, 10, 6),
-            VerticalAlignment = VerticalAlignment.Center,
-            Cursor = Cursors.IBeam,
-            Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { box, label } },
+            Settings.Save();
+            Dispatcher.BeginInvoke(() => Build(lastFilter));
         };
-        void Focus()
-        {
-            box.Focus();
-            Keyboard.Focus(box);
-            box.SelectAll();
-        }
-        well.MouseLeftButtonDown += (_, e) =>
-        {
-            Focus();
-            e.Handled = true;
-        };
-        return (well, Focus);
+        Add(title, sub(value), field, glyph, field.FocusBox, null, filter);
     }
 
     /// A choice from a list that opens under the value (many options): click or Enter opens it, ←→ step.
@@ -310,19 +260,23 @@ internal sealed partial class SettingsView : ScrollViewer
         hits.Clear();
         var s = Settings.Current;
 
+        // the sidebar in four sections, 정보 on its own at the end
+        section = Tr("기본", "Basics");
         PageGeneral(s, filter);
         PageFeatures(s, filter);
+        PagePerformance(s, filter);
+        section = Tr("런처", "Launcher");
         PageHome(s, filter);
         PageSearch(s, filter);
+        section = "AI";
         PageAi(s, filter);
         PageMcp(s, filter);
         PageNotices(s, filter);
-        PageClipboard(s, filter);
+        section = Tr("도구", "Tools");
         PageLens(s, filter);
+        PageClipboard(s, filter);
         PageTools(s, filter);
-        PageQuicklinks(s, filter);
-        PageConnections(s, filter);
-        PagePerformance(s, filter);
+        section = "";
         PageAbout(s, filter);
 
         if (filter.Length > 0 && rows.Count == 0)
@@ -336,12 +290,20 @@ internal sealed partial class SettingsView : ScrollViewer
         Select(Math.Min(keep, rows.Count - 1));
     }
 
-    /// The categories on the left: the open one in rose; while filtering, how many lines each has.
+    /// The categories on the left under their section names: the open one in rose; while filtering, how many lines each has.
     private void BuildNav(string filter)
     {
         Nav.Children.Clear();
-        foreach (var (key, title, glyph) in pages)
+        string? last = null;
+        foreach (var (key, title, glyph, sec) in pages)
         {
+            if (sec != last)
+            {
+                var head = Theme.T(sec, 11.5, Theme.P.TextFaint, Theme.Semi, false);
+                head.Margin = new Thickness(22, last is null ? 4 : 16, 12, 4);
+                Nav.Children.Add(head);
+                last = sec;
+            }
             bool on = filter.Length == 0 && key == current;
             int count = hits.GetValueOrDefault(key);
             bool dim = filter.Length > 0 && count == 0;

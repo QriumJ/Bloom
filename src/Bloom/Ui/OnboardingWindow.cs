@@ -89,6 +89,11 @@ internal sealed class OnboardingWindow : Window
 
         PreviewKeyDown += (_, e) =>
         {
+            if (Keyboard.FocusedElement is TextBox { Tag: Func<Key, bool> fieldKey }) // a number being typed (DurationField)
+            {
+                e.Handled = fieldKey(e.Key);
+                return;
+            }
             switch (e.Key)
             {
                 case Key.Enter or Key.Right when Keyboard.FocusedElement is not TextBox:
@@ -130,9 +135,9 @@ internal sealed class OnboardingWindow : Window
         for (int k = 0; k < steps.Count; k++) // the step marks: Row's selection bar, lying down
             petals.Children.Add(new Rectangle { Width = 16, Height = 3, RadiusX = 1.5, RadiusY = 1.5, Fill = k == step ? Theme.P.Accent : Theme.P.Track, Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, SnapsToDevicePixels = true });
         buttons.Children.Clear();
-        if (step > 0) buttons.Children.Add(Button(Tr("이전", "Back"), false, () => Go(step - 1)));
+        if (step > 0) buttons.Children.Add(ActionButton.Make(Tr("이전", "Back"), false, () => Go(step - 1)));
         bool last = step == steps.Count - 1;
-        buttons.Children.Add(Button(last ? Tr("Bloom 열기", "Open Bloom") : step == 0 ? Tr("시작하기", "Get started") : Tr("다음", "Next"), true, Next));
+        buttons.Children.Add(ActionButton.Make(last ? Tr("Bloom 열기", "Open Bloom") : step == 0 ? Tr("시작하기", "Get started") : Tr("다음", "Next"), true, Next));
         skip.Visibility = last || step == 0 ? Visibility.Hidden : Visibility.Visible;
     }
 
@@ -324,6 +329,18 @@ internal sealed class OnboardingWindow : Window
             Theme.Apply(s.Theme);
         };
         sp.Children.Add(Labeled(Tr("색", "Colour"), sw));
+        // how it draws: the GPU (smooth) or the CPU (about 30 MB less memory; a slow CPU may stutter on moving screens)
+        var draw = new Segmented(new[] { ("gpu", Tr("GPU · 부드럽게", "GPU · smooth")), ("cpu", Tr("CPU · 가볍게", "CPU · light")) }, s.GpuDrawing ? "gpu" : "cpu");
+        draw.Picked += v =>
+        {
+            s.GpuDrawing = v == "gpu";
+            Settings.Save();
+        };
+        sp.Children.Add(Labeled(Tr("그리기", "Drawing"), draw));
+        var about = Theme.T(Hangul.KeepAll(Tr("GPU는 움직임이 부드러워요. CPU는 메모리를 약 30 MB 덜 쓰지만, 느린 CPU에서는 움직임이 끊길 수 있어요. 다음에 Bloom을 켤 때부터 적용되고, 설정 › 성능에서 언제든 바꿔요.", "The GPU keeps motion smooth. The CPU uses about 30 MB less memory, but motion may stutter on a slow CPU. It applies from Bloom's next start; change it any time in Settings › Performance.")), 12, Theme.P.TextFaint, Theme.Regular, false);
+        about.TextWrapping = TextWrapping.Wrap;
+        about.Margin = new Thickness(2, 10, 2, 0);
+        sp.Children.Add(about);
         return sp;
     }
 
@@ -356,9 +373,20 @@ internal sealed class OnboardingWindow : Window
         if (!ais.Contains(s.TranslateProvider)) s.TranslateProvider = ais[0];
         Settings.Save();
         var sp = Column(Tr("어떤 AI를 쓸까요?", "Which AI should do what?"), Tr("이 PC에서 찾은 AI만 보여요. 나중에 설정에서 언제든 바꿀 수 있어요.", "Only the AIs found on this PC are shown. Change it any time in Settings."));
+        // beside the chat's label: when an idle chat's CLI closes (its memory back), in minutes or hours
+        var idle = new DurationField(s.AiIdleMinutes, 24 * 60, DurationField.MinutesHours) { Done = () => Focus() };
+        idle.Changed += v =>
+        {
+            s.AiIdleMinutes = v;
+            Settings.Save();
+        };
+        var idleLabel = Theme.T(Tr("안 쓰면 CLI 닫기", "Close an idle CLI after"), 12.5, Theme.P.TextFaint, Theme.Semi, false);
+        idleLabel.VerticalAlignment = VerticalAlignment.Center;
+        idleLabel.Margin = new Thickness(0, 0, 10, 0);
+        var idleRow = new StackPanel { Orientation = Orientation.Horizontal, ToolTip = Tr("대화를 이만큼 안 쓰면 CLI를 닫아 메모리를 돌려줘요 · 0이면 닫지 않아요", "A chat unused this long closes its CLI to free memory · 0 = never"), Children = { idleLabel, idle } };
         sp.Children.Add(AiChoice(Tr("AI 채팅", "AI chat"), ais, s.AiProvider, v => s.AiProvider = v, v => v == "chatgpt"
             ? Tr("Codex로 답해요 — 빠른 답과 폭넓은 상식에 좋고 PC 작업도 맡길 수 있어요", "Answers through Codex — quick answers, broad knowledge, can work on your PC")
-            : Tr("Claude Code로 답해요 — 긴 글 · 코드에 강하고 PC 작업도 맡길 수 있어요", "Answers through Claude Code — strong at long text and code, can work on your PC")));
+            : Tr("Claude Code로 답해요 — 긴 글 · 코드에 강하고 PC 작업도 맡길 수 있어요", "Answers through Claude Code — strong at long text and code, can work on your PC"), idleRow));
         var lens = AiChoice(Tr("Bloom Lens · 번역", "Bloom Lens · translation"), ais, s.TranslateProvider, v => s.TranslateProvider = v, v => v == "chatgpt"
             ? Tr("ChatGPT가 화면 글자를 읽고 번역해요", "ChatGPT reads and translates the screen's text")
             : Tr("Claude Haiku가 화면 글자를 읽고 번역해요 — 빠르고 가벼워요", "Claude Haiku reads and translates the screen's text — quick and light"));
@@ -367,13 +395,21 @@ internal sealed class OnboardingWindow : Window
         return sp;
     }
 
-    /// A job, then one row per AI found: its name and what it is like in one line; the picked one ticked in rose.
-    private static FrameworkElement AiChoice(string job, List<string> ais, string value, Action<string> set, Func<string, string> about)
+    /// A job (with `side` at the right of its label), then one row per AI found: its name and what it is like in one
+    /// line; the picked one ticked in rose.
+    private static FrameworkElement AiChoice(string job, List<string> ais, string value, Action<string> set, Func<string, string> about, FrameworkElement? side = null)
     {
         var sp = new StackPanel();
+        var head = new DockPanel { Margin = new Thickness(2, 0, 0, 8), LastChildFill = false };
+        if (side is not null)
+        {
+            DockPanel.SetDock(side, Dock.Right);
+            head.Children.Add(side);
+        }
         var label = Theme.T(job, 12.5, Theme.P.TextFaint, Theme.Semi, false);
-        label.Margin = new Thickness(2, 0, 0, 8);
-        sp.Children.Add(label);
+        label.VerticalAlignment = VerticalAlignment.Center;
+        head.Children.Add(label);
+        sp.Children.Add(head);
         var rows = new List<(string ai, SmoothBorder card, TextBlock check)>();
         void Paint(string picked)
         {
@@ -633,24 +669,5 @@ internal sealed class OnboardingWindow : Window
         Grid.SetColumn(t, 1);
         g.Children.Add(t);
         return g;
-    }
-
-    private static SmoothBorder Button(string label, bool primary, Action click)
-    {
-        var b = new SmoothBorder
-        {
-            Child = Theme.T(label, 13.5, primary ? Theme.P.AccentInk : Theme.P.Text, Theme.Medium, false),
-            Background = primary ? Theme.P.Accent : Theme.P.Key,
-            CornerRadius = new CornerRadius(9),
-            Padding = new Thickness(18, 8, 18, 9),
-            Margin = new Thickness(8, 0, 0, 0),
-            Cursor = Cursors.Hand,
-        };
-        b.MouseLeftButtonUp += (_, e) =>
-        {
-            click();
-            e.Handled = true;
-        };
-        return b;
     }
 }

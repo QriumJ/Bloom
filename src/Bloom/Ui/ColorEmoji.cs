@@ -22,6 +22,7 @@ internal static unsafe class ColorEmoji
     private static IntPtr d2d, dwrite, wic;
     private static bool broken;
     private static readonly Dictionary<(string, int, bool), BitmapSource?> Cache = new();
+    private static readonly object Gate = new();
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RenderTargetProperties
@@ -45,24 +46,38 @@ internal static unsafe class ColorEmoji
         public float Left, Top, Right, Bottom;
     }
 
-    /// The text drawn in colour, `px` pixels square (physical pixels; WPF shows it at the size it is given).
-    public static BitmapSource? Render(string text, int px)
+    /// Whether colour drawing failed once (plain text from then on).
+    public static bool Broken => broken;
+
+    /// A bitmap already drawn for this text, size and theme (null inside: drawing it failed).
+    public static bool TryCached(string text, int px, bool dark, out BitmapSource? bmp)
     {
-        if (broken || text.Length == 0) return null;
-        if (Cache.TryGetValue((text, px, Theme.P.Dark), out var hit)) return hit;
-        BitmapSource? result = null;
-        try
+        lock (Gate) return Cache.TryGetValue((text, px, dark), out bmp);
+    }
+
+    /// The text drawn in colour, `px` pixels square (physical pixels; WPF shows it at the size it is given), with the
+    /// ink of the dark or light theme for symbols that have no colour of their own. Any thread: the icons worker draws
+    /// the lists' emoji (Icons.RequestEmoji); one at a time, since the D2D factory is single-threaded.
+    public static BitmapSource? Render(string text, int px, bool dark)
+    {
+        lock (Gate)
         {
-            result = Draw(text, px);
+            if (broken || text.Length == 0) return null;
+            if (Cache.TryGetValue((text, px, dark), out var hit)) return hit;
+            BitmapSource? result = null;
+            try
+            {
+                result = Draw(text, px, dark);
+            }
+            catch (Exception e) when (e is COMException or DllNotFoundException or EntryPointNotFoundException or InvalidCastException)
+            {
+                Log.Error("color emoji", e);
+                broken = true; // plain text from now on
+            }
+            if (Cache.Count > 600) Cache.Clear();
+            Cache[(text, px, dark)] = result;
+            return result;
         }
-        catch (Exception e) when (e is COMException or DllNotFoundException or EntryPointNotFoundException or InvalidCastException)
-        {
-            Log.Error("color emoji", e);
-            broken = true; // plain text from now on
-        }
-        if (Cache.Count > 600) Cache.Clear();
-        Cache[(text, px, Theme.P.Dark)] = result;
-        return result;
     }
 
     private static void Check(int hr)
@@ -84,10 +99,21 @@ internal static unsafe class ColorEmoji
         Check(CoCreateInstance(ref clsid, IntPtr.Zero, 1 /* CLSCTX_INPROC_SERVER */, ref iid, out wic));
     }
 
-    private static BitmapSource? Draw(string text, int px)
+    /// One drawing surface per pixel size, made once and drawn on again for every emoji of that size: the WIC bitmap,
+    /// its D2D render target, the centred text format and the ink brush per theme (making them each time took ~3 ms an
+    /// emoji, half of the emoji view's first draw).
+    private sealed class Canvas
     {
+        public IntPtr Bitmap, Target, Format, InkDark, InkLight;
+    }
+
+    private static readonly Dictionary<int, Canvas> Canvases = new();
+
+    private static Canvas CanvasFor(int px)
+    {
+        if (Canvases.TryGetValue(px, out var c)) return c;
         Factories();
-        IntPtr bitmap = IntPtr.Zero, target = IntPtr.Zero, format = IntPtr.Zero, brush = IntPtr.Zero;
+        IntPtr bitmap = IntPtr.Zero, target = IntPtr.Zero, format = IntPtr.Zero, inkDark = IntPtr.Zero, inkLight = IntPtr.Zero;
         try
         {
             // IWICImagingFactory::CreateBitmap (17): w, h, pixel format, WICBitmapCacheOnLoad (2)
@@ -105,32 +131,43 @@ internal static unsafe class ColorEmoji
             Check(((delegate* unmanaged[Stdcall]<IntPtr, int, int>)Slot(format, 3))(format, 2));
             Check(((delegate* unmanaged[Stdcall]<IntPtr, int, int>)Slot(format, 4))(format, 2));
             // ID2D1RenderTarget::CreateSolidColorBrush (8) — the colour for symbols that have none of their own
-            var ink = Theme.P.Dark ? new ColorF { R = 0.93f, G = 0.91f, B = 0.92f, A = 1 } : new ColorF { R = 0.12f, G = 0.1f, B = 0.11f, A = 1 };
-            Check(((delegate* unmanaged[Stdcall]<IntPtr, ColorF*, IntPtr, IntPtr*, int>)Slot(target, 8))(target, &ink, IntPtr.Zero, &brush));
-
-            // BeginDraw (48), Clear (47), DrawText (27) with ENABLE_COLOR_FONT (4), EndDraw (49)
-            ((delegate* unmanaged[Stdcall]<IntPtr, void>)Slot(target, 48))(target);
-            var clear = new ColorF();
-            ((delegate* unmanaged[Stdcall]<IntPtr, ColorF*, void>)Slot(target, 47))(target, &clear);
-            var rect = new RectF { Left = 0, Top = -px * 0.04f, Right = px, Bottom = px };
-            fixed (char* s = text)
-                ((delegate* unmanaged[Stdcall]<IntPtr, char*, uint, IntPtr, RectF*, IntPtr, int, int, void>)Slot(target, 27))(target, s, (uint)text.Length, format, &rect, brush, 4 | 2 /* colour font, no snap */, 0);
-            Check(((delegate* unmanaged[Stdcall]<IntPtr, ulong*, ulong*, int>)Slot(target, 49))(target, null, null));
-
-            // IWICBitmapSource::CopyPixels (7)
-            int stride = px * 4;
-            var pixels = new byte[stride * px];
-            fixed (byte* p = pixels)
-                Check(((delegate* unmanaged[Stdcall]<IntPtr, IntPtr, uint, uint, byte*, int>)Slot(bitmap, 7))(bitmap, IntPtr.Zero, (uint)stride, (uint)pixels.Length, p));
-            var src = BitmapSource.Create(px, px, 96, 96, PixelFormats.Pbgra32, null, pixels, stride);
-            src.Freeze();
-            return src;
+            var dark = new ColorF { R = 0.93f, G = 0.91f, B = 0.92f, A = 1 };
+            var light = new ColorF { R = 0.12f, G = 0.1f, B = 0.11f, A = 1 };
+            Check(((delegate* unmanaged[Stdcall]<IntPtr, ColorF*, IntPtr, IntPtr*, int>)Slot(target, 8))(target, &dark, IntPtr.Zero, &inkDark));
+            Check(((delegate* unmanaged[Stdcall]<IntPtr, ColorF*, IntPtr, IntPtr*, int>)Slot(target, 8))(target, &light, IntPtr.Zero, &inkLight));
         }
-        finally
+        catch
         {
-            foreach (IntPtr p in new[] { brush, format, target, bitmap })
+            foreach (IntPtr p in new[] { inkLight, inkDark, format, target, bitmap })
                 if (p != IntPtr.Zero) Marshal.Release(p);
+            throw;
         }
+        c = new Canvas { Bitmap = bitmap, Target = target, Format = format, InkDark = inkDark, InkLight = inkLight };
+        Canvases[px] = c;
+        return c;
+    }
+
+    private static BitmapSource? Draw(string text, int px, bool dark)
+    {
+        var c = CanvasFor(px);
+        // BeginDraw (48), Clear (47), DrawText (27) with ENABLE_COLOR_FONT (4), EndDraw (49)
+        ((delegate* unmanaged[Stdcall]<IntPtr, void>)Slot(c.Target, 48))(c.Target);
+        var clear = new ColorF();
+        ((delegate* unmanaged[Stdcall]<IntPtr, ColorF*, void>)Slot(c.Target, 47))(c.Target, &clear);
+        var rect = new RectF { Left = 0, Top = -px * 0.04f, Right = px, Bottom = px };
+        IntPtr ink = dark ? c.InkDark : c.InkLight;
+        fixed (char* s = text)
+            ((delegate* unmanaged[Stdcall]<IntPtr, char*, uint, IntPtr, RectF*, IntPtr, int, int, void>)Slot(c.Target, 27))(c.Target, s, (uint)text.Length, c.Format, &rect, ink, 4 | 2 /* colour font, no snap */, 0);
+        Check(((delegate* unmanaged[Stdcall]<IntPtr, ulong*, ulong*, int>)Slot(c.Target, 49))(c.Target, null, null));
+
+        // IWICBitmapSource::CopyPixels (7)
+        int stride = px * 4;
+        var pixels = new byte[stride * px];
+        fixed (byte* p = pixels)
+            Check(((delegate* unmanaged[Stdcall]<IntPtr, IntPtr, uint, uint, byte*, int>)Slot(c.Bitmap, 7))(c.Bitmap, IntPtr.Zero, (uint)stride, (uint)pixels.Length, p));
+        var src = BitmapSource.Create(px, px, 96, 96, PixelFormats.Pbgra32, null, pixels, stride);
+        src.Freeze();
+        return src;
     }
 
     [DllImport("d2d1.dll")] private static extern int D2D1CreateFactory(int type, ref Guid iid, IntPtr options, out IntPtr factory);
