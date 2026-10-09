@@ -42,7 +42,7 @@ internal sealed partial class Engine
                 case "week":
                     var marks = CalendarMarks("");
                     int count = Enumerable.Range(0, 7).Sum(i => marks.TryGetValue(DateTime.Today.AddDays(i), out var l) ? l.Count : 0);
-                    sections.Add(new Section(Tr("이번 주", "This week"), count > 0 ? Tr($"알림 {count}개", count == 1 ? "1 reminder" : $"{count} reminders") : Tr("알림 없음", "No reminders")) { Widget = () => Ui.HomeViews.Week(marks, d => host.Window.OpenCalendar(d)) });
+                    sections.Add(new Section(Tr("이번 주", "This week"), count > 0 ? count == 1 ? Tr("알림 1개", "1 reminder") : Tr($"알림 {count}개", $"{count} reminders") : Tr("알림 없음", "No reminders")) { Widget = () => Ui.HomeViews.Week(marks, d => host.Window.OpenCalendar(d)) });
                     break;
                 case "recent":
                     var recent = new Section(Tr("최근 사용", "Recent"));

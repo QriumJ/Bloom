@@ -13,7 +13,7 @@ internal sealed record Layout(string Key, string Ko, string En, string Words, do
 {
     public string Id => "layout:" + Key;
 
-    public MatchTarget Match { get; } = new(Lang.En ? En : Ko, new[] { Lang.En ? Ko : En, Words });
+    public MatchTarget Match { get; } = MatchTarget.Named(Ko, En, Words);
 }
 
 /// 창 배치: puts the window in front onto a part of its screen's work area (the taskbar stays clear), the way Windows'

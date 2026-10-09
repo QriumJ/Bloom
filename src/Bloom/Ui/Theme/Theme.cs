@@ -10,8 +10,17 @@ internal static class Theme
 {
     public static readonly Palette P = new();
     /// Windows' own UI fonts: hinted, so with TextFormattingMode.Display (every window) small text stays sharp on 100% screens.
-    public static readonly FontFamily Sans = new("Segoe UI, Segoe UI Emoji, Segoe UI Symbol, Malgun Gothic");
-    public static readonly FontFamily Mono = new("Cascadia Mono, Consolas, Malgun Gothic");
+    public static readonly FontFamily Sans = new("Segoe UI, Segoe UI Emoji, Segoe UI Symbol, " + Cjk);
+    public static readonly FontFamily Mono = new("Cascadia Mono, Consolas, " + Cjk);
+
+    /// Hangul, kana and Han characters: the interface language's own font first (a Japanese or Chinese character
+    /// drawn from a Korean font takes the Korean shape).
+    private static string Cjk => Core.Lang.Code switch
+    {
+        "ja" => "Yu Gothic UI, Meiryo UI, Malgun Gothic",
+        "zh" => "Microsoft YaHei UI, Malgun Gothic",
+        _ => "Malgun Gothic",
+    };
     public static readonly FontFamily IconFont = new("Segoe Fluent Icons, Segoe MDL2 Assets");
 
     public static event Action? Changed;

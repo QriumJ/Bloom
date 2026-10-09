@@ -223,7 +223,7 @@ internal sealed partial class Engine
         if (d.TotalHours < 24 && t.Date == DateTime.Today) return Tr($"{(int)d.TotalHours}시간 전", $"{(int)d.TotalHours} h ago");
         if (t.Date == DateTime.Today.AddDays(-1)) return Tr("어제", "Yesterday");
         if (d.TotalDays < 7) return Tr($"{(int)Math.Ceiling(d.TotalDays)}일 전", $"{(int)Math.Ceiling(d.TotalDays)} days ago");
-        return t.Year == DateTime.Now.Year ? Tr($"{t.Month}월 {t.Day}일", t.ToString("MMM d", Lang.Culture)) : $"{t.Year}. {t.Month}. {t.Day}.";
+        return t.Year == DateTime.Now.Year ? t.ToString(Tr("M월 d일", "MMM d"), Lang.Culture) : $"{t.Year}. {t.Month}. {t.Day}.";
     }
 
     public static string Short(string dir)

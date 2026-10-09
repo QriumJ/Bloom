@@ -14,7 +14,7 @@ internal sealed partial class Engine
 {
     private sealed record SysToggle(string Id, string Ko, string En, char Glyph, string Words)
     {
-        public MatchTarget Match { get; } = new(Lang.En ? En : Ko, new[] { Lang.En ? Ko : En, Words });
+        public MatchTarget Match { get; } = MatchTarget.Named(Ko, En, Words);
     }
 
     private static readonly SysToggle[] Toggles =
@@ -111,7 +111,7 @@ internal sealed partial class Engine
             item.Run = () =>
             {
                 Usage.Touch(id);
-                Done(set(!now.Value), Tr($"{t.Ko} {(now.Value ? "끔" : "켬")}", $"{t.En} {(now.Value ? "off" : "on")}"));
+                Done(set(!now.Value), Switched(t, !now.Value));
             };
         }
         switch (id)
@@ -181,7 +181,7 @@ internal sealed partial class Engine
                         Usage.Touch(id);
                         bool ok = await SystemControl.SetRadio(kind, !radioOn);
                         radiosAt = 0;
-                        Done(ok, Tr($"{t.Ko} {(radioOn ? "끔" : "켬")}", $"{t.En} {(radioOn ? "off" : "on")}"));
+                        Done(ok, Switched(t, !radioOn));
                     };
                 break;
             case "sys:hidden":
@@ -232,6 +232,13 @@ internal sealed partial class Engine
     {
         host.Window.ShowToast(ok ? what : Tr("바꾸지 못했어요", "Couldn't change it"));
         host.Window.Refresh(true);
+    }
+
+    /// "다크 모드 켬" / "Dark mode on": the switch's name as shown, then where it went.
+    private static string Switched(SysToggle t, bool on)
+    {
+        string name = Tr(t.Ko, t.En);
+        return on ? Tr($"{name} 켬", $"{name} on") : Tr($"{name} 끔", $"{name} off");
     }
 
     /// The radios answer slowly (WinRT, ~100 ms): read in the background, the list follows when they change.

@@ -428,7 +428,7 @@ internal sealed partial class SettingsView
             s.NoticeSize = v;
             Notices.Preview(one: true);
         }, filter);
-        Choice(Tr("보이는 시간", "Shown for"), Tr("마우스를 올리면 기다려요 · 승인 대기는 끝날 때까지", "Waits while the mouse is on it · 승인 대기 stays until it ends"), G.Stopwatch,
+        Choice(Tr("보이는 시간", "Shown for"), Tr("마우스를 올리면 기다려요 · 승인 대기는 끝날 때까지", "Waits while the mouse is on it · Needs approval stays until it ends"), G.Stopwatch,
             new[] { ("4", Tr("4초", "4 s")), ("6", Tr("6초", "6 s")), ("10", Tr("10초", "10 s")), ("20", Tr("20초", "20 s")) }, s.NoticeSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture), v => s.NoticeSeconds = int.Parse(v, System.Globalization.CultureInfo.InvariantCulture), filter);
         Choice(Tr("효과음", "Sound"), Tr("알림마다 다른 짧은 소리", "A short sound of its own for each kind"), G.Volume, new[] { ("off", Tr("끔", "Off")), ("s", Tr("작게", "Low")), ("m", Tr("보통", "Medium")), ("l", Tr("크게", "Loud")) }, s.NoticeSound, v =>
         {

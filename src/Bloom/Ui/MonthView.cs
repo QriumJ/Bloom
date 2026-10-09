@@ -42,13 +42,13 @@ internal sealed class MonthView : SmoothBorder
         head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var title = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        title.Children.Add(Theme.T(Tr($"{month.Year}년 {month.Month}월", month.ToString("MMMM yyyy", Culture)), 15, Theme.P.Text, Theme.Semi, false));
+        title.Children.Add(Theme.T(month.ToString(Tr("yyyy년 M월", "MMMM yyyy"), Culture), 15, Theme.P.Text, Theme.Semi, false));
         int count = 0;
         foreach (var (d, list) in marks)
             if (d.Year == month.Year && d.Month == month.Month) count += list.Count;
         if (count > 0)
         {
-            var c = Theme.T(Tr($"일정 {count}개", count == 1 ? "1 reminder" : $"{count} reminders"), 12, Theme.P.TextFaint, Theme.Regular, false);
+            var c = Theme.T(count == 1 ? Tr("일정 1개", "1 reminder") : Tr($"일정 {count}개", $"{count} reminders"), 12, Theme.P.TextFaint, Theme.Regular, false);
             c.Margin = new Thickness(10, 2, 0, 0);
             c.VerticalAlignment = VerticalAlignment.Center;
             title.Children.Add(c);

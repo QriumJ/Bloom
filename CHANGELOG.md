@@ -2,8 +2,9 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
-## 0.10.1
+## 0.11.0
 
+- Bloom speaks Japanese and Simplified Chinese: 设置 › 常规 › 语言 / 設定 › 一般 › 言語, or Auto with a Japanese or Chinese Windows. Searches, times and units are still typed in English or Korean.
 - Text now uses the Windows system font (Segoe UI, Malgun Gothic) instead of Bloom Sans, drawn on whole pixels: sharper on Full HD and other 100% screens. Bloom takes 6 MB less on disk.
 - Drag the launcher by its search line, not only the bottom bar. Past the text the line drags; on the text it still places the caret and selects.
 - A ⚙ at the end of the search line opens the settings.
@@ -14,6 +15,7 @@ Each release on GitHub shows its section from this file (the workflow looks for 
 
 ### 한국어
 
+- 일본어와 간체 중국어를 지원해요. 설정 › 일반 › 언어에서 고르거나, 자동이면 Windows가 일본어 · 중국어일 때 그 언어로 나와요. 검색어 · 시간 · 단위는 지금처럼 한국어나 영어로 적어요.
 - 글꼴이 Bloom Sans에서 Windows 시스템 글꼴(맑은 고딕 · Segoe UI)로 바뀌었어요. 글자를 픽셀에 맞춰 그려서 FHD처럼 배율 100%인 화면에서도 또렷해요. 설치 크기도 6 MB 줄었어요.
 - 아래쪽 바뿐 아니라 검색줄을 끌어서도 런처를 옮길 수 있어요. 글자가 없는 곳을 끌면 옮겨지고, 글자 위에서는 그대로 커서를 두거나 선택해요.
 - 검색줄 끝의 ⚙로 설정을 바로 열어요.

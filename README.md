@@ -10,7 +10,7 @@
   <img src="docs/media/en/loop.webp" alt="Bloom demo: finding Chrome by its initials, maths, a unit, a reminder, emoji, clipboard history, the color picker, asking AI, a PC task approved on its card, notes attached beside the launcher, a Claude Code task-done card, screen translation and Space Cleaner">
 </p>
 
-<p align="center"><sub>WPF · .NET 10 · no WebView · about 80 MB with everything off · English / 한국어 · MIT</sub></p>
+<p align="center"><sub>WPF · .NET 10 · no WebView · about 80 MB with everything off · English / 한국어 / 日本語 / 简体中文 · MIT</sub></p>
 
 - **One line does it.** Apps, files, maths, reminders, emoji and web searches all live in one search line, found from a few letters.
 - **The AI you already use.** No API key: ask the Claude Code or Codex you are signed in to on this PC, and hand it tidying files, notes, timers and your calendar.
@@ -170,7 +170,7 @@ A map of where a drive's or folder's space went, every folder and file a block a
   - Draw with the GPU (smooth) or the CPU (about 30 MB less memory; a slow CPU may stutter on busy screens), picked at first start or in Settings › Performance
   - Features that use memory say in the settings how much they add.
 - **Language · first start · moving**
-  - 한국어 / English (auto follows Windows); Bloom restarts after a change.
+  - 한국어 / English / 日本語 / 简体中文 (auto follows Windows); Bloom restarts after a change. Search words, times and units are typed in English or Korean in every language.
   - The first start walks you through how to open Bloom, the home and the AI.
   - Export the settings, favourites, app names and browser shortcuts to one file, and import them on another PC.
 
@@ -273,7 +273,7 @@ Under `src/Bloom`, one folder is one feature. Big classes are split into `partia
 | `tests/Bloom.Tests` | Automated tests (calculator · time reading · dates and world clock · typed paths · winget's table · shortcuts · matching · learning · emoji · language · AI prompts · the MCP tool · usage reading · work logs · my commands) — a console run without a test framework |
 
 Conventions: a new feature splits into `Engine.<feature>.cs` (results) + one view line in `Launcher.ViewSpecs.cs` + `Core/<feature>.cs` (storage) when needed.
-Every piece of text on screen is written as `Tr("한국어", "English")`. Search keywords and parser data keep both languages.
+Every piece of text on screen is written as `Tr("한국어", "English")`. Japanese and Simplified Chinese come from `src/Bloom/Assets/Lang/ja.tsv` and `zh.tsv`, keyed by the English text (`{0}` for each hole of an interpolated one); `python tools/lang.py check` lists what they miss, `todo ja` the texts still to translate. Search keywords and parser data keep Korean and English.
 QA and development runs always use `--data <temporary folder>`, apart from the real data.
 
 ```powershell

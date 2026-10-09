@@ -10,7 +10,7 @@
   <img src="docs/media/loop.webp" alt="Bloom 데모: 한/영 오타로 Chrome 찾기, 계산, 평 단위 변환, 알림, 이모지, 클립보드 기록, 컬러 피커, AI에게 묻기, 승인 카드로 PC 작업 맡기기, 런처 옆에 메모 붙이기, Claude Code 작업 완료 알림, 화면 번역, Space Cleaner">
 </p>
 
-<p align="center"><sub>WPF · .NET 10 · WebView 없음 · 모두 끈 상태 약 80 MB · 한국어 / English · MIT</sub></p>
+<p align="center"><sub>WPF · .NET 10 · WebView 없음 · 모두 끈 상태 약 80 MB · 한국어 / English / 日本語 / 简体中文 · MIT</sub></p>
 
 - **한 줄로 다 해요.** 앱 · 파일 · 계산 · 알림 · 이모지 · 웹 검색이 검색창 하나에 있어요. 한/영을 안 바꿔도, 초성만 쳐도 찾아요.
 - **쓰던 AI를 그대로 써요.** API 키 없이, 이 PC에 로그인해 둔 Claude Code · Codex로 묻고 파일 정리 · 메모 · 타이머 · 일정까지 맡겨요.
@@ -169,7 +169,7 @@ API 키는 필요 없어요. 이 PC에 설치하고 로그인해 둔 Claude Code
   - GPU로 그리기(부드럽게) 또는 CPU로 그리기(메모리 약 30 MB 덜 씀 · 느린 CPU에서는 움직임이 많은 화면이 끊길 수 있어요) — 처음 설정이나 설정 › 성능에서 골라요
   - 메모리를 쓰는 기능은 설정에 늘어나는 양을 적어 뒀어요.
 - **언어 · 처음 설정 · 옮기기**
-  - 화면 언어는 한국어 · English(자동은 Windows 언어를 따라요)예요.
+  - 화면 언어는 한국어 · English · 日本語 · 简体中文(자동은 Windows 언어를 따라요)예요. 검색어 · 시간 · 단위는 어느 언어에서나 한국어나 영어로 적어요.
   - 처음 켜면 여는 방법 · 홈 · AI를 고르는 안내가 나와요.
   - 설정 · 즐겨찾기 · 앱 이름 · 브라우저 바로 가기를 파일 하나로 내보내고 가져와요.
 
@@ -272,7 +272,7 @@ powershell -File tools\install.ps1   # → %LOCALAPPDATA%\Programs\Bloom, 시작
 | `tests/Bloom.Tests` | 자동 테스트(계산기 · 시간 읽기 · 날짜와 세계 시간 · 경로 · winget 목록 · 단축키 · 매칭 · 학습 · 이모지 · 언어 · AI 프롬프트 · MCP 도구 · 사용량 읽기 · 작업 기록 · 내 명령) — 테스트 프레임워크 없이 콘솔 실행 |
 
 규칙: 새 기능은 `Engine.<기능>.cs`(결과) + `Launcher.ViewSpecs.cs`에 보기 한 줄 + 필요하면 `Core/<기능>.cs`(저장)로 나눠요.
-화면에 보이는 글자는 모두 `Tr("한국어", "English")`로 적어요. 검색 키워드와 파서 데이터는 두 언어를 함께 둬요.
+화면에 보이는 글자는 모두 `Tr("한국어", "English")`로 적어요. 일본어 · 간체 중국어는 영어 문장을 키로 한 `src/Bloom/Assets/Lang/ja.tsv` · `zh.tsv`에서 가져와요(보간 문자열의 자리는 `{0}`). `python tools/lang.py check`가 빠진 걸, `todo ja`가 아직 번역할 문구를 보여 줘요. 검색 키워드와 파서 데이터는 한국어 · 영어를 함께 둬요.
 QA나 개발 실행은 항상 `--data <임시 폴더>`로 실제 데이터와 분리해요.
 
 ```powershell

@@ -141,11 +141,37 @@ internal static class LangTests
 
     public static void Settings()
     {
-        Check.True(Lang.Wanted("en"), "en");
-        Check.True(!Lang.Wanted("ko"), "ko");
+        Check.Eq(Lang.Wanted("en"), "en", "en");
+        Check.Eq(Lang.Wanted("zh"), "zh", "zh");
         Lang.Force(false);
         Check.True(Lang.Pending("en"), "en is pending while Korean shows");
         Check.True(!Lang.Pending("ko"), "ko is not");
+    }
+
+    public static void Tables()
+    {
+        Lang.Force("ja", new() { ["Search"] = "検索", ["{0} files"] = "{0} 個のファイル", ["{0:0.0} MB free"] = "空き {0:0.0} MB" });
+        Check.Eq(Tr("검색", "Search"), "検索", "a plain text");
+        Check.Eq(Tr("열기", "Open"), "Open", "missing: English");
+        int n = 3;
+        Check.Eq(Tr($"{n}개 파일", $"{n} files"), "3 個のファイル", "a pattern");
+        Check.Eq(Tr("파일", $"{n} files"), "3 個のファイル", "a pattern with a plain Korean half");
+        Check.Eq(Tr($"{n}개 남음", $"{n} left"), "3 left", "a missing pattern: English");
+        Check.Eq(Tr($"{{a}} {n}", $"{{a}} {n}"), "{a} 3", "braces");
+        double free = 1.25;
+        Check.Eq(Tr($"{free:0.0} MB 남음", $"{free:0.0} MB free"), $"空き {free:0.0} MB", "a format");
+        int calls = 0;
+        _ = Tr($"{++calls}", $"{n}");
+        Check.Eq(calls, 0, "the Korean half is not built");
+        Lang.Force("zh");
+        Check.Eq(Tr("설정", "Settings"), "设置", "the embedded Chinese table");
+        Check.Eq(Tr($"{n}개 위젯", $"{n} widgets"), "3 widgets", "after the real table loads, a missing pattern is still English");
+        Lang.Force("ja");
+        Check.Eq(Tr($"{n}분 전", $"{n} min ago"), "3分前", "a pattern from the embedded Japanese table");
+        Check.Eq(DateTime.Parse("2026-10-09", System.Globalization.CultureInfo.InvariantCulture).ToString(Tr("M월 d일", "MMM d"), Lang.Culture), "10月9日", "a date format from the table");
+        Lang.Force("en");
+        Check.Eq(Tr($"{n}개 파일", $"{n} files"), "3 files", "English");
+        Check.Eq(Lang.Find("Search"), null, "no table in English");
     }
 }
 
@@ -162,6 +188,13 @@ internal static class AiTextTests
         Check.Eq(Translator.TargetFor("こんにちは", "auto"), "en", "Japanese → English (English UI)");
         Check.Eq(Translator.TargetFor("Hello there", "auto"), "ko", "English → Korean (English UI)");
         Check.Eq(Translator.TargetFor("Hello", "ja"), "ja", "a fixed target stays");
+        Lang.Force("ja");
+        Check.Eq(Translator.TargetFor("こんにちは、元気ですか", "auto"), "en", "Japanese → English (Japanese UI)");
+        Check.Eq(Translator.TargetFor("Hello there", "auto"), "ja", "English → Japanese (Japanese UI)");
+        Check.Eq(Translator.TargetFor("你好，今天天气很好", "auto"), "ja", "Chinese → Japanese (Japanese UI)");
+        Lang.Force("zh");
+        Check.Eq(Translator.TargetFor("你好，今天天气很好", "auto"), "en", "Chinese → English (Chinese UI)");
+        Check.Eq(Translator.TargetFor("こんにちは", "auto"), "zh", "Japanese → Chinese (Chinese UI)");
     }
 
     public static void QuickPrompts()

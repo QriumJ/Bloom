@@ -11,6 +11,10 @@ internal sealed class MatchTarget
     public readonly string[] Words;
     public readonly MatchTarget[]? Aliases;
 
+    /// A thing named in both languages: found by the name it shows first, then by its other names and its keywords.
+    public static MatchTarget Named(string ko, string en, string words) =>
+        new(Tr(ko, en), Code switch { "ko" => new[] { en, words }, "en" => new[] { ko, words }, _ => new[] { ko, en, words } });
+
     public MatchTarget(string title, IEnumerable<string>? aliases = null)
     {
         Lower = title.ToLowerInvariant().Trim();

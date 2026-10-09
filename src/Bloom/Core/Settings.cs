@@ -8,7 +8,7 @@ namespace Bloom.Core;
 internal sealed class Settings
 {
     public string Theme { get; set; } = "system"; // system | light | dark
-    public string Language { get; set; } = "auto"; // auto (Windows' display language) | ko | en — read once per run (Core\Lang.cs)
+    public string Language { get; set; } = "auto"; // auto (Windows' display language) | ko | en | ja | zh — read once per run (Core\Lang.cs)
     public bool? Onboarded { get; set; } // the first-run screens were seen (null: a settings file from before they existed)
     public string IconStyle { get; set; } = "tile"; // favorites' picture icons: soft (rose tint) | tile (Bloom's neutral tile) | card (raised card) | black
     public string Accent { get; set; } = "rose"; // Ui.Accents key: rose | lavender | sky | mint | tangerine | lemon | gray
@@ -68,7 +68,7 @@ internal sealed class Settings
     public string TranslateClaudeModel { get; set; } = "haiku"; // haiku | sonnet | opus
     public string TranslateClaudeEffort { get; set; } = "fast"; // fast (thinking off) … max; Haiku has none
     public string TranslateGptEffort { get; set; } = "minimal"; // fitted to the model's lowest it takes
-    public string TranslateTo { get; set; } = "auto"; // auto (Korean → English, else → Korean) | ko | en | ja
+    public string TranslateTo { get; set; } = "auto"; // auto (Korean → English, else → Korean; Translator.TargetFor) | ko | en | ja | zh
     public double LiveSeconds { get; set; } = 1.5; // realtime translation: how often the area is read
     // 알림: Claude Code / Codex turns and plan limits as cards in a screen corner (App\Notices.cs)
     public bool Notices { get; set; } = true;

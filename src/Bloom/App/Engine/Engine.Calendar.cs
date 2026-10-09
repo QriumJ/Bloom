@@ -73,7 +73,7 @@ internal sealed partial class Engine
     private static string DayTitle(DateTime d)
     {
         int n = (int)(d - DateTime.Today).TotalDays;
-        string date = Tr($"{d.Month}월 {d.Day}일 {Weekdays[(int)d.DayOfWeek]}", $"{Weekdays[(int)d.DayOfWeek]}, {d.ToString("MMM d", Lang.Culture)}");
+        string date = d.ToString(Tr("M월 d일 dddd", "dddd, MMM d"), Lang.Culture);
         return n switch
         {
             0 => Tr("오늘 · ", "Today · ") + date,

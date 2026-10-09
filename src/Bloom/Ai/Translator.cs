@@ -13,7 +13,7 @@ namespace Bloom.Ai;
 /// counts against the user's plan.
 internal static class Translator
 {
-    public static readonly (string value, string label)[] Targets = { ("auto", Tr("자동", "Auto")), ("ko", Tr("한국어", "Korean")), ("en", Tr("영어", "English")), ("ja", Tr("일본어", "Japanese")) };
+    public static readonly (string value, string label)[] Targets = { ("auto", Tr("자동", "Auto")), ("ko", Tr("한국어", "Korean")), ("en", Tr("영어", "English")), ("ja", Tr("일본어", "Japanese")), ("zh", Tr("중국어", "Chinese")) };
 
     /// The model a side translates with: Claude Haiku, or the ChatGPT model set for translation
     /// (default: the catalog's lightest, its name containing "Luna" or "mini").
@@ -57,26 +57,37 @@ internal static class Translator
         return Effort(provider) is { } e ? who + " · " + AiModels.EffortName(e) : who;
     }
 
-    /// "auto": text in the interface's language goes to the other one (Korean ↔ English), anything else to the
-    /// interface's language.
+    /// "auto": text in the interface's language goes to another one (Korean ↔ English; Japanese and Chinese → English),
+    /// anything else to the interface's language.
     public static string TargetFor(string text, string setting)
     {
         if (setting != "auto") return setting;
-        int hangul = 0, latin = 0, letters = 0;
+        int hangul = 0, latin = 0, kana = 0, han = 0, letters = 0;
         foreach (char c in text)
         {
             if (c is >= '가' and <= '힣') hangul++;
             else if (c is >= 'a' and <= 'z' or >= 'A' and <= 'Z') latin++;
+            else if (c is >= '\u3040' and <= '\u30FF') kana++;
+            else if (c is >= '\u4E00' and <= '\u9FFF') han++;
             if (char.IsLetter(c)) letters++;
         }
-        if (En) return letters > 0 && latin * 2 > letters ? "ko" : "en";
-        return letters > 0 && hangul * 2 > letters ? "en" : "ko";
+        bool Most(int n) => letters > 0 && n * 2 > letters;
+        return Code switch
+        {
+            "en" => Most(latin) ? "ko" : "en",
+            "ja" => Most(kana + han) && kana > 0 ? "en" : "ja",
+            "zh" => Most(han) && kana == 0 ? "en" : "zh",
+            _ => Most(hangul) ? "en" : "ko",
+        };
     }
 
-    public static string TargetName(string t) => t switch { "en" => Tr("영어", "English"), "ja" => Tr("일본어", "Japanese"), _ => Tr("한국어", "Korean") };
+    /// A language code's English name, for the prompts.
+    public static string LanguageName(string code) => code switch { "en" => "English", "ja" => "Japanese", "zh" => "Simplified Chinese", _ => "Korean" };
+
+    public static string TargetName(string t) => t switch { "en" => Tr("영어", "English"), "ja" => Tr("일본어", "Japanese"), "zh" => Tr("중국어", "Chinese"), _ => Tr("한국어", "Korean") };
 
     private static string Prompt(string target) =>
-        $"You translate text that was read from the user's screen by OCR. Translate it into {(target switch { "en" => "English", "ja" => "Japanese", _ => "Korean" })}. " +
+        $"You translate text that was read from the user's screen by OCR. Translate it into {LanguageName(target)}. " +
         "Fix obvious OCR mistakes (broken words, wrong letters) silently. Keep the line structure when it carries meaning (lists, dialogue, UI labels); join lines that are one sentence. " +
         "Output only the translation — no notes, quotes, or explanations. If the text is already in the target language, output it cleaned up.";
 

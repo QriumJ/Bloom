@@ -134,7 +134,7 @@ internal static class WorldClock
         return h is >= 0 and < 24 && min is >= 0 and < 60 ? new TimeSpan(h, min, 0) : null;
     }
 
-    private static string Time(DateTime t) => t.ToString(Lang.En ? "h:mm tt" : "tt h:mm", Lang.Culture);
+    private static string Time(DateTime t) => t.ToString(Tr("tt h:mm", "h:mm tt"), Lang.Culture);
 
     /// "내일 " / "어제 " when the other side's date differs.
     private static string Rel(DateTime t, DateTime from) => (t.Date - from.Date).Days switch
@@ -142,10 +142,10 @@ internal static class WorldClock
         0 => "",
         1 => Tr("다음 날 ", "next day "),
         -1 => Tr("전날 ", "previous day "),
-        _ => t.ToString(Lang.En ? "MMM d " : "M월 d일 ", Lang.Culture),
+        _ => t.ToString(Tr("M월 d일 ", "MMM d "), Lang.Culture),
     };
 
-    private static string Day(DateTime there, DateTime here) => there.ToString(Lang.En ? "ddd, MMM d" : "M월 d일 (ddd)", Lang.Culture) + ((there.Date - here.Date).Days switch
+    private static string Day(DateTime there, DateTime here) => there.ToString(Tr("M월 d일 (ddd)", "ddd, MMM d"), Lang.Culture) + ((there.Date - here.Date).Days switch
     {
         1 => Tr(" · 여기보다 하루 앞", " · a day ahead of here"),
         -1 => Tr(" · 여기보다 하루 뒤", " · a day behind here"),

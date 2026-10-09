@@ -40,15 +40,13 @@ internal static class QuickActions
         var a = Find(key);
         if (a is null) return Base;
         string instruction = key == "translate"
-            ? $"Translate the text into {LanguageName(Translator.TargetFor(source, Settings.Current.TranslateTo))}. Natural, not word for word."
-            : a.Instruction.Replace("{ui}", En ? "English" : "Korean", StringComparison.Ordinal);
+            ? $"Translate the text into {Translator.LanguageName(Translator.TargetFor(source, Settings.Current.TranslateTo))}. Natural, not word for word."
+            : a.Instruction.Replace("{ui}", Translator.LanguageName(Code), StringComparison.Ordinal);
         return Base + "\n\nThe action: " + instruction;
     }
 
-    private static string LanguageName(string code) => code switch { "en" => "English", "ja" => "Japanese", _ => "Korean" };
-
     /// The words an action is found by, in both languages.
-    public static MatchTarget Match(QuickAction a) => new(En ? a.En : a.Ko, new[] { En ? a.Ko : a.En, a.Words });
+    public static MatchTarget Match(QuickAction a) => MatchTarget.Named(a.Ko, a.En, a.Words);
 
     public static string Title(QuickAction a) => Tr(a.Ko, a.En);
 

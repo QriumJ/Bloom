@@ -139,7 +139,7 @@ internal static partial class DateCalc
         return new CalcAnswer
         {
             Caption = Caption,
-            Expr = d.ToString(Lang.En ? "MMM d, yyyy" : "yyyy. M. d.", Lang.Culture),
+            Expr = d.ToString(Tr("yyyy. M. d.", "MMM d, yyyy"), Lang.Culture),
             Value = d.ToString("dddd", Lang.Culture),
             Copy = d.ToString("dddd", Lang.Culture),
             Detail = days == 0 ? Tr("오늘", "Today") : days > 0 ? $"D-{days:#,0} · {Long(d)}" : $"D+{-days:#,0} · {Long(d)}",
@@ -222,7 +222,7 @@ internal static partial class DateCalc
         return i >= 0 && CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(i + 1).StartsWith(n, StringComparison.OrdinalIgnoreCase) ? i + 1 : n == "sept" ? 9 : 0;
     }
 
-    private static string Long(DateTime d) => d.ToString(Lang.En ? "ddd, MMM d, yyyy" : "yyyy년 M월 d일 (ddd)", Lang.Culture);
+    private static string Long(DateTime d) => d.ToString(Tr("yyyy년 M월 d일 (ddd)", "ddd, MMM d, yyyy"), Lang.Culture);
 
     private static string Weeks(int days) => days < 14
         ? Tr($"{days}일", $"{days} days")

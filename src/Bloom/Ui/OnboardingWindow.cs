@@ -191,10 +191,10 @@ internal sealed class OnboardingWindow : Window
         import.Children.Add(link);
         sp.Children.Add(import);
         // the language first of all: a pick restarts Bloom, which opens these screens again in it
-        var lang = new Segmented(new[] { ("ko", "한국어"), ("en", "English") }, En ? "en" : "ko");
+        var lang = new Segmented(Lang.Choices.Where(c => c.value != "auto").ToArray(), Code);
         lang.Picked += v =>
         {
-            if ((v == "en") == En) return;
+            if (v == Code) return;
             Settings.Current.Language = v;
             Settings.Flush();
             host.Restart();

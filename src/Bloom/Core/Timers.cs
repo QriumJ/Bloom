@@ -105,7 +105,7 @@ internal sealed class Timers
     /// "오늘 15:30" / "내일 09:00" / "10월 9일 18:00"
     public static string WhenText(DateTime d)
     {
-        string day = d.Date == DateTime.Today ? Tr("오늘", "today") : d.Date == DateTime.Today.AddDays(1) ? Tr("내일", "tomorrow") : Tr($"{d.Month}월 {d.Day}일", d.ToString("MMM d", Lang.Culture));
+        string day = d.Date == DateTime.Today ? Tr("오늘", "today") : d.Date == DateTime.Today.AddDays(1) ? Tr("내일", "tomorrow") : d.ToString(Tr("M월 d일", "MMM d"), Lang.Culture);
         return $"{day} {d:HH:mm}";
     }
 }

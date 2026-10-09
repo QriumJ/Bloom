@@ -15,7 +15,7 @@
     <RootNamespace>Bloom</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
-    <Version>0.10.1</Version>
+    <Version>0.11.0</Version>
     <Product>Bloom</Product>
     <AssemblyTitle>Bloom</AssemblyTitle>
     <Company>Hyeon</Company>
@@ -31,6 +31,8 @@
   <ItemGroup>
     <!-- the emoji / symbol search (tools\make_symbols.py) -->
     <EmbeddedResource Include="Assets\symbols.tsv" LogicalName="Bloom.Assets.symbols.tsv" />
+    <!-- Japanese and Chinese, keyed by the English text (tools\lang.py) -->
+    <EmbeddedResource Include="Assets\Lang\*.tsv" LogicalName="Bloom.Assets.Lang.%(Filename).tsv" />
     <EmbeddedResource Include="..\..\CHANGELOG.md" LogicalName="Bloom.CHANGELOG.md" />
     <!-- tests\Bloom.Tests checks the internal parsers and rankers directly -->
     <InternalsVisibleTo Include="Bloom.Tests" />
