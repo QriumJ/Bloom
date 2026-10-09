@@ -170,6 +170,13 @@ internal static class Program
 
         if (Updates.ApplyAtStart(args)) return 0; // an update downloaded earlier goes in; Bloom starts again in it
 
+        // apps started from Bloom take over its working folder: never the install folder, which an update has to move
+        // aside (an app left running from there kept every update from going in). Relative dev/QA paths stay valid.
+        static string? Full(string? path) => path is null ? null : Path.GetFullPath(path);
+        (opt.CaptureDir, opt.GlassFile, opt.ChatFile, opt.PasteFile) = (Full(opt.CaptureDir), Full(opt.GlassFile), Full(opt.ChatFile), Full(opt.PasteFile));
+        (opt.OcrFile, opt.SpaceDir, opt.SpacePath) = (Full(opt.OcrFile), Full(opt.SpaceDir), Full(opt.SpacePath));
+        Directory.SetCurrentDirectory(Paths.Home);
+
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         var host = new Host(opt);
         app.DispatcherUnhandledException += (_, e) =>

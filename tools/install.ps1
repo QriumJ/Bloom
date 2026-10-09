@@ -1,7 +1,7 @@
 # Installs Bloom from dist\app (run tools\package.ps1 first):
 #   - into the setup's install (%LOCALAPPDATA%\BloomLauncher\current, made by a release's BloomLauncher-win-Setup.exe)
-#     when there is one: the files are swapped in place, Velopack's own (sq.version) stay, so the next release still
-#     updates it, and the setup's Start-menu shortcut stays as it is;
+#     when there is one: the files are swapped in place, Velopack's sq.version stays (set to this build's version, so
+#     the next release still updates it), and the setup's Start-menu shortcut stays as it is;
 #   - otherwise into %LOCALAPPDATA%\Programs\Bloom with a Start menu "Bloom.lnk" (--show).
 # A running copy quits first and starts again afterwards in the tray (--autostart, through explorer.exe and a short-lived
 # shortcut so it doesn't inherit this shell's package identity); the app writes its own HKCU Run entry "Bloom".
@@ -38,6 +38,26 @@ foreach ($f in @(Get-ChildItem -LiteralPath $dest -Recurse -File)) {
     if (-not (Test-Path -LiteralPath (Join-Path $src $rel))) {
         Remove-Item -LiteralPath $f.FullName -Force
         "removed old $rel"
+    }
+}
+# Velopack reads the installed version from sq.version: it says this build's version, and updates downloaded earlier
+# that are not newer go (otherwise an older release is offered as "new" and would put an older build back; a dev build
+# with the next release's number simply stays until a later one)
+if ($fromSetup) {
+    $ver = ([Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $dest 'Bloom.dll')).FileVersion -split '\.')[0..2] -join '.'
+    $sq = Join-Path $dest 'sq.version'
+    $text = [IO.File]::ReadAllText($sq)
+    $was = [regex]::Match($text, '<version>([^<]+)</version>').Groups[1].Value
+    if ($was -ne $ver) {
+        [IO.File]::WriteAllText($sq, ([regex]'<version>[^<]+</version>').Replace($text, "<version>$ver</version>", 1), [Text.UTF8Encoding]::new($false))
+        "sq.version: $was -> $ver"
+    }
+    foreach ($pkg in @(Get-ChildItem -LiteralPath (Join-Path (Split-Path $dest -Parent) 'packages') -Filter 'BloomLauncher-*-full.nupkg' -ErrorAction SilentlyContinue)) {
+        $v = [regex]::Match($pkg.Name, '^BloomLauncher-(.+)-full\.nupkg$').Groups[1].Value
+        if ($v -and [version]$v -le [version]$ver) {
+            Remove-Item -LiteralPath $pkg.FullName -Force
+            "removed the older downloaded update $v"
+        }
     }
 }
 $sh = New-Object -ComObject WScript.Shell

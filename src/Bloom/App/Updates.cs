@@ -109,23 +109,16 @@ internal static class Updates
             Set(Stage.NotInstalled);
             return;
         }
-        if (ready is null && m.UpdatePendingRestart is { } pending)
-        {
-            ready = pending;
-            Found = pending.Version.ToString();
-        }
-        if (ready is not null)
-        {
-            Set(Stage.Ready);
-            return;
-        }
+        // one downloaded earlier that could not go in yet still counts, unless GitHub has a newer one by now (a pending
+        // 0.11.4 used to hide 0.12.1 for good)
+        var pending = ready ?? m.UpdatePendingRestart;
         Set(Stage.Checking);
         try
         {
             var info = await Task.Run(m.CheckForUpdatesAsync);
-            if (info is null)
+            if (info is null || (pending is not null && pending.Version >= info.TargetFullRelease.Version))
             {
-                Set(Stage.Latest);
+                Ready(pending);
                 return;
             }
             Found = info.TargetFullRelease.Version.ToString();
@@ -139,8 +132,22 @@ internal static class Updates
         catch (Exception e)
         {
             Log.Error("update", e);
-            Set(asked ? Stage.Failed : Stage.Idle);
+            if (pending is not null) Ready(pending); // offline: the one on disk can still go in
+            else Set(asked ? Stage.Failed : Stage.Idle);
         }
+    }
+
+    /// `pending` (downloaded, waiting to go in) as the update to offer, or Latest when there is none.
+    private static void Ready(VelopackAsset? pending)
+    {
+        if (pending is null)
+        {
+            Set(Stage.Latest);
+            return;
+        }
+        ready = pending;
+        Found = pending.Version.ToString();
+        Set(Stage.Ready);
     }
 
     /// 다시 시작해서 업데이트 (after Host has saved): Bloom ends, the update goes in, the new version starts on 설정.

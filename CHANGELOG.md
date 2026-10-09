@@ -2,6 +2,16 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.12.2
+
+- Updates could get stuck: an update downloaded earlier that could not be installed kept being offered (for example 0.11.4), and newer versions were never looked for. Bloom now checks GitHub even then and takes the newest version.
+- An app opened from Bloom no longer keeps Bloom's install folder in use. Such an app (a VR streamer, for example) blocked every update until it was closed.
+
+### 한국어
+
+- 업데이트가 멈추던 문제를 고쳤습니다. 예전에 받았지만 설치하지 못한 업데이트(예: 0.11.4)만 계속 표시되고 새 버전은 확인하지 않았습니다. 이제 그런 경우에도 GitHub를 확인해 가장 새 버전을 받습니다.
+- Bloom에서 실행한 앱이 Bloom 설치 폴더를 붙잡지 않습니다. 이런 앱(예: VR 스트리머)이 켜져 있으면 닫을 때까지 모든 업데이트가 실패했습니다.
+
 ## 0.12.1
 
 - Screen capture now lets you mark up the area before it goes anywhere. After you drag over the area, a bar opens beside it: pen (P), highlighter (H), eraser (E), four colours (1–4), three line sizes, undo (Ctrl+Z) and redo (Ctrl+Y). Enter copies the picture with your marks; the bar can also pin it, ask AI about it or save it. Esc cancels.
