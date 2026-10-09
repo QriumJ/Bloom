@@ -13,7 +13,7 @@ internal sealed class Favorites
     public sealed class Entry
     {
         public string Id { get; set; } = "";
-        public string Kind { get; set; } = ""; // app | uwp | file | folder | url | cmd | setting | tool | quicklink | group
+        public string Kind { get; set; } = ""; // app | uwp | file | folder | url | cmd | setting | tool | quicklink | sys | layout | group
         public string Title { get; set; } = "";
         public string? Subtitle { get; set; }
         public string Target { get; set; } = "";
@@ -121,7 +121,7 @@ internal sealed class Favorites
         Current = Json.Load<Favorites>(Paths.In("favorites.json"));
         saver = new Saver(() => Json.Save(Paths.In("favorites.json"), Current));
         // entries of a kind Bloom no longer has (a feature that was taken out) leave the list
-        static bool Gone(Entry e) => e.Kind is not ("app" or "uwp" or "file" or "folder" or "url" or "cmd" or "setting" or "tool" or "quicklink" or "sys" or GroupKind);
+        static bool Gone(Entry e) => e.Kind is not ("app" or "uwp" or "file" or "folder" or "url" or "cmd" or "setting" or "tool" or "quicklink" or "sys" or "layout" or GroupKind);
         int dropped = Current.Items.RemoveAll(Gone);
         foreach (var g in Current.Items) dropped += g.Items?.RemoveAll(Gone) ?? 0;
         if (dropped > 0) saver.Touch();

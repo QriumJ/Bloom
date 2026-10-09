@@ -30,6 +30,8 @@ internal enum Mode
     System, // toggles: dark mode, sound, radios, …
     Quick, // AI actions on the selected / copied text
     Commands, // 내 명령: scripts, snippets, chains
+    Layout, // 창 배치: where the window in front goes
+    Winget, // 앱 설치: winget's catalogue
 }
 
 /// Builds the result sections for each view. Fast sources (apps, commands, settings, calculator,

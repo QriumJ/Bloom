@@ -55,6 +55,7 @@ internal sealed partial class Engine
                 new() { Title = Tr("최소화", "Minimize"), Glyph = G.Down, StayOpen = true, Run = () => { OpenWindows.Minimize(h); host.Window.Refresh(true); } },
                 new() { Title = Tr("최대화해서 전환", "Maximize and switch"), Glyph = G.Up, Run = () => OpenWindows.Maximize(h) },
             };
+            if (Features.On("layout")) list.AddRange(LayoutActions(h));
             if (w.Exe is { } exe)
             {
                 list.Add(new ActionItem { Title = Tr("파일 위치 열기", "Show the program file"), Keys = "Ctrl+Enter", Glyph = G.Folder, Run = () => Launch.Reveal(exe) });

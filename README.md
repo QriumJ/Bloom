@@ -59,6 +59,18 @@ You don't need the whole name. Sums are worked out as you type, and times are wr
 - **Ctrl+K** on any result lists everything you can do with it. On a file: rename, move or copy to another folder, Recycle Bin — the way Explorer does it, with the same progress window and name-clash questions.
 - What you pick after typing the same letters comes up first next time. A new habit beats an old one, and the settings can clear it.
 
+### Paths, windows, dates and installs
+
+<img src="docs/media/en/more.webp" alt="The window layout list with drawn icons for halves and quarters, and a column of more things one line takes: a path, left half, in 100 days, days until christmas, new york 3pm, install vlc, pin to the screen">
+
+- **Paths**: type `C:\Users`, `D:/work`, `~\Downloads` or `%APPDATA%` and that folder comes first with what's in it. Enter opens it in Explorer; Tab goes into the folder you picked.
+- **Window layout**: `left half`, `right third`, `top-left quarter`, `maximize`, `center`, `next screen` move the window in front. Halves meet edge to edge and the taskbar stays clear.
+- **Dates · world clock**: `in 100 days`, `days until christmas`, `days since 2026-03-01`, `2026-01-01 ~ 2026-12-25`, `new york time`, `tokyo 3pm`, `3pm in london`
+- **Install apps**: `install vlc` looks it up in winget and the Microsoft Store. Enter asks first, then installs it in the background and a card tells you how it went. Ctrl+K installs it in a terminal you can watch.
+- **Shortcuts for anything**: Ctrl+K › Set a shortcut gives an app, folder, file, site, command or window layout a global shortcut of its own (`ctrl+alt+m`). They're listed in Settings › Tools.
+- **Pin to the screen**: Bloom Lens' fifth choice keeps the picked area on top as a picture (see below).
+- Each of these can be switched off in Settings › Features.
+
 ### AI with your own Claude Code · Codex login
 
 <img src="docs/media/en/ai.webp" alt="A chat asking Allow, Always or Decline before it moves a PDF into Documents, and Claude Code and Codex work notifications">
@@ -94,6 +106,7 @@ No API key. Answers come from the Claude Code or Codex CLI you have installed an
   - `2` Translate
   - `3` Copy its text (Windows OCR)
   - `4` Translate live: Bloom keeps reading the area and translates it whenever it changes.
+  - `5` Pin to the screen: the area stays on top as a picture. Drag it, size it with the wheel, Esc closes it.
   - Translate (Ctrl+Alt+T) and copy text (Ctrl+Alt+O) have shortcuts of their own.
 - **Color picker**: take a color from the screen with the magnifier, or paste a color code.
   - See HEX · RGB · HSL and its contrast with white and black text.
@@ -247,7 +260,7 @@ Under `src/Bloom`, one folder is one feature. Big classes are split into `partia
 | `Native/` | Win32 calls (System32 DLLs only), WinRT calls (`WinRt`), system toggles (`SystemControl` — sound · wireless · dark mode …), Explorer-style file operations (`ShellFiles`) |
 | `Ui/Tools/` | Tool windows: free placement · attaching · magnetic snapping · sizing (`ToolDock`), the window frame (`ToolWindow`), notes · timers · calculator · clipboard |
 | `Ui/` | The launcher window (`Launcher/` — every view's chips · hints · results in one place, `Launcher.ViewSpecs.cs`), the AI chat window (`Chat/`), the settings window (`Settings/`), notice cards, shared controls (`Controls/` — continuous-curvature corners `SmoothBorder`, `Dropdown`, `PopupMenu`), theme (`Theme/` — animation settings in `Motion`) |
-| `tests/Bloom.Tests` | Automated tests (calculator · time reading · matching · learning · emoji · language · AI prompts · the MCP tool · usage reading · work logs · my commands) — a console run without a test framework |
+| `tests/Bloom.Tests` | Automated tests (calculator · time reading · dates and world clock · typed paths · winget's table · shortcuts · matching · learning · emoji · language · AI prompts · the MCP tool · usage reading · work logs · my commands) — a console run without a test framework |
 
 Conventions: a new feature splits into `Engine.<feature>.cs` (results) + one view line in `Launcher.ViewSpecs.cs` + `Core/<feature>.cs` (storage) when needed.
 Every piece of text on screen is written as `Tr("한국어", "English")`. Search keywords and parser data keep both languages.

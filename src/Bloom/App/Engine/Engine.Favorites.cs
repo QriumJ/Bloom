@@ -91,6 +91,8 @@ internal sealed partial class Engine
                 return FromGroup(e);
             case "sys":
                 return SysItem(e.Id);
+            case "layout":
+                return LayoutItem(e.Id);
             default:
                 var s = SystemItems.Find(e.Id);
                 return s is null ? null : FromSys(s);

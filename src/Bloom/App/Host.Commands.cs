@@ -1,3 +1,4 @@
+using System;
 using Bloom.Core;
 using Bloom.Native;
 using Bloom.Search;
@@ -8,6 +9,24 @@ namespace Bloom.App;
 internal sealed partial class Host
 {
     // ── commands ────────────────────────────────────────────────────────────────────────────────
+    /// An item's own shortcut was pressed: it runs as if picked in the launcher (a gone app or file says so on a card).
+    private void RunItemKey(Favorites.Entry entry)
+    {
+        if (Engine.FromFavorite(entry) is not { Run: { } run } item)
+        {
+            Notices.Result(false, Tr("단축키 · 오류", "Shortcut · Error"), entry.Title, Tr("찾지 못했어요 — 지워졌거나 옮겨졌을 수 있어요", "Not found — it may have been deleted or moved"));
+            return;
+        }
+        try
+        {
+            run();
+        }
+        catch (Exception e)
+        {
+            Log.Error("item key " + item.Id, e);
+        }
+    }
+
     public void RunCommand(string id)
     {
         switch (id)
@@ -48,9 +67,18 @@ internal sealed partial class Host
             case "cmd:lens":
                 StartLens("menu");
                 break;
+            case "cmd:pin":
+                StartLens("pin");
+                break;
             case "cmd:windows":
                 OpenWindows.Invalidate();
                 OpenView(Mode.Windows);
+                break;
+            case "cmd:winget":
+                OpenView(Mode.Winget);
+                break;
+            case "cmd:layout":
+                OpenView(Mode.Layout);
                 break;
             case "cmd:emoji":
                 OpenView(Mode.Emoji);

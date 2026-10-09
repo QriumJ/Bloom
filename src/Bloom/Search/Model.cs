@@ -58,6 +58,10 @@ internal sealed class IconSpec
 
     public static IconSpec Symbol(string text, bool emoji) => new() { Text = text, Emoji = emoji };
 
+    /// A small screen with a part of it filled (창 배치: where the window goes), as fractions of the screen.
+    public System.Windows.Rect? Area;
+
+    public static IconSpec Share(double x, double y, double w, double h) => new() { Area = new System.Windows.Rect(x, y, w, h) };
 }
 
 internal sealed class ActionItem
@@ -102,6 +106,7 @@ internal sealed class ResultItem
 
     // calculator card
     public string? CalcExpr, CalcValue, CalcDetail;
+    public string? CalcCaption; // under the left side (null: 수식)
 }
 
 internal sealed class Section

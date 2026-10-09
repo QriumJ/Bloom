@@ -173,7 +173,7 @@ internal sealed class Row : SmoothBorder
         var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(22, 0, 0, 0) };
         var expr = Theme.T(item.CalcExpr ?? "", 17, Theme.P.TextDim);
         left.Children.Add(expr);
-        var cap1 = Theme.T(Tr("수식", "Expression"), 11.5, Theme.P.TextFaint);
+        var cap1 = Theme.T(item.CalcCaption ?? Tr("수식", "Expression"), 11.5, Theme.P.TextFaint);
         cap1.Margin = new Thickness(0, 6, 0, 0);
         left.Children.Add(cap1);
         card.Children.Add(left);

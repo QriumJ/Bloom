@@ -241,6 +241,7 @@ internal static class Icons
     {
         if (spec.Mono is { } mono) return MonoTile(mono, size);
         if (spec.Text is { } text) return SymbolTile(text, spec.Emoji, size);
+        if (spec.Area is { } area) return AreaTile(area, size);
         if (spec.Fill is { } fill)
             return new SmoothBorder { Width = size, Height = size, CornerRadius = new CornerRadius(size * 0.27), Background = fill, BorderBrush = Theme.P.CardLine, BorderThickness = new Thickness(1), VerticalAlignment = VerticalAlignment.Center };
         if (spec.ShellPath is not null)
@@ -473,5 +474,33 @@ internal static class Icons
         };
         b.Child = glyph == G.Sparkle ? Theme.Sparkle(size * 0.56, Theme.P.Accent) : Theme.Glyph(glyph, size * 0.52, accent ? Theme.P.Accent : Theme.P.TileFg);
         return b;
+    }
+
+    /// 창 배치's icon: a screen outline on the glyph tile with the part the window takes filled in.
+    private static FrameworkElement AreaTile(Rect area, double size)
+    {
+        double w = Math.Round(size * 0.62), h = Math.Round(size * 0.46), inset = 1.5;
+        var screen = new Canvas { Width = w, Height = h, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        screen.Children.Add(new System.Windows.Shapes.Rectangle { Width = w, Height = h, RadiusX = 2, RadiusY = 2, Stroke = Theme.P.TileFg, StrokeThickness = 1, Opacity = 0.55 });
+        var part = new System.Windows.Shapes.Rectangle
+        {
+            Width = Math.Max(1, area.Width * (w - inset * 2)),
+            Height = Math.Max(1, area.Height * (h - inset * 2)),
+            RadiusX = 1,
+            RadiusY = 1,
+            Fill = Theme.P.TileFg,
+        };
+        Canvas.SetLeft(part, inset + area.X * (w - inset * 2));
+        Canvas.SetTop(part, inset + area.Y * (h - inset * 2));
+        screen.Children.Add(part);
+        return new SmoothBorder
+        {
+            Width = size,
+            Height = size,
+            CornerRadius = new CornerRadius(size * 0.27),
+            Background = Theme.P.Tile,
+            VerticalAlignment = VerticalAlignment.Center,
+            Child = screen,
+        };
     }
 }

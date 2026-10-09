@@ -18,12 +18,19 @@ internal sealed partial class Engine
         var sections = new List<Section>();
         var q = new Query(text);
         if (q.IsEmpty) return RootEmpty(sections);
+        // a typed path answers alone: the folder, what is in it, Tab to go in
+        if (PathInput.Looks(text) && RootPath(text) is { } path)
+        {
+            sections.Add(path);
+            return sections;
+        }
         // a feature switched off in 설정 > 기능 answers nothing here (Features)
         bool noteFirst = false;
         var notes = Features.On("notes") ? RootNotes(text, q, out noteFirst) : null;
         if (notes is not null && noteFirst) sections.Add(notes); // "메모 …": keeping it is what Enter does
         if (Features.On("quicklinks") && TypedQuicklink(text) is { } typed) sections.Add(typed);
         if (Features.On("mine") && TypedCommand(text) is { } mine) sections.Add(mine);
+        if (Features.On("winget") && RootWinget(text) is { } install) sections.Add(install);
         if (Features.On("timers") && TimeParse.Read(text) is { } ask)
         {
             var ts = new Section(Tr("타이머 · 알림", "Timers · reminders"));
@@ -35,26 +42,9 @@ internal sealed partial class Engine
         if (Features.On("system") && RootVolume(text) is { } volume) sections.Add(volume);
 
         if (Features.On("calc") && Calculator.Evaluate(text) is { } calc)
-        {
-            var s = new Section(Tr("계산기", "Calculator"));
-            s.Items.Add(new ResultItem
-            {
-                Id = "calc",
-                Kind = ItemKind.Calc,
-                Title = calc.Value,
-                CalcExpr = calc.Expr,
-                CalcValue = calc.Value,
-                CalcDetail = calc.Detail,
-                PrimaryLabel = calc.Copy.Length > 0 ? Tr("결과 복사", "Copy result") : "",
-                Run = calc.Copy.Length > 0 ? () => Launch.Copy(calc.Copy) : null,
-                MoreActions = calc.Copy.Length > 0 ? () => new List<ActionItem>
-                {
-                    new() { Title = Tr("서식 포함 복사", "Copy as shown"), Glyph = G.Copy, Run = () => Launch.Copy(calc.Value) },
-                    new() { Title = Tr("식과 함께 복사", "Copy with the expression"), Glyph = G.Copy, Run = () => Launch.Copy($"{calc.Expr} = {calc.Value}") },
-                } : null,
-            });
-            sections.Add(s);
-        }
+            sections.Add(new Section(Tr("계산기", "Calculator")) { Items = { CalcItem("calc", calc) } });
+        else if (Features.On("dates") && (DateCalc.Evaluate(text) ?? WorldClock.Evaluate(text)) is { } date)
+            sections.Add(new Section(Tr("날짜 · 시간", "Dates · time")) { Items = { CalcItem("date", date) } });
 
         var results = new Section(Tr("결과", "Results"));
         if (Web.AsUrl(text) is { } url) results.Items.Add(FromUrl(url, text.Trim(), Tr("브라우저에서 열기", "Open in the browser"), ItemKind.Url, Tr("링크", "Link")));
@@ -98,6 +88,11 @@ internal sealed partial class Engine
             item.Score += Learned(item.Id) + 2;
             scored.Add(item);
         }
+        foreach (var item in Features.On("layout") ? RootLayouts(q) : Enumerable.Empty<ResultItem>())
+        {
+            item.Score += Learned(item.Id) + 2;
+            scored.Add(item);
+        }
         if (Matcher.Score(q, NewGroupMatch) is > 0 and var gs)
         {
             var item = NewGroupItem();
@@ -126,6 +121,25 @@ internal sealed partial class Engine
         return sections;
     }
 
+    /// An answer on the calculator card (sums, units, dates, other cities' clocks): Enter copies it.
+    private static ResultItem CalcItem(string id, CalcAnswer calc) => new()
+    {
+        Id = id,
+        Kind = ItemKind.Calc,
+        Title = calc.Value,
+        CalcExpr = calc.Expr,
+        CalcValue = calc.Value,
+        CalcDetail = calc.Detail,
+        CalcCaption = calc.Caption,
+        PrimaryLabel = calc.Copy.Length > 0 ? Tr("결과 복사", "Copy result") : "",
+        Run = calc.Copy.Length > 0 ? () => Launch.Copy(calc.Copy) : null,
+        MoreActions = calc.Copy.Length > 0 ? () => new List<ActionItem>
+        {
+            new() { Title = Tr("서식 포함 복사", "Copy as shown"), Glyph = G.Copy, Run = () => Launch.Copy(calc.Value) },
+            new() { Title = Tr("식과 함께 복사", "Copy with the expression"), Glyph = G.Copy, Run = () => Launch.Copy($"{calc.Expr} = {calc.Value}") },
+        } : null,
+    };
+
     private static string Join(params string?[] parts) => string.Join(" · ", parts.Where(p => !string.IsNullOrEmpty(p)));
 
     private static IEnumerable<T> Score<T>(IEnumerable<T> items, Func<T, MatchTarget> target, Query q, Func<T, double>? boost = null)
@@ -143,7 +157,7 @@ internal sealed partial class Engine
     /// The top files for the root list (Everything), re-ranked by how well the name matches.
     public async Task<Section?> RootFiles(string text)
     {
-        if (!Settings.Current.FilesInRoot || text.Trim().Length < 2 || Calculator.Evaluate(text) is not null) return null;
+        if (!Settings.Current.FilesInRoot || text.Trim().Length < 2 || PathInput.Looks(text) || Calculator.Evaluate(text) is not null) return null;
         var list = await host.Everything.Query(text.Trim() + RootNoise, 60, EverythingClient.SortDateModifiedDesc);
         if (list is null || list.Count == 0) return null;
         var q = new Query(text);

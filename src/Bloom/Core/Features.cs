@@ -15,6 +15,7 @@ internal static class Features
         ("ai", "lens", "Bloom Lens", Tr("화면을 골라 AI에게 묻기 · 번역 · 글자 복사 · 단축키 5개", "Pick a screen area to ask AI, translate or copy text · its 5 shortcuts"), G.Page),
         ("ai", "quick", Tr("AI 빠른 동작", "AI actions"), Tr("선택한 글 요약 · 번역 · 다듬기와 그 단축키", "Summarize, translate or polish selected text, and its shortcut"), G.Sparkle),
         ("search", "calc", Tr("계산기 · 단위 · 환율", "Calculator, units and currency"), Tr("검색줄에 식을 적으면 바로 계산 (12*3, 5km to mi, 100 usd)", "Typing a sum answers at once (12*3, 5km to mi, 100 usd)"), G.Calculator),
+        ("search", "dates", Tr("날짜 · 세계 시간", "Dates · world clock"), Tr("‘100일 뒤’ ‘크리스마스까지’ ‘뉴욕 시간’ ‘도쿄 오후 3시’를 바로 계산", "Answers ‘in 100 days’, ‘days until christmas’, ‘new york time’, ‘tokyo 3pm’ at once"), G.Calendar),
         ("search", "timers", Tr("타이머 · 알림", "Timers · reminders"), Tr("‘10분 타이머’ ‘오후 3시 회의’ · 홈의 타이머 블록 · 이미 맞춘 건 그대로 울려요", "‘10 min timer’, ‘3pm meeting’ · the home's timers block · ones already set still ring"), G.Stopwatch),
         ("search", "calendar", Tr("캘린더", "Calendar"), Tr("월 달력과 홈의 ‘이번 주’ 블록", "The month calendar and the home's ‘This week’ block"), G.Calendar),
         ("search", "color", Tr("컬러 피커", "Color picker"), Tr("화면 색 찍기 · 색 코드 검색 · 그라데이션 추천과 그 단축키", "Pick screen colours, look up colour codes, gradient ideas, and its shortcut"), G.Eyedrop),
@@ -24,6 +25,8 @@ internal static class Features
         ("search", "mine", Tr("내 명령", "My commands"), Tr("직접 만든 스크립트 · 글 조각 · 연속 실행", "Your own scripts, snippets and chains"), G.Code),
         ("tools", "notes", Tr("메모장 · 도구 창", "Notes & tool windows"), Tr("메모 · 타이머 · 계산기 · 클립보드를 런처 옆 창으로 · 검색줄에서 메모 찾기", "Notes, timers, calculator and clipboard in windows beside the launcher · notes in the search line"), G.Document),
         ("tools", "windows", Tr("창 전환", "Switch windows"), Tr("열린 창 목록 · 검색 결과 아래의 창과 그 단축키", "The open windows list, windows under the results, and its shortcut"), G.NewWindow),
+        ("tools", "layout", Tr("창 배치", "Window layout"), Tr("‘왼쪽 절반’ ‘최대화’ ‘다음 화면으로’처럼 앞의 창 옮기기", "Move the window in front: ‘left half’, ‘maximize’, ‘next screen’"), ''),
+        ("tools", "winget", Tr("앱 설치 (winget)", "Install apps (winget)"), Tr("‘설치 vlc’처럼 찾아서 Enter로 설치 — Windows의 winget으로, 할 때마다 물어봐요", "Find one like ‘install vlc’ and Enter installs it — through Windows' winget, asked every time"), G.Download),
         ("tools", "processes", Tr("프로세스 종료", "End processes"), Tr("멈춘 프로그램 찾아서 끄기", "Find and end a stuck program"), G.Gears),
         ("tools", "space", "Bloom Space Cleaner", Tr("디스크를 지도로 보고 큰 파일 정리", "See the disk as a map and clear big files"), G.Folder),
     };
@@ -42,7 +45,7 @@ internal static class Features
     public static string? Of(string id) => id switch
     {
         "cmd:ai" or "cmd:threads" or "threads" => "chat",
-        "cmd:lens" => "lens",
+        "cmd:lens" or "cmd:pin" => "lens",
         "cmd:quick" => "quick",
         "cmd:timer" or "timers" => "timers",
         "cmd:calendar" or "week" => "calendar",
@@ -54,6 +57,9 @@ internal static class Features
         "cmd:commands" => "mine",
         "cmd:notes" or "cmd:tools" => "notes",
         "cmd:windows" => "windows",
+        "cmd:layout" => "layout",
+        "cmd:winget" => "winget",
+        _ when id.StartsWith("layout:", System.StringComparison.Ordinal) => "layout", // pinned or given a shortcut
         "cmd:processes" => "processes",
         "cmd:space" => "space",
         _ => null,

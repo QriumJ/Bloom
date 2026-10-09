@@ -2,6 +2,26 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.9.0
+
+- Type a path like `C:\Users`, `D:/work` or `%APPDATA%` and the folder comes first. Enter opens it, Tab goes into the folder you picked.
+- Window layout: `left half`, `right third`, `top-left quarter`, `maximize`, `center` and `next screen` move the window in front.
+- Dates and other cities' clocks: `in 100 days`, `days until christmas`, `days since 2026-03-01`, `new york time`, `tokyo 3pm`.
+- Give anything its own shortcut: Ctrl+K › Set a shortcut on an app, folder, file, site, command or layout. They're listed in Settings › Tools.
+- Bloom Lens has a fifth choice, Pin to the screen. The area stays on top as a picture you can drag, size and copy.
+- Install apps with winget: type `install vlc`. Bloom asks first, installs it in the background and tells you how it went.
+- Each new one can be switched off in Settings › Features.
+
+### 한국어
+
+- `C:\Users`, `D:/작업`, `%APPDATA%`처럼 경로를 적으면 그 폴더가 맨 위에 떠요. Enter로 열고, Tab으로 고른 폴더에 들어가요.
+- 창 배치: `왼쪽 절반`, `오른쪽 1/3`, `왼쪽 위 1/4`, `최대화`, `가운데로`, `다음 화면으로`로 앞에 있는 창을 옮겨요.
+- 날짜와 다른 도시 시간: `100일 뒤`, `크리스마스까지`, `2026-03-01부터`, `뉴욕 시간`, `도쿄 오후 3시`.
+- 무엇이든 단축키를 붙일 수 있어요. 앱 · 폴더 · 파일 · 사이트 · 명령 · 창 배치에서 Ctrl+K › 단축키 지정. 붙인 단축키는 설정 › 도구에 모여 있어요.
+- Bloom Lens에 5번 ‘화면에 고정’이 생겼어요. 고른 영역이 그림으로 맨 위에 떠 있고, 옮기고 크기를 바꾸고 복사할 수 있어요.
+- winget으로 앱 설치: `설치 vlc`처럼 적으면 돼요. 먼저 묻고, 뒤에서 설치한 다음 결과를 알려 줘요.
+- 새 기능은 모두 설정 › 기능에서 끌 수 있어요.
+
 ## 0.8.3
 
 - AI chat with ChatGPT (Codex): MCP servers you switched on no longer flash terminal windows while a chat runs.

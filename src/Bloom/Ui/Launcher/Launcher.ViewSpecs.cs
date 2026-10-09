@@ -111,7 +111,7 @@ internal sealed partial class Launcher
         [Mode.Lens] = new()
         {
             Chip = () => "Bloom Lens",
-            Placeholder = () => Tr("이 영역으로 할 일 · 1 묻기 2 번역 3 글자 4 실시간", "What to do with this area · 1 ask 2 translate 3 text 4 live"),
+            Placeholder = () => Tr("이 영역으로 할 일 · 1 묻기 2 번역 3 글자 4 실시간 5 고정", "What to do with this area · 1 ask 2 translate 3 text 4 live 5 pin"),
             Context = () => host.LastLens is { } ll ? $"Bloom Lens · {ll.Rect.Width}×{ll.Rect.Height}" : "Bloom Lens",
             Build = _ => Engine.LensView(),
             Split = true,
@@ -167,6 +167,20 @@ internal sealed partial class Launcher
             Context = () => Tr("최근 파일 · Windows 최근 항목", "Recent files · Windows' recent items"),
             Build = Engine.RecentView,
             Split = true,
+        },
+        [Mode.Layout] = new()
+        {
+            Chip = () => Tr("창 배치", "Layout"),
+            Placeholder = () => Tr("왼쪽 절반, 1/3, 최대화, 다음 화면 … · Enter로 앞의 창 옮기기", "left half, third, maximize, next screen … · Enter moves the window in front"),
+            Context = () => Tr("창 배치 · Ctrl+K › 단축키 지정", "Window layout · Ctrl+K › Set a shortcut"),
+            Build = Engine.LayoutView,
+        },
+        [Mode.Winget] = new()
+        {
+            Chip = () => Tr("앱 설치", "Install"),
+            Placeholder = () => Tr("설치할 앱 이름 · Enter로 설치 · Ctrl+K 터미널에서 설치", "App to install · Enter installs · Ctrl+K installs in a terminal"),
+            Context = () => Tr("앱 설치 · winget", "Install apps · winget"),
+            Build = Engine.WingetView,
         },
         [Mode.System] = new()
         {

@@ -10,6 +10,7 @@ internal sealed class CalcAnswer
 {
     public string Expr = "", Value = "", Copy = "";
     public string? Detail;
+    public string? Caption; // what the left side is (null: 수식): 날짜 계산, 세계 시간
 }
 
 /// The launcher's calculator, kept small:

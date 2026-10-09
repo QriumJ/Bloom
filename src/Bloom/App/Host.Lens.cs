@@ -36,6 +36,7 @@ internal sealed partial class Host
                 "live" => Tr("실시간으로 번역할 영역을 끌어서 고르세요", "Drag over the area to translate live"),
                 "translate" => Tr("번역할 영역을 끌어서 고르세요", "Drag over the area to translate"),
                 "text" => Tr("글자를 읽을 영역을 끌어서 고르세요", "Drag over the area to read"),
+                "pin" => Tr("화면에 고정할 영역을 끌어서 고르세요", "Drag over the area to pin"),
                 _ => Tr("영역을 끌어서 고르세요 — 고른 뒤 할 일을 골라요", "Drag over an area — then pick what to do"),
             };
             var pick = await Ocr.ScreenGrab.Pick(hint);
@@ -58,7 +59,7 @@ internal sealed partial class Host
         }
     }
 
-    /// One of the four things to do with the last area.
+    /// One of the five things to do with the last area.
     public async Task LensDo(string kind)
     {
         if (LastLens is not { } l) return;
@@ -73,6 +74,10 @@ internal sealed partial class Host
                 case "live":
                     Window.Dismiss();
                     new Ocr.TranslateWindow(this, l.Rect, null, true).Show();
+                    return;
+                case "pin":
+                    Window.Dismiss();
+                    new Ocr.PinWindow(this, l).Show();
                     return;
             }
             var (px, w, h, _) = Ocr.ScreenGrab.ForOcr(l.Bgra, l.Rect.Width, l.Rect.Height);

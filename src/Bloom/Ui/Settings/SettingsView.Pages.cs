@@ -376,6 +376,20 @@ internal sealed partial class SettingsView
         Shortcut("windows", Tr("창 전환 단축키", "Switch windows shortcut"), Tr("열린 창 목록이 바로 떠요", "Opens the list of open windows"), G.NewWindow, new[] { "ctrl+alt+w", "ctrl+alt+s" }, s.WindowsHotkey, v => s.WindowsHotkey = v, filter);
         Shortcut("emoji", Tr("이모지 · 기호 단축키", "Emoji & symbols shortcut"), Tr("찾아서 Enter면 앞의 창에 붙여 넣어요", "Find one, Enter pastes it into the window in front"), '\uE76E', new[] { "ctrl+alt+e", "ctrl+shift+e" }, s.EmojiHotkey, v => s.EmojiHotkey = v, filter);
         Shortcut("quick", Tr("AI 빠른 동작 단축키", "AI actions shortcut"), Tr("아무 앱에서 글을 선택하고 누르면 요약 · 번역 · 다듬기 (동작마다 사용량 1회 · 엔진은 Bloom Lens > 번역)", "Select text in any app and press it: summarize, translate, polish (1 use per action · engine: Bloom Lens > Translation)"), G.Sparkle, new[] { "ctrl+alt+a", "ctrl+shift+a" }, s.QuickHotkey, v => s.QuickHotkey = v, filter);
+        Header(Tr("항목 단축키", "Item shortcuts"));
+        if (ItemKeys.All.Count == 0)
+            Add(Tr("아직 없어요", "None yet"), Tr("런처에서 앱 · 폴더 · 명령 · 창 배치를 고르고 Ctrl+K › 단축키 지정", "Pick an app, folder, command or layout in the launcher, then Ctrl+K › Set a shortcut"), null, G.Keyboard, null, null, filter);
+        foreach (var k in ItemKeys.All.ToList())
+        {
+            var item = k.Item;
+            string taken = host.Shortcuts?.Status("item:" + item.Id) == "taken" ? Tr(" · 다른 앱이 쓰고 있어요", " · another app uses it") : "";
+            Add(item.Title, Hotkeys.Label(k.Combo) + taken + Tr(" · Enter로 지우기", " · Enter removes it"), null, G.Keyboard, () =>
+            {
+                ItemKeys.Set(item, null);
+                host.ApplyHotkeys();
+                Dispatcher.BeginInvoke(() => Build(lastFilter));
+            }, null, filter);
+        }
         Header(Tr("도구 창", "Tool windows"));
         foreach (var (key, name, glyph) in ToolDock.Kinds)
         {

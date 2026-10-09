@@ -23,6 +23,7 @@ internal sealed class Settings
     public string EmojiHotkey { get; set; } = "off"; // 이모지 · 기호
     public string QuickHotkey { get; set; } = "ctrl+alt+a"; // AI 빠른 동작 on the selected text
     public string ChatHotkey { get; set; } = "ctrl+alt+c"; // the AI 채팅 window: open / bring forward / tuck away
+    public List<ItemKey> ItemKeys { get; set; } = new(); // shortcuts given to single items (Core\ItemKeys.cs)
     public string WebBrowser { get; set; } = "default"; // default | a Browser.Web.Installed key — where searches and links open
     public string SearchEngine { get; set; } = "google"; // Browser.Web.Engines key
     public string AiProvider { get; set; } = "claude"; // claude | chatgpt: the side new conversations use

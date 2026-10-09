@@ -13,7 +13,17 @@ internal sealed partial class Launcher
     private void OnBoxKey(object sender, KeyEventArgs e)
     {
         // keys the TextBox would otherwise consume
-        if (e.Key == Key.Tab && Mode == Mode.Root && Bloom.Core.Features.On("chat"))
+        if (e.Key == Key.Tab && Mode == Mode.Root && PathInput.Looks(box.Text))
+        {
+            // a typed path: Tab goes into the selected folder (never to the AI)
+            if (Engine.DigInto(box.Text, Selected) is { } into)
+            {
+                box.Text = into;
+                box.CaretIndex = into.Length;
+            }
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Tab && Mode == Mode.Root && Bloom.Core.Features.On("chat"))
         {
             // Tab: the conversation it picks up (if any); Shift+Tab: always a new one
             bool fresh = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
@@ -109,8 +119,8 @@ internal sealed partial class Launcher
             }
             return;
         }
-        // Bloom Lens: 1–4 pick the action right away
-        if (Mode == Mode.Lens && box.Text.Length == 0 && !ctrl && key is >= Key.D1 and <= Key.D4 && rows.Count >= key - Key.D1 + 1)
+        // Bloom Lens: 1–5 pick the action right away
+        if (Mode == Mode.Lens && box.Text.Length == 0 && !ctrl && key is >= Key.D1 and <= Key.D5 && rows.Count >= key - Key.D1 + 1)
         {
             Select(key - Key.D1, false);
             RunSelected(null);

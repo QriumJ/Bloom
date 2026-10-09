@@ -34,6 +34,7 @@ internal static partial class Captures
         ["v13"] = V13Screens,
         ["v14"] = V14Screens,
         ["v15"] = V15Screens,
+        ["v16"] = V16Screens,
         ["chat"] = ChatScreens,
         ["chatwin"] = ChatWindowScreens,
         ["mine"] = MineScreens,

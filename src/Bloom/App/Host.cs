@@ -257,6 +257,15 @@ internal sealed partial class Host
         Shortcuts?.Set("emoji", F("emoji", s.EmojiHotkey), () => ToggleView(Mode.Emoji));
         Shortcuts?.Set("quick", F("quick", s.QuickHotkey), () => StartQuick(true));
         Shortcuts?.Set("chat", F("chat", s.ChatHotkey), () => ui.BeginInvoke(ToggleChatWindow));
+        // shortcuts given to single items (Ctrl+K › 단축키 지정), after Bloom's own, which win a clash
+        var items = new HashSet<string>();
+        foreach (var k in ItemKeys.All)
+        {
+            var entry = k.Item;
+            items.Add("item:" + entry.Id);
+            Shortcuts?.Set("item:" + entry.Id, Features.Shows(entry.Id) ? k.Combo : "off", () => ui.BeginInvoke(() => RunItemKey(entry)));
+        }
+        Shortcuts?.Drop("item:", items);
         bool wantHook = Settings.Current.WinKey && !Opt.NoHook;
         if (wantHook && winKey is null)
         {

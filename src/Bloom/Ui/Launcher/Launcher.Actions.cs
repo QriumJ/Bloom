@@ -63,6 +63,7 @@ internal sealed partial class Launcher
                     list.Add(new ActionItem { Title = Tr("원래 아이콘으로", "Back to the original icon"), Glyph = G.Refresh, StayOpen = true, Run = () => { Favorites.SetMono(item.Id, null); Refresh(true); } });
             }
             list.Add(new ActionItem { Title = Tr("즐겨찾기 폴더에 넣기…", "Add to a favorites folder…"), Glyph = G.Folder, StayOpen = true, Run = () => PickGroup(item) });
+            list.AddRange(Engine.ItemKeyActions(item));
             if (Home.ForCommand(item.Id) is { } widget)
             {
                 bool on = Home.IsOn(widget);
