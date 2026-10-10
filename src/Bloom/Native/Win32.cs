@@ -167,6 +167,7 @@ internal static class Win32
 
     [DllImport("dwmapi.dll")] public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
     [DllImport("dwmapi.dll")] public static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS m);
+    [DllImport("dwmapi.dll")] public static extern int DwmFlush();
 
     // ── shell ───────────────────────────────────────────────────────────────────────────────────
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

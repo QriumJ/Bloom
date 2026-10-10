@@ -443,7 +443,15 @@ internal sealed class ToolDock
     /// The window is one of the attached tools.
     public bool Owns(IntPtr hwnd) => hwnd != IntPtr.Zero && windows.Exists(w => w.Edge is not null && w.Handle == hwnd);
 
-    public void LauncherShown() => Layout();
+    /// The attached tools come back with the launcher, cloaked like it: the launcher uncloaks the returned windows with
+    /// its own, once their new frame is drawn.
+    public List<IntPtr> LauncherShown()
+    {
+        var cloaked = windows.Where(w => w.Edge is not null && !w.IsVisible).Select(w => new WindowInteropHelper(w).EnsureHandle()).ToList();
+        foreach (var h in cloaked) Glass.Cloak(h, true);
+        Layout();
+        return cloaked;
+    }
 
     public void LauncherHidden()
     {

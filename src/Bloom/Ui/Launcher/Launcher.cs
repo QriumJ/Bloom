@@ -360,7 +360,8 @@ internal sealed partial class Launcher : Window, IChatHost
     // ── show / hide ─────────────────────────────────────────────────────────────────────────────
     public IntPtr Handle => new WindowInteropHelper(this).Handle;
 
-    public void Summon()
+    /// `display` = a fixed monitor (1-based) for recordings and QA (--display=N); otherwise the one under the cursor.
+    public void Summon(int? display = null)
     {
         if (IsVisible && IsActive)
         {
@@ -368,60 +369,22 @@ internal sealed partial class Launcher : Window, IChatHost
             return;
         }
         bool wasVisible = IsVisible;
+        // opening: the launcher and its attached tools draw under a DWM cloak and appear together once drawn
+        List<IntPtr> revealed = [];
         if (!wasVisible)
         {
             // opened again: a fresh search line and home, except the quick AI, which carries on where it was
             if (Mode is not Mode.Chat) Go(Mode.Root, "");
-            Place();
-            new WindowInteropHelper(this).EnsureHandle();
-            Cloak(true);
+            Place(display);
+            revealed.Add(new WindowInteropHelper(this).EnsureHandle());
+            Glass.Cloak(Handle, true);
             Show();
-            host.Tools.LauncherShown(); // the attached tools come with it
+            revealed.AddRange(host.Tools.LauncherShown()); // the attached tools come with it
         }
         Activate();
         Win32.ForceForeground(Handle);
         FocusBox();
-        if (!wasVisible) UncloakAfterFrame();
-    }
-
-    /// The window opens under a DWM cloak and appears once WPF has drawn the new frame. Uncloaked,
-    /// the first frame on screen was the one from before the last hide, over the plain backdrop of a
-    /// not-yet-active window (the acrylic only draws while active): a blink on every open.
-    private void Cloak(bool on)
-    {
-        if (Handle == IntPtr.Zero) return;
-        int v = on ? 1 : 0;
-        int hr = Win32.DwmSetWindowAttribute(Handle, Win32.DWMWA_CLOAK, ref v, 4);
-        if (hr != 0 && !cloakLogged)
-        {
-            cloakLogged = true;
-            Log.Write($"cloak {(on ? "on" : "off")} failed 0x{hr:X8}");
-        }
-    }
-
-    private bool cloakLogged;
-
-    private void UncloakAfterFrame()
-    {
-        int frames = 0;
-        bool done = false;
-        var guard = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) }; // never stays hidden
-        EventHandler? onFrame = null;
-        void Done()
-        {
-            if (done) return;
-            done = true;
-            CompositionTarget.Rendering -= onFrame;
-            guard.Stop();
-            Cloak(false);
-        }
-        onFrame = (_, _) =>
-        {
-            if (++frames >= 2) Done(); // the frame after the first one: the new content is presented
-        };
-        guard.Tick += (_, _) => Done();
-        CompositionTarget.Rendering += onFrame;
-        guard.Start();
+        if (!wasVisible) Glass.RevealAfterFrame(revealed);
     }
 
     public void Dismiss()

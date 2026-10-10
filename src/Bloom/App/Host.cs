@@ -248,18 +248,7 @@ internal sealed partial class Host
     /// A Bloom-only app name changed: names and order again, the list follows.
     public void AppsChanged() => Apps.ApplyNames();
 
-    public void Summon()
-    {
-        if (Opt.Display is { } d && !Window.IsVisible)
-        {
-            Window.Place(d);
-            Window.Show();
-            Window.Activate();
-            Window.FocusBox();
-            return;
-        }
-        Window.Summon();
-    }
+    public void Summon() => Window.Summon(Opt.Display);
 
     // ── hotkeys ─────────────────────────────────────────────────────────────────────────────────
     public string AltSpaceStatus => Shortcuts?.Status("altspace") ?? "off";
