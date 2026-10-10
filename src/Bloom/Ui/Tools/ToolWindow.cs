@@ -112,6 +112,7 @@ internal sealed class ToolWindow : Window
             Glass.ToolWindow(this);
             Paint();
             HwndSource.FromHwnd(Handle)?.AddHook(WndProc);
+            Glass.CloakFirstFrame(this);
         };
         Theme.Changed += Paint;
         Closed += (_, _) =>

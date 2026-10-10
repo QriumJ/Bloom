@@ -147,6 +147,7 @@ internal sealed class TranslateWindow : Window
             // never in a screen capture: neither in our own live readings nor in anyone's screenshots
             SetWindowDisplayAffinity(h, 0x11 /* WDA_EXCLUDEFROMCAPTURE */);
             Paint();
+            Glass.CloakFirstFrame(this);
             if (Left > -30000) Place(h); // QA pictures stay off-screen
         };
         Theme.Changed += Paint;

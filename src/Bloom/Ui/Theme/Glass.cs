@@ -39,7 +39,9 @@ internal static class Glass
     }
 
     /// Hides a window from the screen while it keeps drawing (DWM cloak). Opening under a cloak, the first frame on
-    /// screen is the new one: uncloaked, it was the one from before the last hide, over the plain backdrop.
+    /// screen is the new one. Uncloaked, it was the one from before the last hide (or nothing yet, for a new window)
+    /// over the bare backdrop: a light flash, measured on 0.12.2 on the first open after the idle trim. The acrylic only
+    /// draws while the window is active, so whoever opens a glass window activates it before RevealAfterFrame.
     public static void Cloak(IntPtr hwnd, bool on)
     {
         if (hwnd == IntPtr.Zero) return;
@@ -52,20 +54,30 @@ internal static class Glass
         }
     }
 
+    /// A glass window being created (from its SourceInitialized, before it is shown): it appears with its first frame.
+    public static void CloakFirstFrame(Window w)
+    {
+        IntPtr hwnd = new WindowInteropHelper(w).Handle;
+        Cloak(hwnd, true);
+        RevealAfterFrame([hwnd]);
+    }
+
     private static bool cloakLogged;
     private static int openings;
+    private static readonly Dictionary<IntPtr, int> claims = []; // a cloaked window → the newest opening that reveals it
 
     /// The longest an opening window stays cloaked if no frame comes; the first frame came 6–85 ms after opening (measured).
     private static readonly TimeSpan RevealGuard = TimeSpan.FromMilliseconds(500);
 
     /// Uncloaks the windows together once WPF has drawn their next frame and DWM has composed it. The Rendering event
     /// comes before the drawing (and can come twice within a couple of ms), so after it: the frame goes out, then one
-    /// DWM pass, waited for off the UI thread. The guard never leaves them hidden. Hidden and opened again before
-    /// that, the newer opening uncloaks the shown windows; this one only lets go of the ones that stayed hidden.
+    /// DWM pass, waited for off the UI thread. The guard never leaves them hidden. A window opened again before that
+    /// belongs to the newer opening, which uncloaks it; this one only lets go of it if it stayed hidden.
     public static void RevealAfterFrame(IReadOnlyList<IntPtr> hwnds)
     {
         var ui = Dispatcher.CurrentDispatcher;
         int opening = ++openings;
+        foreach (var h in hwnds) claims[h] = opening;
         bool done = false;
         var guard = new DispatcherTimer { Interval = RevealGuard };
         EventHandler? onFrame = null;
@@ -76,7 +88,11 @@ internal static class Glass
             CompositionTarget.Rendering -= onFrame;
             guard.Stop();
             foreach (var h in hwnds)
-                if (opening == openings || !Win32.IsWindowVisible(h)) Cloak(h, false);
+            {
+                bool mine = claims.TryGetValue(h, out int c) && c == opening;
+                if (mine) claims.Remove(h);
+                if (mine || !Win32.IsWindowVisible(h)) Cloak(h, false);
+            }
         }
         onFrame = (_, _) =>
         {

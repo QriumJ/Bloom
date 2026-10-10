@@ -174,7 +174,7 @@ internal sealed partial class Host
             if (!Opt.NoTray)
             {
                 tray = new Tray();
-                tray.Toggle += () => Window.Summon();
+                tray.Toggle += Summon;
                 tray.OpenSettings += OpenSettings;
                 tray.Quit += QuitForGood;
             }

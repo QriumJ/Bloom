@@ -148,7 +148,7 @@ internal sealed class ToolDock
         }
         else
         {
-            if (!L.IsVisible) host.Window.Summon(); // the launcher comes, then the tool joins it
+            if (!L.IsVisible) host.Summon(); // the launcher comes, then the tool joins it
             AttachNew(w);
         }
         Save();

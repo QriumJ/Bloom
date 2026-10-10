@@ -5,10 +5,12 @@ Each release on GitHub shows its section from this file (the workflow looks for 
 ## 0.12.3
 
 - Fixed: opening the launcher could flash a light background for a moment, more often with Notes or Clipboard attached beside it. The launcher and its attached tools now stay hidden until their new picture is on screen, and appear together.
+- The Bloom Lens translation window and tool windows opened on their own also appear only once drawn.
 
 ### 한국어
 
 - 수정: 런처를 열 때 밝은 배경이 잠깐 깜빡이던 문제를 고쳤습니다. 메모나 클립보드를 옆에 붙여 쓸 때 더 자주 보였습니다. 이제 런처와 붙은 도구가 새 화면을 다 그린 뒤 함께 표시됩니다.
+- Bloom Lens 번역 창과 따로 연 도구 창도 다 그린 뒤 표시됩니다.
 
 ## 0.12.2
 
