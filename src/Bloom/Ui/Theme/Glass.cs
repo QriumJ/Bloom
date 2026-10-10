@@ -55,6 +55,9 @@ internal static class Glass
     private static bool cloakLogged;
     private static int openings;
 
+    /// The longest an opening window stays cloaked if no frame comes; the first frame came 6–85 ms after opening (measured).
+    private static readonly TimeSpan RevealGuard = TimeSpan.FromMilliseconds(500);
+
     /// Uncloaks the windows together once WPF has drawn their next frame and DWM has composed it. The Rendering event
     /// comes before the drawing (and can come twice within a couple of ms), so after it: the frame goes out, then one
     /// DWM pass, waited for off the UI thread. The guard never leaves them hidden. Hidden and opened again before
@@ -64,7 +67,7 @@ internal static class Glass
         var ui = Dispatcher.CurrentDispatcher;
         int opening = ++openings;
         bool done = false;
-        var guard = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        var guard = new DispatcherTimer { Interval = RevealGuard };
         EventHandler? onFrame = null;
         void Reveal()
         {
