@@ -19,7 +19,7 @@ internal static class CodexUsage
     {
         var psi = OneShot.Psi(exe);
         psi.ArgumentList.Add("app-server");
-        if (account.Home is { } home) psi.Environment["CODEX_HOME"] = home;
+        AiAccounts.UseHome(psi, "chatgpt", account.Home);
         psi.RedirectStandardError = false; // its log is not read: left unredirected, it can never fill a pipe and block
         psi.StandardErrorEncoding = null;
         Process? p = null;
@@ -91,22 +91,12 @@ internal static class CodexUsage
             if (!rl.TryGetProperty(key, out var w) || w.ValueKind != JsonValueKind.Object) continue;
             double used = Num(w, "usedPercent") ?? 0;
             DateTime? resets = Num(w, "resetsAt") is { } at ? DateTimeOffset.FromUnixTimeSeconds((long)at).LocalDateTime : null;
-            limits.Add(new UsageLimit(Window((int)(Num(w, "windowDurationMins") ?? 0)), used, resets));
+            limits.Add(new UsageLimit(UsageLimit.Window((int)(Num(w, "windowDurationMins") ?? 0)), used, resets));
         }
         if (limits.Count == 0) return null;
         string? plan = rl.TryGetProperty("planType", out var pt) && pt.GetString() is { Length: > 0 } s ? char.ToUpperInvariant(s[0]) + s[1..] : null;
         return new UsageAccount("ChatGPT", plan, limits, DateTime.Now);
     }
-
-    /// 300 → "5시간", 10080 → "주간".
-    public static string Window(int mins) => mins switch
-    {
-        10080 => Tr("주간", "Weekly"),
-        >= 1440 when mins % 1440 == 0 => Tr($"{mins / 1440}일", $"{mins / 1440}d"),
-        >= 60 => Tr($"{mins / 60}시간", $"{mins / 60}h"),
-        > 0 => Tr($"{mins}분", $"{mins} min"),
-        _ => Tr("한도", "Limit"),
-    };
 
     private static double? Num(JsonElement e, string name) => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : null;
 }

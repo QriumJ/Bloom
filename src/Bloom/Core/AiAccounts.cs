@@ -87,14 +87,24 @@ internal static class AiAccounts
     public static AiAccount Chat(string kind)
     {
         string id = kind == "chatgpt" ? Settings.Current.GptChatAccount : Settings.Current.ClaudeChatAccount;
-        return Find(id) is { } a && a.Kind == kind ? a : Find(kind == "chatgpt" ? DefaultChatGpt : DefaultClaude)!;
+        return Find(id) is { } a && a.Kind == kind ? a : Find(DefaultId(kind))!;
     }
+
+    /// Picks the account for AI chat; the caller saves the settings.
+    public static void UseForChat(string kind, string id)
+    {
+        if (kind == "chatgpt") Settings.Current.GptChatAccount = id;
+        else Settings.Current.ClaudeChatAccount = id;
+    }
+
+    public static string DefaultId(string kind) => kind == "chatgpt" ? DefaultChatGpt : DefaultClaude;
 
     /// The folder a CLI for `kind` gets as CLAUDE_CONFIG_DIR / CODEX_HOME; null = its own default.
     public static string? ChatHome(string kind) => Chat(kind).Home;
 
-    /// Points a CLI's process at the chat account's folder (after Cli.CleanEnvironment, which keeps the user's own).
-    public static void UseChatAccount(System.Diagnostics.ProcessStartInfo psi, string kind, string? home)
+    /// Points a CLI's process at an account's folder after Cli.CleanEnvironment; null leaves the CLI's own default
+    /// (including the user's environment, which CleanEnvironment keeps).
+    public static void UseHome(System.Diagnostics.ProcessStartInfo psi, string kind, string? home)
     {
         if (home is not null) psi.Environment[kind == "chatgpt" ? "CODEX_HOME" : "CLAUDE_CONFIG_DIR"] = home;
     }

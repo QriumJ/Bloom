@@ -37,7 +37,7 @@ internal static partial class ClaudeUsage
     public static async Task<UsageAccount?> Ask(string cli, AiAccount account)
     {
         var psi = OneShot.Psi(cli);
-        if (account.Home is { } home) psi.Environment["CLAUDE_CONFIG_DIR"] = home;
+        AiAccounts.UseHome(psi, "claude", account.Home);
         foreach (string a in new[] { "-p", "/usage", "--output-format", "json", "--no-session-persistence", "--strict-mcp-config", "--name", "Bloom", "--settings", "{\"disableAllHooks\":true}" })
             psi.ArgumentList.Add(a);
         var (_, output, error) = await OneShot.RunCli(psi, "", CancellationToken.None);

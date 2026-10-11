@@ -20,7 +20,7 @@ internal static class GptCatalog
     private static DateTime stamp = DateTime.MinValue, configStamp = DateTime.MinValue;
     private static string? configModel, loaded; // loaded: the models_cache.json read last (the chat account may change)
 
-    public static string Home => Environment.GetEnvironmentVariable("CODEX_HOME") is { Length: > 0 } h ? h : Path.Combine(Paths.Home, ".codex");
+    public static string Home => CodexAuth.DefaultHome();
 
     public static IReadOnlyList<Model> All
     {

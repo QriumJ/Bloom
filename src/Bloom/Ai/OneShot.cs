@@ -30,7 +30,7 @@ internal static class OneShot
         string? cli = ClaudeSession.FindCli(Settings.Current.ClaudePath);
         if (cli is null) return (null, AiErrors.ClaudeMissing);
         var psi = Psi(cli);
-        AiAccounts.UseChatAccount(psi, "claude", AiAccounts.ChatHome("claude"));
+        AiAccounts.UseHome(psi, "claude", AiAccounts.ChatHome("claude"));
         bool fast = effort is null or "fast";
         foreach (string a in new[]
         {
@@ -57,7 +57,7 @@ internal static class OneShot
         string instructions = Path.Combine(cwd, name + ".md");
         await File.WriteAllTextAsync(instructions, system, ct);
         var psi = Psi(exe);
-        AiAccounts.UseChatAccount(psi, "chatgpt", AiAccounts.ChatHome("chatgpt"));
+        AiAccounts.UseHome(psi, "chatgpt", AiAccounts.ChatHome("chatgpt"));
         _ = CodexAuth.Unsaved(AiAccounts.ChatHome("chatgpt")); // tokens the light way refreshed go in first
         var args = new List<string> { "exec", "--json", "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "read-only", "--cd", cwd, "--color", "never" };
         if (AiModels.GptSlug(model) is { } slug)

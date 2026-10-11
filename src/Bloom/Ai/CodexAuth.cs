@@ -14,9 +14,10 @@ namespace Bloom.Ai;
 /// A Codex sign-in folder's auth.json, as the light way (ChatGptLight) reads and refreshes it. A refresh spends the old
 /// refresh token, so the tokens it gets back are the only good ones: they go into auth.json through a Bloom-only file
 /// (auth.bloom.<tag>.tmp, never one of Codex's), and when that fails (Codex or a scanner holds auth.json, the disk says
-/// no) they wait — in memory, and in that file for a Bloom started again. They replace auth.json only while it still
-/// holds the refresh token they were made from (the tag): a sign-in since (UsageLogin, `codex login`) wins, and nothing
-/// is saved while a login terminal is open on the folder. Every read, every app-server fallback and every Codex start in
+/// no) they wait — in memory, and in that file for a Bloom started again. The pending file is also written while a login
+/// terminal is open, so its waiting tokens survive a Bloom restart; replacing auth.json waits for the terminal to close.
+/// They replace auth.json only while it still holds the refresh token they were made from (the tag): a sign-in since
+/// (UsageLogin, `codex login`) wins. Every read, every app-server fallback and every Codex start in
 /// an account folder settles them first. Left open: a `codex login` run by hand into a Bloom folder in the instant
 /// between Store's check and its move.
 internal static class CodexAuth
@@ -117,10 +118,10 @@ internal static class CodexAuth
     }
 
     /// One try at putting waiting tokens into auth.json, only while it still holds the refresh token they were made from.
+    /// The pending file is written while a login terminal is open too, so a Bloom restart can restore it; only the move waits.
     private static void Store(string home, Waiting w)
     {
         string file = Path.Combine(home, "auth.json"), pending = Path.Combine(home, PendingName(w.Base));
-        if (UsageLogin.SigningIn(home)) return; // the login's own file comes first; these are dropped if it lands
         try
         {
             if (Load(file)?.Refresh != w.Base)
@@ -130,6 +131,9 @@ internal static class CodexAuth
                 return;
             }
             File.WriteAllText(pending, w.Auth.Raw.ToJsonString(Indented));
+            // a login terminal is open on this folder: the CLI writes auth.json there and UsageLogin.Run takes a newer file for
+            // a finished sign-in, so the login's own file comes first; the pending file survives a Bloom restart (dropped if it lands)
+            if (LoginMarker.Alive(home)) return;
             File.Move(pending, file, true);
             waiting.Remove(home);
         }

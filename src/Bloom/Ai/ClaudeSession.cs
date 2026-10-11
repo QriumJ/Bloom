@@ -189,7 +189,7 @@ internal sealed class ClaudeSession : IChatSession
             psi.ArgumentList.Add(resume);
         }
         Cli.CleanEnvironment(psi); // a Claude session that launched us must not leak its routing into the user's CLI
-        AiAccounts.UseChatAccount(psi, "claude", AccountHome);
+        AiAccounts.UseHome(psi, "claude", AccountHome);
         try
         {
             var p = Process.Start(psi);

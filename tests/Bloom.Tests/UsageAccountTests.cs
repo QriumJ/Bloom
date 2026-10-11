@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text.Json.Nodes;
 using Bloom.Core;
@@ -6,7 +8,7 @@ using Bloom.Core;
 namespace Bloom.Tests;
 
 /// The AI 계정 list, the light ChatGPT usage answer (wham/usage, the shape seen on 2026-10-11) and refreshed tokens
-/// whose save failed.
+/// whose save failed, including login markers that keep the terminal's sign-in file protected.
 internal static class UsageAccountTests
 {
     public static void DefaultsComeFirst()
@@ -46,6 +48,74 @@ internal static class UsageAccountTests
         Check.Eq((a.Limits[0].Title, a.Limits[0].Percent, a.Limits[0].Resets), ("5시간", 12.0, (DateTime?)now.AddHours(1)), "five hours, reset counted from now");
         Check.Eq((a.Limits[1].Title, a.Limits[1].Percent), ("주간", 48.0), "week");
         Check.Eq(Ai.ChatGptLight.Parse(JsonNode.Parse("""{"rate_limit":null}""")!, null, now), null, "no windows → nothing");
+    }
+
+    /// Only the marked process and start time keep a login open; stale or malformed markers are removed.
+    public static void LoginMarkerTracksTheSameProcess()
+    {
+        string home = Path.Combine(Path.GetTempPath(), "bloom-test-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(home);
+        string marker = Path.Combine(home, ".bloom-login");
+        using var process = Process.GetCurrentProcess();
+        try
+        {
+            Check.Eq(Ai.LoginMarker.Alive(null), false, "a default account has no marker");
+            Check.Eq(Ai.LoginMarker.Alive(home), false, "no terminal marked");
+            Ai.LoginMarker.Mark(home, process);
+            Check.True(Ai.LoginMarker.Alive(home), "the marked process is still running");
+            var account = new AiAccount { Id = "chatgpt-test", Kind = "chatgpt", Home = home };
+            Check.True(Ai.UsageLogin.Open(account), "the terminal keeps the account open after the login wait");
+
+            string pid = process.Id.ToString(CultureInfo.InvariantCulture);
+            File.WriteAllText(marker, pid + " 0");
+            Check.Eq(Ai.LoginMarker.Alive(home), false, "the same PID with another start time is stale");
+            Check.Eq(File.Exists(marker), false, "a stale marker is removed");
+            File.WriteAllText(marker, int.MaxValue.ToString(CultureInfo.InvariantCulture) + " 0");
+            Check.Eq(Ai.LoginMarker.Alive(home), false, "a nonexistent PID is stale without throwing");
+            Check.Eq(File.Exists(marker), false, "a nonexistent process's marker is removed");
+            File.WriteAllText(marker, "unfinished");
+            Check.Eq(Ai.LoginMarker.Alive(home), false, "a malformed marker is stale");
+            Check.Eq(File.Exists(marker), false, "a malformed marker is removed");
+
+            Ai.LoginMarker.Mark(home, process);
+            Ai.LoginMarker.Unmark(home);
+            Check.Eq(Ai.UsageLogin.Open(account), false, "the account is free once unmarked");
+        }
+        finally
+        {
+            Directory.Delete(home, true);
+        }
+    }
+
+    /// A terminal owns its sign-in file until it closes; refreshed tokens must wait without overwriting it.
+    public static void LoginTerminalKeepsTokensWaiting()
+    {
+        string home = Path.Combine(Path.GetTempPath(), "bloom-test-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(home);
+        string file = Path.Combine(home, "auth.json");
+        const string original = """{"tokens":{"access_token":"old","refresh_token":"r-old"}}""";
+        using var process = Process.GetCurrentProcess();
+        try
+        {
+            File.WriteAllText(file, original);
+            var from = Ai.CodexAuth.Read(home)!;
+            var fresh = Ai.CodexAuth.From((JsonObject)JsonNode.Parse("""{"tokens":{"access_token":"fresh","refresh_token":"r-fresh"}}""")!)!;
+            Ai.LoginMarker.Mark(home, process);
+            Ai.CodexAuth.Save(home, from, fresh).GetAwaiter().GetResult();
+            Check.Eq(File.ReadAllText(file), original, "a live terminal's auth.json is untouched");
+            Check.True(File.Exists(Path.Combine(home, Ai.CodexAuth.PendingName("r-old"))), "waiting tokens survive a Bloom restart while the terminal is open");
+            Check.Eq(Ai.CodexAuth.Read(home)?.Access, "fresh", "the light query can still read waiting tokens");
+            Check.True(Ai.CodexAuth.Unsaved(home), "CLI fallback waits for the terminal to close");
+
+            Ai.LoginMarker.Unmark(home);
+            Check.Eq(Ai.CodexAuth.Unsaved(home), false, "the waiting tokens settle after the terminal closes");
+            Check.Eq(Ai.CodexAuth.Read(home)?.Access, "fresh", "the refreshed sign-in is saved");
+            Check.Eq(File.Exists(Path.Combine(home, Ai.CodexAuth.PendingName("r-old"))), false, "no pending file remains");
+        }
+        finally
+        {
+            Directory.Delete(home, true);
+        }
     }
 
     /// Refreshed tokens on their way into auth.json (CodexAuth): they wait while the file is held and go in once it is

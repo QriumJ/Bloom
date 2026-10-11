@@ -233,7 +233,7 @@ internal sealed class CodexSession : IChatSession
             args.Add("-"); // the prompt comes on stdin
             foreach (string a in args) psi.ArgumentList.Add(a);
             Cli.CleanEnvironment(psi); // the ChatGPT login only
-            AiAccounts.UseChatAccount(psi, "chatgpt", AccountHome);
+            AiAccounts.UseHome(psi, "chatgpt", AccountHome);
             _ = CodexAuth.Unsaved(AccountHome); // tokens the light way refreshed go in first (they were the folder's before it was picked)
             Process p;
             try

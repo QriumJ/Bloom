@@ -51,7 +51,7 @@ internal sealed partial class CodexWatch
 
     public CodexWatch()
     {
-        string home = Environment.GetEnvironmentVariable("CODEX_HOME") is { Length: > 0 } h ? h : Path.Combine(Core.Paths.Home, ".codex");
+        string home = CodexAuth.DefaultHome();
         sessions = Path.Combine(home, "sessions");
         index = Path.Combine(home, "session_index.jsonl");
     }

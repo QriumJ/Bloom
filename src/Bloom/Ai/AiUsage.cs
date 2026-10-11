@@ -8,14 +8,6 @@ using Bloom.Core;
 
 namespace Bloom.Ai;
 
-internal sealed record UsageLimit(string Title, double Percent, DateTime? Resets);
-
-internal sealed record UsageAccount(string Name, string? Plan, List<UsageLimit> Limits, DateTime Fetched)
-{
-    public string Id { get; init; } = ""; // the AiAccount it belongs to
-    public string? Who { get; init; } // the account's e-mail, shown when one kind has more than one card
-}
-
 /// The plan usage on the home (AI 사용량), one card per account (Core\AiAccounts): Claude through Claude Code's own
 /// `/usage` (ClaudeUsage), ChatGPT through Codex's app-server (CodexUsage) or, if picked, one HTTPS request with the
 /// account's Codex sign-in (ChatGptLight). Each CLI runs only while it is asked, with no window, and is closed after
@@ -148,18 +140,21 @@ internal static class AiUsage
         var due = AiAccounts.All.Where(a => !a.Hidden && (all || a.IsDefault || now - asked.GetValueOrDefault(a.Id) >= TimeSpan.FromMinutes(ExtraMinutes))).ToList();
         foreach (var a in due) asked[a.Id] = now;
         Func<AiAccount, Task<UsageAccount?>>? claude = claudeCli is null ? null : a => ClaudeUsage.Ask(claudeCli, a);
-        Func<AiAccount, Task<UsageAccount?>>? chatgpt = Settings.Current.ChatGptUsage == "light" ? a => LightOrCli(a, codexCli)
-            : codexCli is null ? null : a => CodexAuth.Unsaved(a.Home) ? Task.FromResult<UsageAccount?>(null) : CodexUsage.Ask(codexCli, a);
+        bool light = Settings.Current.ChatGptUsage == "light";
+        Func<AiAccount, Task<UsageAccount?>>? chatgpt = !light && codexCli is null ? null : a => AskChatGpt(a, codexCli, light);
         var c = Task.Run(() => Each(due.Where(a => a.Kind == "claude").ToList(), claude));
         var g = Task.Run(() => Each(due.Where(a => a.Kind == "chatgpt").ToList(), chatgpt));
         if (await c | await g) Fetched = DateTime.Now;
     }
 
-    /// The light way first; when it gives nothing (a token Bloom may not refresh ran out, the endpoint changed) Codex's
+    /// If picked, the light way first; when it gives nothing (a token Bloom may not refresh ran out, the endpoint changed) Codex's
     /// own app-server, which refreshes its sign-in itself — not while tokens the light way refreshed still wait to be
     /// saved (CodexAuth.Unsaved), since Codex would send the spent refresh token.
-    private static async Task<UsageAccount?> LightOrCli(AiAccount a, string? codexCli) =>
-        await ChatGptLight.Ask(a) ?? (codexCli is null || CodexAuth.Unsaved(a.Home) ? null : await CodexUsage.Ask(codexCli, a));
+    private static async Task<UsageAccount?> AskChatGpt(AiAccount a, string? codexCli, bool light)
+    {
+        if (light && await ChatGptLight.Ask(a) is { } answer) return answer;
+        return codexCli is null || CodexAuth.Unsaved(a.Home) ? null : await CodexUsage.Ask(codexCli, a);
+    }
 
     /// One account after another (a second CLI never runs beside the first); true when any answered. No CLI for the
     /// kind (`ask` null): nothing is asked and no account is called signed out.
