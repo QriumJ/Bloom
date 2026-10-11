@@ -295,6 +295,29 @@ internal static class Win32
         return ExitWindowsEx(restart ? 0x2u : 0x8u, 0x800000FFu);
     }
 
+    // ── this process: priority, page faults ─────────────────────────────────────────────────────
+    [DllImport("kernel32.dll")] private static extern bool SetPriorityClass(IntPtr process, uint priorityClass);
+
+    /// ABOVE_NORMAL_PRIORITY_CLASS or back to NORMAL: every thread of Bloom's (UI, WPF's render thread, the pool, the
+    /// GC) goes ahead of the PC's ordinary work. Programs Bloom starts don't inherit it (only IDLE and BELOW_NORMAL pass on).
+    public static void AboveNormal(bool on) => SetPriorityClass(GetCurrentProcess(), on ? 0x8000u : 0x20u);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PROCESS_MEMORY_COUNTERS
+    {
+        public uint cb, PageFaultCount;
+        public UIntPtr PeakWorkingSetSize, WorkingSetSize, QuotaPeakPagedPoolUsage, QuotaPagedPoolUsage, QuotaPeakNonPagedPoolUsage, QuotaNonPagedPoolUsage, PagefileUsage, PeakPagefileUsage;
+    }
+
+    [DllImport("kernel32.dll", EntryPoint = "K32GetProcessMemoryInfo")] private static extern bool GetProcessMemoryInfo(IntPtr process, ref PROCESS_MEMORY_COUNTERS counters, uint cb);
+
+    /// Page faults since Bloom started, soft (a page back from the standby list) and hard (from disk) together.
+    public static uint PageFaults()
+    {
+        var c = new PROCESS_MEMORY_COUNTERS { cb = (uint)Marshal.SizeOf<PROCESS_MEMORY_COUNTERS>() };
+        return GetProcessMemoryInfo(GetCurrentProcess(), ref c, c.cb) ? c.PageFaultCount : 0;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct DATA_BLOB { public int cbData; public IntPtr pbData; }
 

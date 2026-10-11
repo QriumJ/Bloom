@@ -2,6 +2,20 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.13.2
+
+- The launcher opens in about a third of the time: from the key to the screen took about 100 ms and now 30–40 ms (measured). The home is kept between openings (blocks that would look the same stay as they were, a block that changed is drawn again), the launcher shows as soon as its first screen is drawn, and the rest of a long list comes right after.
+- On a busy PC Bloom stalls less. While the launcher is open it runs ahead of other programs; file search (Everything), pictures copied to the clipboard and the memory clean-up no longer hold up the launcher or the Win key.
+- Pictures in the clipboard history's folder that no entry uses any more (left by a crash) are removed at start.
+- A slow opening of the launcher (over 150 ms) is written to the log with its steps.
+
+### 한국어
+
+- 런처가 약 3분의 1의 시간에 열립니다. 키를 누른 뒤 화면에 뜨기까지 약 100 ms에서 30–40 ms로 줄었습니다(실측). 홈을 열 때마다 새로 만들지 않고, 그대로인 블록은 남겨 두고 바뀐 블록만 다시 그립니다. 첫 화면을 다 그리면 바로 표시하고, 긴 목록의 나머지는 바로 뒤에 채웁니다.
+- PC가 바쁠 때 Bloom이 덜 멈춥니다. 런처가 열려 있는 동안 다른 프로그램보다 먼저 실행되고, 파일 검색(Everything) · 클립보드에 복사한 그림 · 메모리 정리가 더 이상 런처와 Win 키를 붙잡지 않습니다.
+- 클립보드 기록 폴더에서 어떤 항목도 쓰지 않는 그림(비정상 종료로 남은 것)을 시작할 때 지웁니다.
+- 런처가 느리게 열리면(150 ms 초과) 단계별 시간을 로그에 남깁니다.
+
 ## 0.13.1
 
 - Edit home (Ctrl+E) now reorders the AI usage cards (‹ › on each card) and lets each account show a name of your own instead of its e-mail (✎). A card with its own name shows it even when it is the only one of its kind; limit notices use the same name.

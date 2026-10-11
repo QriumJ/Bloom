@@ -72,7 +72,9 @@ internal static class Icons
     public static void Start(Dispatcher dispatcher)
     {
         ui = dispatcher;
-        var t = new Thread(Worker) { IsBackground = true, Name = "icons", Priority = ThreadPriority.BelowNormal };
+        // Normal, not below: a GC started here (Workstation, not concurrent) runs at this thread's priority and stops the
+        // UI thread and the Win key's hook until it ends, which on a busy PC left them waiting behind everything else
+        var t = new Thread(Worker) { IsBackground = true, Name = "icons" };
         t.SetApartmentState(ApartmentState.STA);
         t.Start();
     }

@@ -165,9 +165,10 @@ internal sealed partial class Host
             };
             SyncAlarm();
             AiUsage.Start(ui);
-            Notices.Quiet = Opt.MeasureSeconds is not null;
+            Notices.Quiet = Opt.MeasureSeconds is not null || Opt.SummonRounds is not null;
             if (!Opt.Demo) Notices.Start(ui); // recording mode: no cards from the real Claude Code and Codex
             if (Opt.MeasureSeconds is { } measure) MeasureLater(measure);
+            if (Opt.SummonRounds is { } rounds) _ = SummonBench.Run(this, ui, rounds);
             if (!Opt.Demo) Clipboard.Start(); // recording mode: the PC's clipboard stays out, the samples stay in
             Shortcuts = new Hotkeys();
             ApplyHotkeys();
@@ -185,7 +186,7 @@ internal sealed partial class Host
             if (Settings.Current.Onboarded != true) ShowOnboarding();
             else if (Opt.Settings) OpenSettings();
             else if (Opt.Show) Summon();
-            if (!Opt.Demo && Opt.MeasureSeconds is null && ReleaseNotes.JustUpdated())
+            if (!Opt.Demo && Opt.MeasureSeconds is null && Opt.SummonRounds is null && ReleaseNotes.JustUpdated())
             {
                 // the first start on a new version: 바뀐 점 a moment later, without taking the focus
                 var soon = new DispatcherTimer(DispatcherPriority.Background, ui) { Interval = TimeSpan.FromSeconds(3) };
@@ -250,6 +251,16 @@ internal sealed partial class Host
 
     public void Summon() => Window.Summon(Opt.Display);
 
+    /// Opens the hidden launcher straight into a view (no home built first); Chat = the caller shows the conversation.
+    private void SummonInto(Mode mode, string text = "") => Window.Summon(Opt.Display, mode, text);
+
+    /// A key's own Summon (hook thread or hotkey): the key is marked for SummonTrace, the opening runs on the UI thread.
+    private void SummonByKey()
+    {
+        SummonTrace.Key();
+        ui.BeginInvoke(Summon);
+    }
+
     // ── hotkeys ─────────────────────────────────────────────────────────────────────────────────
     public string AltSpaceStatus => Shortcuts?.Status("altspace") ?? "off";
 
@@ -259,7 +270,7 @@ internal sealed partial class Host
         var s = Settings.Current;
         static string F(string feature, string keys) => Features.On(feature) ? keys : "off"; // 설정 > 기능 lets go of an off feature's keys
         Clipboard.Apply();
-        Shortcuts?.Set("altspace", s.AltSpace ? "alt+space" : "off", () => ui.BeginInvoke(Summon));
+        Shortcuts?.Set("altspace", s.AltSpace ? "alt+space" : "off", SummonByKey);
         Shortcuts?.Set("clipboard", s.ClipHistory ? s.ClipHotkey : "off", () => ToggleView(Mode.Clipboard));
         Shortcuts?.Set("color", F("color", s.ColorHotkey), StartColor);
         Shortcuts?.Set("lens", F("lens", s.LensHotkey), () => StartLens("menu"));
@@ -288,7 +299,7 @@ internal sealed partial class Host
         bool wantHook = Settings.Current.WinKey && !Opt.NoHook;
         if (wantHook && winKey is null)
         {
-            winKey = new WinKeyHook(() => ui.BeginInvoke(Summon));
+            winKey = new WinKeyHook(SummonByKey);
             winKey.Start();
         }
         else if (!wantHook && winKey is not null)
@@ -300,8 +311,8 @@ internal sealed partial class Host
 
     public void OpenView(Mode mode, string text = "")
     {
-        if (!Window.IsVisible) Summon();
-        Window.Go(mode, text);
+        if (!Window.IsVisible) SummonInto(mode, text);
+        else Window.Go(mode, text);
     }
 
     /// Bloom Space Cleaner (one window; a folder given starts a scan of it there).
@@ -317,7 +328,7 @@ internal sealed partial class Host
                 // a drive's map is hundreds of MB: give it back now, not at the next idle trim
                 // (after a moment: WPF lets go of a closed window's visuals on its next passes; Aggressive also
                 // hands the emptied GC segments back to Windows, not only the working set)
-                _ = Task.Delay(2000).ContinueWith(_ => MemoryTrim.Now(aggressive: true), TaskScheduler.Default);
+                _ = Task.Delay(2000).ContinueWith(_ => MemoryTrim.Soon(aggressive: true), TaskScheduler.Default);
             };
             spaceWindow.Show();
         }
@@ -425,7 +436,7 @@ internal sealed partial class Host
 
     public void OpenChat(ChatThread? t)
     {
-        if (!Window.IsVisible) Summon();
+        if (!Window.IsVisible) SummonInto(Mode.Chat);
         Window.ShowChat(Recent(t) ?? Chats.New());
     }
 
@@ -438,7 +449,7 @@ internal sealed partial class Host
     {
         if (t is null && !fresh) t = TabThread;
         t ??= Chats.New();
-        if (!Window.IsVisible) Summon();
+        if (!Window.IsVisible) SummonInto(Mode.Chat);
         Window.ShowChat(t);
         Chats.Send(t, text);
     }

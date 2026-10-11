@@ -74,6 +74,16 @@ internal sealed class Row : SmoothBorder
         }
     }
 
+    /// Shown again as it was (the launcher's kept home): no hover or selection left from before (a hidden window's rows
+    /// may never hear the mouse leave), a live accessory up to date.
+    public void Reuse()
+    {
+        hover = false;
+        selected = false;
+        Paint();
+        Tick?.Invoke();
+    }
+
     private void Paint()
     {
         if (CalcFrame is not null)

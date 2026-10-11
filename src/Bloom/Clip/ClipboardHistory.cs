@@ -35,6 +35,7 @@ internal sealed class ClipboardHistory : IDisposable
     private readonly Dispatcher ui;
     private readonly object gate = new();
     private ClipFile data;
+    private readonly bool loadedWhole;
     private HwndSource? window;
     private bool listening;
     private readonly DispatcherTimer settle, expiry;
@@ -43,6 +44,9 @@ internal sealed class ClipboardHistory : IDisposable
     private IntPtr lastForeground;
     private readonly Saver saver;
     private readonly Dictionary<uint, string?> appNames = new();
+    private Task work = Task.CompletedTask; // the copies' entries being made, one after another (Capture)
+    private int busyTries;
+    private static readonly TimeSpan SettleTime = TimeSpan.FromMilliseconds(150), BusyRetry = TimeSpan.FromMilliseconds(40);
 
     /// Raised on the UI thread when the list changed.
     public event Action? Changed;
@@ -50,12 +54,13 @@ internal sealed class ClipboardHistory : IDisposable
     public ClipboardHistory(Dispatcher ui)
     {
         this.ui = ui;
-        data = Load();
+        data = Load(out loadedWhole);
         saver = new Saver(Save, 600);
-        settle = new DispatcherTimer(DispatcherPriority.Background, ui) { Interval = TimeSpan.FromMilliseconds(150) };
+        settle = new DispatcherTimer(DispatcherPriority.Background, ui) { Interval = SettleTime };
         settle.Tick += (_, _) =>
         {
             settle.Stop();
+            settle.Interval = SettleTime;
             Capture();
         };
         expiry = new DispatcherTimer(DispatcherPriority.Background, ui);
@@ -94,6 +99,45 @@ internal sealed class ClipboardHistory : IDisposable
         if (pid != Environment.ProcessId) lastForeground = fg;
         Apply();
         Prune();
+        if (loadedWhole) Sweep();
+    }
+
+    /// Pictures no entry names (Bloom closed while a copy's entry was being made, a crash) and half-written ones: a
+    /// screenshot shouldn't stay on disk with nothing in the history to show or remove it. Only files from before this
+    /// start, so a copy saved meanwhile stays.
+    private void Sweep()
+    {
+        var named = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        lock (gate)
+            foreach (var e in data.Items)
+                if (e.Image is { } file) named.Add(file);
+        var started = DateTime.UtcNow;
+        _ = Task.Run(() =>
+        {
+            int held = 0;
+            try
+            {
+                if (!Directory.Exists(Dir)) return;
+                foreach (string f in Directory.EnumerateFiles(Dir))
+                {
+                    string name = Path.GetFileName(f);
+                    bool stray = name.EndsWith(".png.tmp", StringComparison.OrdinalIgnoreCase) || (name.EndsWith(".png", StringComparison.OrdinalIgnoreCase) && !named.Contains(name));
+                    try
+                    {
+                        if (stray && File.GetLastWriteTimeUtc(f) < started) File.Delete(f);
+                    }
+                    catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                    {
+                        held++; // open in a viewer, read-only: the next start tries again, the others go now
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error("clipboard sweep", e);
+            }
+            if (held > 0) Log.Write($"clipboard sweep: {held} in use, left for the next start");
+        });
     }
 
     /// Recording on/off, from the settings (its shortcut is one of Host's Hotkeys).
@@ -114,7 +158,9 @@ internal sealed class ClipboardHistory : IDisposable
         if (msg == WM_CLIPBOARDUPDATE)
         {
             // apps put several formats one after another: read once they are done
+            busyTries = 0;
             settle.Stop();
+            settle.Interval = SettleTime;
             settle.Start();
             handled = true;
         }
@@ -136,29 +182,48 @@ internal sealed class ClipboardHistory : IDisposable
     public void Flush() => saver.Flush();
 
     // ── reading the clipboard ───────────────────────────────────────────────────────────────────
+    /// The copy is read here, on the UI thread (the clipboard's data object belongs to it); its entry is made off it,
+    /// one copy after another so the list keeps their order: decoding, hashing and saving a screenshot took 150–400 ms
+    /// on the UI thread (estimated), which stopped the launcher and the keyboard hook with it.
     private void Capture()
     {
         if (!Settings.Current.ClipHistory) return;
         try
         {
-            IDataObject? d = null;
-            for (int i = 0; i < 4 && d is null; i++)
-                try
-                {
-                    d = Clipboard.GetDataObject();
-                }
-                catch (COMException)
-                {
-                    System.Threading.Thread.Sleep(40); // another app still holds it
-                }
+            IDataObject? d;
+            try
+            {
+                d = Clipboard.GetDataObject();
+            }
+            catch (COMException)
+            {
+                // another app still holds it: again in a moment, a few times (it slept here, holding the UI thread)
+                if (++busyTries > 3) return;
+                settle.Interval = BusyRetry;
+                settle.Start();
+                return;
+            }
             if (d is null || Private(d)) return;
             string? source = SourceApp(out bool privateApp);
             if (privateApp) return;
-            var e = Read(d);
-            if (e is null) return;
-            e.Source = source;
-            e.Copied = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            Add(e);
+            long copied = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            if (Read(d) is not { } make) return;
+            work = work.ContinueWith(_ =>
+            {
+                ClipEntry? e = null;
+                try
+                {
+                    e = make();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("clipboard read", ex);
+                }
+                if (e is null) return;
+                e.Source = source;
+                e.Copied = copied;
+                ui.BeginInvoke(() => Add(e));
+            }, TaskScheduler.Default);
         }
         catch (Exception ex)
         {
@@ -217,55 +282,62 @@ internal sealed class ClipboardHistory : IDisposable
         return pid == Environment.ProcessId ? "Bloom" : name;
     }
 
-    /// Files first (Explorer), then text (Office puts a picture of the cells next to the text), then a picture.
-    private static ClipEntry? Read(IDataObject d)
+    /// Files first (Explorer), then text (Office puts a picture of the cells next to the text), then a picture. What the
+    /// copy holds is taken from the data object here; the returned work makes the entry on any thread.
+    private static Func<ClipEntry?>? Read(IDataObject d)
     {
         if (d.GetDataPresent(DataFormats.FileDrop) && d.GetData(DataFormats.FileDrop) is string[] { Length: > 0 } files)
-            return new ClipEntry { Kind = "files", Files = files.ToList(), Id = "clip:" + Hash(Encoding.UTF8.GetBytes(string.Join("\n", files).ToLowerInvariant())) };
+            return () => new ClipEntry { Kind = "files", Files = files.ToList(), Id = "clip:" + Hash(Encoding.UTF8.GetBytes(string.Join("\n", files).ToLowerInvariant())) };
         if (d.GetDataPresent(DataFormats.UnicodeText) && d.GetData(DataFormats.UnicodeText) is string text)
         {
             if (string.IsNullOrWhiteSpace(text) || text.Length > MaxText) return null;
-            return new ClipEntry { Kind = "text", Text = text, Id = "clip:" + Hash(Encoding.UTF8.GetBytes(text)) };
+            return () => new ClipEntry { Kind = "text", Text = text, Id = "clip:" + Hash(Encoding.UTF8.GetBytes(text)) };
         }
-        if (ReadImage(d) is { } bmp)
-        {
-            if ((long)bmp.PixelWidth * bmp.PixelHeight > MaxPixels) return null;
-            var bgra = new FormatConvertedBitmap(bmp, PixelFormats.Bgra32, null, 0);
-            int stride = bgra.PixelWidth * 4;
-            var px = new byte[stride * bgra.PixelHeight];
-            bgra.CopyPixels(px, stride, 0);
-            string hash = Hash(px);
-            string file = hash + ".png";
-            string path = Path.Combine(Dir, file);
-            if (!File.Exists(path))
-            {
-                var enc = new PngBitmapEncoder();
-                enc.Frames.Add(BitmapFrame.Create(bgra));
-                using var fs = File.Create(path);
-                enc.Save(fs);
-            }
-            return new ClipEntry { Kind = "image", Image = file, Width = bmp.PixelWidth, Height = bmp.PixelHeight, Id = "clip:" + hash };
-        }
-        return null;
-    }
-
-    /// "PNG" keeps transparency (browsers, the Snipping Tool); the DIB is the fallback.
-    private static BitmapSource? ReadImage(IDataObject d)
-    {
         try
         {
+            // "PNG" keeps transparency (browsers, the Snipping Tool): its bytes, decoded by the work
             if (d.GetDataPresent("PNG") && d.GetData("PNG") is MemoryStream png)
             {
-                var dec = new PngBitmapDecoder(png, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-                return dec.Frames[0];
+                byte[] bytes = png.ToArray();
+                return () => Picture(new PngBitmapDecoder(new MemoryStream(bytes), BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames[0]);
             }
-            if (d.GetDataPresent(DataFormats.Bitmap)) return Clipboard.GetImage();
+            // the DIB is the fallback: its bitmap belongs to this thread, so the work gets a frozen copy
+            if (d.GetDataPresent(DataFormats.Bitmap) && Clipboard.GetImage() is { } bmp)
+            {
+                if ((long)bmp.PixelWidth * bmp.PixelHeight > MaxPixels) return null;
+                var copy = new WriteableBitmap(bmp);
+                copy.Freeze();
+                return () => Picture(copy);
+            }
         }
         catch (Exception e)
         {
             Log.Error("clipboard image", e);
         }
         return null;
+    }
+
+    /// A picture's entry: its pixels' hash names the PNG saved in Local\clipboard (once: the same picture copied again
+    /// finds its file).
+    private static ClipEntry? Picture(BitmapSource bmp)
+    {
+        if ((long)bmp.PixelWidth * bmp.PixelHeight > MaxPixels) return null;
+        var bgra = new FormatConvertedBitmap(bmp, PixelFormats.Bgra32, null, 0);
+        int stride = bgra.PixelWidth * 4;
+        var px = new byte[stride * bgra.PixelHeight];
+        bgra.CopyPixels(px, stride, 0);
+        string hash = Hash(px);
+        string file = hash + ".png";
+        string path = Path.Combine(Dir, file);
+        if (!File.Exists(path))
+        {
+            // whole or not at all: Bloom may close while the pool writes it, and a cut file would keep its name
+            var enc = new PngBitmapEncoder();
+            enc.Frames.Add(BitmapFrame.Create(bgra));
+            using (var fs = File.Create(path + ".tmp")) enc.Save(fs);
+            File.Move(path + ".tmp", path, true);
+        }
+        return new ClipEntry { Kind = "image", Image = file, Width = bmp.PixelWidth, Height = bmp.PixelHeight, Id = "clip:" + hash };
     }
 
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes), 0, 10).ToLowerInvariant();
@@ -377,7 +449,7 @@ internal sealed class ClipboardHistory : IDisposable
         }
         catch
         {
-            /* in use by a preview: removed with the next prune */
+            /* in use by a preview: the next start's Sweep removes it */
         }
     }
 
@@ -505,15 +577,23 @@ internal sealed class ClipboardHistory : IDisposable
     }
 
     // ── storage (DPAPI, current user) ───────────────────────────────────────────────────────────
-    private static ClipFile Load()
+    /// `read`: the history file was read whole, or there was none (Sweep goes only then).
+    private static ClipFile Load(out bool read)
     {
         string file = Paths.InLocal(@"clipboard\history.dat");
+        read = false;
         try
         {
-            if (!File.Exists(file)) return new ClipFile();
+            if (!File.Exists(file))
+            {
+                read = true;
+                return new ClipFile();
+            }
             byte[]? plain = Dpapi(File.ReadAllBytes(file), false);
             if (plain is null) return new ClipFile();
-            return JsonSerializer.Deserialize<ClipFile>(plain, Json.Options) ?? new ClipFile();
+            var loaded = JsonSerializer.Deserialize<ClipFile>(plain, Json.Options);
+            read = loaded is not null;
+            return loaded ?? new ClipFile();
         }
         catch (Exception e)
         {

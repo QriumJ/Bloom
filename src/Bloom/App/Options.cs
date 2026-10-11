@@ -20,6 +20,7 @@ internal sealed class Options
     public string? SpaceDir, SpacePath; // --qa-space <dir> --qa-space-path <folder>
     public string? Lang; // --lang ko|en: this run's language whatever the settings say (dev, QA)
     public int? MeasureSeconds; // --qa-measure <s>: run as usual (notice cards off-screen, no sounds), write memory.txt, quit
+    public int? SummonRounds; // --qa-summon <n>: n cold + warm openings timed (SummonBench), summon.txt, quit
 }
 
 /// Owns the services and the window and carries out commands.

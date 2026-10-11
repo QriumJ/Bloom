@@ -85,6 +85,9 @@ internal static class Program
                 case "--qa-measure" when i + 1 < args.Length:
                     opt.MeasureSeconds = int.TryParse(args[++i], out int ms) ? ms : 60;
                     break;
+                case "--qa-summon" when i + 1 < args.Length:
+                    opt.SummonRounds = int.TryParse(args[++i], out int rounds) ? Math.Clamp(rounds, 1, 50) : 10;
+                    break;
                 case "--qa-space" when i + 1 < args.Length:
                     opt.SpaceDir = args[++i];
                     break;
@@ -135,7 +138,7 @@ internal static class Program
                     break;
             }
         }
-        if ((opt.CaptureDir is not null || opt.GlassFile is not null || opt.ChatFile is not null || opt.MeasureSeconds is not null || opt.Demo) && opt.Data is null) return 2; // QA and recording never touch the real data
+        if ((opt.CaptureDir is not null || opt.GlassFile is not null || opt.ChatFile is not null || opt.MeasureSeconds is not null || opt.SummonRounds is not null || opt.Demo) && opt.Data is null) return 2; // QA and recording never touch the real data
         Paths.Init(opt.Data);
         if (uninstallFrom >= 0) return Uninstall(uninstallFrom, wipe);
         // the setup's Start-menu shortcut starts Bloom without arguments: that opens the launcher (the Run entry has --autostart)

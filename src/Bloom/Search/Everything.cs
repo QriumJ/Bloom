@@ -54,21 +54,50 @@ internal sealed class EverythingClient : IDisposable
         return null;
     }
 
-    /// null when Everything is not running or did not answer.
+    /// null when Everything is not running or did not answer. Any thread: the bookkeeping stays on the thread of the
+    /// reply window (the UI thread), and only the send leaves it. SendMessageTimeout returns once Everything has
+    /// searched, so on the UI thread every typed pause in a file search stopped Bloom for as long as Everything took
+    /// (up to the 1.5 s time-out on a busy PC); Everything's reply reaches the window meanwhile, as before.
     public Task<List<EvItem>?> Query(string search, int max, uint sort)
     {
+        var ui = window.Dispatcher;
+        if (!ui.CheckAccess()) return ui.InvokeAsync(() => Query(search, max, sort)).Task.Unwrap();
         IntPtr ev = Find();
         if (ev == IntPtr.Zero) return Task.FromResult<List<EvItem>?>(null);
         uint id = ++nextId;
         var tcs = new TaskCompletionSource<List<EvItem>?>(TaskCreationOptions.RunContinuationsAsynchronously);
         pending[id] = tcs;
-
+        IntPtr reply = window.Handle;
         byte[] text = Encoding.Unicode.GetBytes(search + "\0");
+        _ = Task.Run(() =>
+        {
+            if (!Send(ev, reply, id, text, max, sort)) ui.BeginInvoke(() => Drop(id));
+        });
+        // a reply normally arrives within milliseconds; never leave a caller hanging
+        var timer = new DispatcherTimer(DispatcherPriority.Background, ui) { Interval = TimeSpan.FromSeconds(3) };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            Drop(id);
+        };
+        timer.Start();
+        return tcs.Task;
+    }
+
+    /// A query that will get no answer: its caller gets null (the UI thread).
+    private void Drop(uint id)
+    {
+        if (pending.Remove(id, out var tcs)) tcs.TrySetResult(null);
+    }
+
+    /// EVERYTHING_IPC_QUERY2W to Everything's window; false when it could not be delivered or was refused.
+    private static bool Send(IntPtr ev, IntPtr reply, uint id, byte[] text, int max, uint sort)
+    {
         int size = 28 + text.Length;
         IntPtr buf = Marshal.AllocHGlobal(size);
         try
         {
-            Marshal.WriteInt32(buf, 0, (int)window.Handle.ToInt64()); // reply_hwnd (32 bits are enough)
+            Marshal.WriteInt32(buf, 0, (int)reply.ToInt64()); // reply_hwnd (32 bits are enough)
             Marshal.WriteInt32(buf, 4, (int)id); // reply_copydata_message
             Marshal.WriteInt32(buf, 8, 0); // search flags
             Marshal.WriteInt32(buf, 12, 0); // offset
@@ -77,27 +106,13 @@ internal sealed class EverythingClient : IDisposable
             Marshal.WriteInt32(buf, 24, (int)sort);
             Marshal.Copy(text, 0, buf + 28, text.Length);
             var cds = new Win32.COPYDATASTRUCT { dwData = (UIntPtr)QUERY2W, cbData = size, lpData = buf };
-            IntPtr ok = Win32.SendMessageTimeout(ev, Win32.WM_COPYDATA, window.Handle, ref cds, 0x2 /* SMTO_ABORTIFHUNG */, 1500, out IntPtr res);
-            if (ok == IntPtr.Zero || res == IntPtr.Zero)
-            {
-                pending.Remove(id);
-                tcs.TrySetResult(null);
-                return tcs.Task;
-            }
+            IntPtr ok = Win32.SendMessageTimeout(ev, Win32.WM_COPYDATA, reply, ref cds, 0x2 /* SMTO_ABORTIFHUNG */, 1500, out IntPtr res);
+            return ok != IntPtr.Zero && res != IntPtr.Zero;
         }
         finally
         {
             Marshal.FreeHGlobal(buf);
         }
-        // a reply normally arrives within milliseconds; never leave a caller hanging
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
-        timer.Tick += (_, _) =>
-        {
-            timer.Stop();
-            if (pending.Remove(id)) tcs.TrySetResult(null);
-        };
-        timer.Start();
-        return tcs.Task;
     }
 
     private IntPtr Hook(IntPtr hwnd, int msg, IntPtr w, IntPtr l, ref bool handled)

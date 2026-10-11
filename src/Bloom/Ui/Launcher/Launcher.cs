@@ -259,15 +259,23 @@ internal sealed partial class Launcher : Window, IChatHost
             if (Mode == Mode.Form && form?.Current.Keys == true) FormKeys(e, up: true); // PrintScreen arrives going up
         };
         Deactivated += (_, _) => OnDeactivated();
+        IsVisibleChanged += (_, e) =>
+        {
+            if (e.NewValue is false) Win32.AboveNormal(false); // Summon raised it for the time it shows
+        };
         Activated += (_, _) =>
         {
             Topmost = true;
             host.Tools.SetTopmost(true); // the group comes forward together
+            Win32.AboveNormal(true); // a pinned launcher clicked again (GroupLeft let it down)
         };
         debounce.Tick += (_, _) =>
         {
             debounce.Stop();
-            _ = Slow();
+            // one Everything question at a time, as when it held the UI thread: on a busy PC a question per key queued
+            // up behind each other until the last one ran out of time; the newest text goes once this one is answered
+            if (slowBusy) slowAgain = true;
+            else _ = Slow();
         };
         chatTick.Tick += (_, _) =>
         {
@@ -352,6 +360,7 @@ internal sealed partial class Launcher : Window, IChatHost
         frame.Background = Theme.Acrylic && !Capturing ? Theme.P.Tint : Theme.P.Solid;
         if (IsLoaded || new WindowInteropHelper(this).Handle != IntPtr.Zero)
             Glass.Apply(this, Theme.P.Dark, Theme.Acrylic && !Capturing, Theme.P.Dark ? Color.FromRgb(0x35, 0x2E, 0x31) : Color.FromRgb(0xD9, 0xD2, 0xD5));
+        home = null; // drawn in the old colours
         if (Mode == Mode.Chat && thread is not null) chat.Show(thread);
         else Render(sections, Selected?.Id);
         UpdateChrome();
@@ -360,8 +369,18 @@ internal sealed partial class Launcher : Window, IChatHost
     // ── show / hide ─────────────────────────────────────────────────────────────────────────────
     public IntPtr Handle => new WindowInteropHelper(this).Handle;
 
+    /// QA (`--qa-summon`): openings are measured without taking the focus from the user's own work.
+    public static bool NoActivateForQa;
+
+    /// While an opening waits to be on screen: the rows after the first ones wait in afterReveal (Render). openings
+    /// counts them: a hidden and reopened launcher's earlier reveal, still on its way, leaves the new opening alone.
+    private bool opening;
+    private Action? afterReveal;
+    private int openings;
+
     /// `display` = a fixed monitor (1-based) for recordings and QA (--display=N); otherwise the one under the cursor.
-    public void Summon(int? display = null)
+    /// `into` = the view a view's own key opens (Host.SummonInto), Chat = the caller shows a conversation itself.
+    public void Summon(int? display = null, Mode? into = null, string text = "")
     {
         if (IsVisible && IsActive)
         {
@@ -373,18 +392,55 @@ internal sealed partial class Launcher : Window, IChatHost
         List<IntPtr> revealed = [];
         if (!wasVisible)
         {
-            // opened again: a fresh search line and home, except the quick AI, which carries on where it was
-            if (Mode is not Mode.Chat) Go(Mode.Root, "");
+            SummonTrace.Begin();
+            // ahead of the PC's ordinary work while it shows (a busy PC stretched every step), Normal again on hide
+            Win32.AboveNormal(true);
+            opening = true;
+            ++openings;
+            // opened again: a fresh search line and home, except the quick AI, which carries on where it was; a view's
+            // own key opens straight into that view (no home built only to be replaced)
+            if (into is { } view)
+            {
+                if (view is not Mode.Chat) Go(view, text);
+            }
+            else if (Mode is not Mode.Chat) Go(Mode.Root, "");
+            SummonTrace.Mark("go");
             Place(display);
             revealed.Add(new WindowInteropHelper(this).EnsureHandle());
             Glass.Cloak(Handle, true);
             Show();
             revealed.AddRange(host.Tools.LauncherShown()); // the attached tools come with it
+            SummonTrace.Mark("shown");
         }
-        Activate();
-        Win32.ForceForeground(Handle);
+        if (!NoActivateForQa)
+        {
+            Activate();
+            Win32.ForceForeground(Handle);
+        }
         FocusBox();
-        if (!wasVisible) Glass.RevealAfterFrame(revealed);
+        if (wasVisible) return;
+        SummonTrace.Mark("focus");
+        int mine = openings;
+        Glass.RevealAfterFrame(revealed, step => RevealStep(step, mine));
+    }
+
+    /// The opening's steps from Glass: traced, and once on screen the late rows may come.
+    private void RevealStep(string step, int of)
+    {
+        if (of != openings) return; // an earlier opening's
+        SummonTrace.Mark(step);
+        if (step != "revealed") return;
+        SummonTrace.End();
+        Opened();
+    }
+
+    /// The opening is over (on screen, or hidden before that): the rows it held back come now.
+    private void Opened()
+    {
+        opening = false;
+        if (afterReveal is not { } rest) return;
+        afterReveal = null;
+        Dispatcher.BeginInvoke(rest, DispatcherPriority.Background);
     }
 
     public void Dismiss()
@@ -393,6 +449,11 @@ internal sealed partial class Launcher : Window, IChatHost
         actions.Close();
         SetPinned(false);
         Hide();
+        if (opening)
+        {
+            ++openings; // its reveal, still on its way, is no longer traced
+            Opened();
+        }
         KeysField();
         host.Tools.LauncherHidden();
         ShowPreview(null); // a playing preview stops with the window
@@ -408,7 +469,7 @@ internal sealed partial class Launcher : Window, IChatHost
     {
         trim.Stop();
         if (IsVisible) return;
-        Core.MemoryTrim.Now();
+        Core.MemoryTrim.Soon();
     }
 
     /// A minute from now, while the launcher stays hidden (another window of Bloom's was closed).
@@ -436,7 +497,14 @@ internal sealed partial class Launcher : Window, IChatHost
     /// launcher's own (Ctrl+O, 저장…) keeps it.
     public void GroupLeft()
     {
-        if (Pinned || Win32.GetWindow(Win32.GetForegroundWindow(), 4 /* GW_OWNER */) == Handle) return;
+        if (Win32.GetWindow(Win32.GetForegroundWindow(), 4 /* GW_OWNER */) == Handle) return;
+        if (Pinned)
+        {
+            // it may stay for hours behind the user's work: Bloom's own background work (a Space scan) goes back behind
+            // theirs too, until it is clicked again (Activated)
+            Win32.AboveNormal(false);
+            return;
+        }
         Dismiss();
     }
 
@@ -583,11 +651,12 @@ internal sealed partial class Launcher : Window, IChatHost
     {
         Left = -32000;
         Top = -32000;
+        bool activates = ShowActivated; // false under --qa-summon
         ShowActivated = false;
         Show();
         UpdateLayout();
         Hide();
-        ShowActivated = true;
+        ShowActivated = activates;
         trim.Start(); // the start-up allocations are given back too, not only after the first use
     }
 

@@ -70,7 +70,7 @@ internal sealed partial class Host
             switch (kind)
             {
                 case "ask":
-                    if (!Window.IsVisible) Summon();
+                    if (!Window.IsVisible) SummonInto(Mode.Chat);
                     Window.ShowChat(Chats.New(), null, null, l.Png);
                     return;
                 case "live":
@@ -108,7 +108,6 @@ internal sealed partial class Host
             }
             LastOcr = r;
             if (Settings.Current.OcrCopy) Launch.Copy(r.Text);
-            if (!Window.IsVisible) Summon();
             OpenView(Mode.Ocr);
             Window.ShowToast(Settings.Current.OcrCopy ? Tr($"{r.Lines.Count}줄 인식·복사 완료", $"Read and copied {r.Lines.Count} lines") : Tr($"{r.Lines.Count}줄 인식 완료", $"Read {r.Lines.Count} lines"));
         }

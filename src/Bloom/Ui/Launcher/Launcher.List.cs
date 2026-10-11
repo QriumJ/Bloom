@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -62,8 +63,26 @@ internal sealed partial class Launcher
         _ = v;
     }
 
-    /// The slow half of a refresh: Everything.
+    private bool slowBusy, slowAgain; // an Everything question is out; the text changed meanwhile (debounce)
+
+    /// The slow half of a refresh: Everything, one question at a time; the text typed meanwhile goes next.
     private async Task Slow()
+    {
+        slowBusy = true;
+        try
+        {
+            await SlowOnce();
+        }
+        finally
+        {
+            slowBusy = false;
+        }
+        if (!slowAgain) return;
+        slowAgain = false;
+        await Slow();
+    }
+
+    private async Task SlowOnce()
     {
         int v = version;
         string text = box.Text;
@@ -93,7 +112,13 @@ internal sealed partial class Launcher
 
     /// Rows built at once; a longer list gets the rest right after, at Background priority, so it shows without a wait
     /// (a row costs 1–2 ms: the emoji view's 88 took ~200 ms in one go). The kept row is always among the first ones.
+    /// While the launcher opens, only what a screen holds comes first (ScreenRows) and the rest waits for it to be on
+    /// screen (afterReveal): built first, they held the reveal back by their own time and a second layout pass.
     private const int FirstRows = 24;
+
+    /// The rows the list shows at once (its height as last laid out, over a row's 42 px), one more for a part shown:
+    /// the home's 명령 alone, ~20 rows below the fold, took 30 ms of the opening's first frame (measured 10-12).
+    private int ScreenRows() => scroll.ActualHeight > 0 ? Math.Min(FirstRows, (int)(scroll.ActualHeight / 42) + 1) : FirstRows;
 
     private int renderVersion;
 
@@ -101,64 +126,114 @@ internal sealed partial class Launcher
     {
         double offset = scroll.VerticalOffset;
         int v = ++renderVersion;
-        list.Children.Clear();
-        rows.Clear();
-        strip = null;
-        inStrip = false;
         int keep = -1, keepStrip = -1;
-        // the list as steps in order (a section's start, then its rows), so the late rows land where they belong
-        var steps = new List<(Action run, bool row)>();
-        Panel into = list;
-        int need = FirstRows, counted = 0;
-        foreach (var s in secs)
+        inStrip = false;
+        var shown = secs.Where(s => s.Widget is not null || s.Items.Count > 0).ToList();
+        // the home: its blocks stay as the list holds them where they would show the same (Launcher.Kept.cs)
+        string? look = null;
+        List<string>? keys = null;
+        var made = new Dictionary<Section, FrameworkElement>(); // widgets made for the keys, used if drawn anew
+        if (Mode == Mode.Root && box.Text.Length == 0 && shown.Count > 0 && shown.All(s => s.HomeKey is not null))
         {
-            if (s.Widget is null && s.Items.Count == 0) continue;
-            var sec = s;
-            steps.Add((() =>
+            look = HomeLook();
+            keys = [];
+            foreach (var s in shown)
             {
-                into = StartSection(sec, keepId, out int ks);
-                if (ks >= 0) keepStrip = ks;
-            }, false));
-            if (s.Widget is not null || s.Strip) continue;
-            foreach (var item in s.Items)
-            {
-                if (keepId is not null && item.Id == keepId && need == FirstRows) need = Math.Max(FirstRows, counted + 1);
-                counted++;
-                var it = item;
-                steps.Add((() =>
-                {
-                    if (keepId is not null && it.Id == keepId && keep < 0) keep = rows.Count;
-                    into.Children.Add(AddRow(it));
-                }, true));
+                keys.Add(SectionKey(s, out var widget));
+                if (widget is not null) made[s] = widget;
             }
         }
-        int made = 0, next = 0;
-        for (; next < steps.Count; next++)
+        if (keys is not null && KeepHome(shown, look!, keys, made))
         {
-            if (steps[next].row && made >= need) break;
-            steps[next].run();
-            if (steps[next].row) made++;
-        }
-        if (next < steps.Count)
-        {
-            int from = next;
-            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, () =>
+            if (keepId is not null)
             {
-                if (v != renderVersion) return; // a newer list is showing
-                for (int i = from; i < steps.Count; i++) steps[i].run();
-                if (keepScroll) scroll.ScrollToVerticalOffset(offset);
-            });
+                keep = rows.FindIndex(r => r.Item?.Id == keepId);
+                keepStrip = strip?.Items.FindIndex(x => x.Id == keepId) ?? -1;
+            }
         }
-        if (rows.Count == 0 && strip is null)
+        else
         {
-            ShowPreview(null);
-            var empty = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 64, 0, 0) };
-            empty.Children.Add(Theme.Glyph(G.Search, 26, Theme.P.TextFaint));
-            var t = Theme.T(Mode == Mode.Root && box.Text.Length == 0 ? Tr("검색어를 입력하세요", "Type to search") : Tr("검색 결과 없음", "Nothing found"), 13.5, Theme.P.TextFaint);
-            t.Margin = new Thickness(0, 12, 0, 0);
-            t.HorizontalAlignment = HorizontalAlignment.Center;
-            empty.Children.Add(t);
-            list.Children.Add(empty);
+            home = null;
+            list.Children.Clear();
+            rows.Clear();
+            strip = null;
+            // the list as steps in order (a section's start, then its rows), so the late rows land where they belong
+            var steps = new List<(Action run, bool row)>();
+            Panel into = list;
+            int first = opening ? ScreenRows() : FirstRows, need = first, counted = 0;
+            var holders = new UIElement?[shown.Count];
+            var starts = new int[shown.Count];
+            var strips = new FavStrip?[shown.Count];
+            for (int n = 0; n < shown.Count; n++)
+            {
+                var sec = shown[n];
+                int at = n;
+                // the favorites row comes in the first go wherever it is: the home opens on it (Enter runs the first one)
+                if (sec.Strip) need = Math.Max(need, counted);
+                steps.Add((() =>
+                {
+                    starts[at] = rows.Count;
+                    into = StartSection(sec, keepId, made.GetValueOrDefault(sec), out int ks, out holders[at]);
+                    if (ks >= 0) keepStrip = ks;
+                    if (sec.Strip) strips[at] = strip;
+                }, false));
+                if (sec.Widget is not null || sec.Strip) continue;
+                foreach (var item in sec.Items)
+                {
+                    if (keepId is not null && item.Id == keepId && need == first) need = Math.Max(first, counted + 1);
+                    counted++;
+                    var it = item;
+                    steps.Add((() =>
+                    {
+                        if (keepId is not null && it.Id == keepId && keep < 0) keep = rows.Count;
+                        into.Children.Add(AddRow(it));
+                    }, true));
+                }
+            }
+            if (keys is not null)
+                steps.Add((() =>
+                {
+                    // the home whole (its late rows too), one box per block: kept for the next time
+                    if (list.Children.Count != shown.Count) return;
+                    var blocks = new List<Block>(shown.Count);
+                    for (int n = 0; n < shown.Count; n++)
+                    {
+                        int end = n + 1 < shown.Count ? starts[n + 1] : rows.Count;
+                        blocks.Add(new Block(keys[n], shown[n].HomeKey, holders[n]!, rows.GetRange(starts[n], end - starts[n]), strips[n]));
+                    }
+                    home = blocks;
+                    homeLook = look;
+                }, false));
+            int built = 0, next = 0;
+            for (; next < steps.Count; next++)
+            {
+                if (steps[next].row && built >= need) break;
+                steps[next].run();
+                if (steps[next].row) built++;
+            }
+            if (next < steps.Count)
+            {
+                int from = next;
+                void Rest()
+                {
+                    if (v != renderVersion) return; // a newer list is showing
+                    for (int i = from; i < steps.Count; i++) steps[i].run();
+                    if (keepScroll) scroll.ScrollToVerticalOffset(offset);
+                }
+                if (opening) afterReveal = Rest;
+                else Dispatcher.BeginInvoke(Rest, System.Windows.Threading.DispatcherPriority.Background);
+            }
+            if (rows.Count == 0 && strip is null)
+            {
+                ShowPreview(null);
+                var empty = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 64, 0, 0) };
+                empty.Children.Add(Theme.Glyph(G.Search, 26, Theme.P.TextFaint));
+                var t = Theme.T(Mode == Mode.Root && box.Text.Length == 0 ? Tr("검색어를 입력하세요", "Type to search") : Tr("검색 결과 없음", "Nothing found"), 13.5, Theme.P.TextFaint);
+                t.Margin = new Thickness(0, 12, 0, 0);
+                t.HorizontalAlignment = HorizontalAlignment.Center;
+                empty.Children.Add(t);
+                list.Children.Add(empty);
+            }
         }
         sel = -1;
         // the empty view starts on the first favorite (Enter opens it, as before the row of icons)
@@ -170,27 +245,30 @@ internal sealed partial class Launcher
     }
 
     /// A section's start in the list: a home block's own box (▲ ▼ 숨기기 while 홈 편집 is on), a widget, the favorites
-    /// strip or a header. Returns the panel its rows go into; `keepStrip`: the kept item's place in the strip (or -1).
-    private Panel StartSection(Section s, string? keepId, out int keepStrip)
+    /// strip or a header. Returns the panel its rows go into; `keepStrip`: the kept item's place in the strip (or -1);
+    /// `holder`: a home block's box. `widget`: the section's widget if already made (SectionKey).
+    private Panel StartSection(Section s, string? keepId, FrameworkElement? widget, out int keepStrip, out UIElement? holder)
     {
         keepStrip = -1;
+        holder = null;
         Panel into = list;
         if (s.HomeKey is { } homeKey)
         {
             var inner = new StackPanel();
-            var block = new Grid { Background = Brushes.Transparent };
-            block.Children.Add(inner);
+            var blockBox = new Grid { Background = Brushes.Transparent };
+            blockBox.Children.Add(inner);
             var tools = HomeTools(homeKey);
             // only while 홈 편집 is on (the footer button / Ctrl+E), never on a mere hover
             tools.Visibility = HomeEditing || ShowHomeToolsForQa ? Visibility.Visible : Visibility.Collapsed;
-            block.Children.Add(tools);
-            list.Children.Add(block);
+            blockBox.Children.Add(tools);
+            list.Children.Add(blockBox);
+            holder = blockBox;
             into = inner;
         }
-        if (s.Widget is { } widget)
+        if (s.Widget is { } make)
         {
             if (s.Title is not null) into.Children.Add(Section2.Header(s.Title, s.Note, s.Reload));
-            into.Children.Add(widget());
+            into.Children.Add(widget ?? make());
             return into;
         }
         if (s.Strip)

@@ -226,6 +226,13 @@ internal sealed class FavStrip : ScrollViewer
         Paint();
     }
 
+    /// Shown again as it was (the launcher's kept home): nothing hovered, selected or half dragged from before.
+    public void Reuse()
+    {
+        hovered = selected = -1;
+        EndDrag();
+    }
+
     /// -1 = none (the selection is in the list below).
     public void Select(int i)
     {

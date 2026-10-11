@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
@@ -21,7 +22,7 @@ internal static unsafe class ColorEmoji
 
     private static IntPtr d2d, dwrite, wic;
     private static bool broken;
-    private static readonly Dictionary<(string, int, bool), BitmapSource?> Cache = new();
+    private static readonly ConcurrentDictionary<(string, int, bool), BitmapSource?> Cache = new(); // read without Gate: a lookup on the UI thread never waits for a drawing
     private static readonly object Gate = new();
 
     [StructLayout(LayoutKind.Sequential)]
@@ -50,10 +51,7 @@ internal static unsafe class ColorEmoji
     public static bool Broken => broken;
 
     /// A bitmap already drawn for this text, size and theme (null inside: drawing it failed).
-    public static bool TryCached(string text, int px, bool dark, out BitmapSource? bmp)
-    {
-        lock (Gate) return Cache.TryGetValue((text, px, dark), out bmp);
-    }
+    public static bool TryCached(string text, int px, bool dark, out BitmapSource? bmp) => Cache.TryGetValue((text, px, dark), out bmp);
 
     /// The text drawn in colour, `px` pixels square (physical pixels; WPF shows it at the size it is given), with the
     /// ink of the dark or light theme for symbols that have no colour of their own. Any thread: the icons worker draws
