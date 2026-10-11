@@ -18,7 +18,7 @@ internal static class GptCatalog
     private static readonly object gate = new();
     private static List<Model> list = new();
     private static DateTime stamp = DateTime.MinValue, configStamp = DateTime.MinValue;
-    private static string? configModel;
+    private static string? configModel, loaded; // loaded: the models_cache.json read last (the chat account may change)
 
     public static string Home => Environment.GetEnvironmentVariable("CODEX_HOME") is { Length: > 0 } h ? h : Path.Combine(Paths.Home, ".codex");
 
@@ -38,12 +38,14 @@ internal static class GptCatalog
 
     private static void Load()
     {
-        string file = Path.Combine(Home, "models_cache.json");
+        // the chat account's own list (the plan decides the models), else the default folder's until Codex ran there once
+        string file = AiAccounts.ChatHome("chatgpt") is { } home && File.Exists(Path.Combine(home, "models_cache.json")) ? Path.Combine(home, "models_cache.json") : Path.Combine(Home, "models_cache.json");
         try
         {
             var t = File.GetLastWriteTimeUtc(file); // 1601 when it is missing
-            if (t == stamp) return;
+            if (t == stamp && file == loaded) return;
             stamp = t;
+            loaded = file;
             var rows = new List<(int prio, Model m)>();
             if (File.Exists(file))
             {

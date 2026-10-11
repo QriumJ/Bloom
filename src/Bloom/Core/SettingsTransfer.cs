@@ -17,7 +17,7 @@ internal static class SettingsTransfer
     public static readonly string[] Files = { "settings.json", "favorites.json", "names.json", "quicklinks.json", "usercommands.json", "colors.json" };
 
     /// Settings that belong to this PC, not to the person: they keep their local value on import.
-    private static readonly string[] Local = { "claudePath", "codexPath", "onboarded" };
+    private static readonly string[] Local = { "claudePath", "codexPath", "onboarded", "aiAccounts", "claudeChatAccount", "gptChatAccount" }; // AI accounts: sign-in folders on this PC
 
     private const string Manifest = "bloom-settings.json";
 
@@ -41,7 +41,14 @@ internal static class SettingsTransfer
             {
                 string src = Paths.In(f);
                 if (!File.Exists(src)) continue;
-                zip.CreateEntryFromFile(src, f, CompressionLevel.Optimal);
+                if (f == "settings.json" && JsonNode.Parse(File.ReadAllText(src)) is JsonObject settings)
+                {
+                    // this PC's own values stay out of the file (import keeps the local ones anyway): CLI paths, AI account folders and e-mails
+                    foreach (var key in settings.Select(p => p.Key).Where(k => Local.Contains(k, StringComparer.OrdinalIgnoreCase)).ToList()) settings.Remove(key);
+                    using var sw = new StreamWriter(zip.CreateEntry(f, CompressionLevel.Optimal).Open());
+                    sw.Write(settings.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                }
+                else zip.CreateEntryFromFile(src, f, CompressionLevel.Optimal);
                 n++;
             }
             var manifest = new JsonObject { ["app"] = "Bloom", ["version"] = version, ["exported"] = DateTimeOffset.Now.ToString("o"), ["files"] = new JsonArray(Files.Select(f => (JsonNode)f).ToArray()) };

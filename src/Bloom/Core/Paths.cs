@@ -71,6 +71,7 @@ internal static class Log
 
     public static void Write(string line)
     {
+        if (Paths.Data.Length == 0) return; // no data folder yet (the tests): nowhere of Bloom's to write
         try
         {
             lock (Gate)

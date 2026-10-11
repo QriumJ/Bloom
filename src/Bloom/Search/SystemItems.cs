@@ -161,6 +161,7 @@ internal static class G
         Sync = '', Sliders = '', Gears = '', Clock = '', Screen = '', Bolt = '';
     public const char Stopwatch = '', Eyedrop = '', Pin = '', Camera = '', Attach = '';
     public const char Download = '';
+    public const char Account = ''; // 설정 > AI 계정 (Contact)
     public const char Pen = '', Highlight = '', Erase = '', Undo = '', Redo = '', Save = ''; // 화면 캡처's drawing bar
     public const char Restart = '', Calendar = '', Bulb = '', Palette = '', Import = '', Tag = '';
     public const char Search = '', Settings = '', Globe = '', History = '', Refresh = '',

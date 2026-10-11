@@ -62,6 +62,7 @@ internal sealed class OnboardingWindow : Window
         Icon = Shots.AppIcon();
         steps = new() { Welcome, Opening, BrowserPick, Looks, HomeTools, Helpers };
         if (FoundAis().Count > 0) steps.Add(PickAi); // which AI does what, when there is one to pick
+        if (FoundAis().Contains("chatgpt")) steps.Add(PickUsage); // how ChatGPT's usage is asked, when Codex is there
         steps.Add(KeysToKnow);
         steps.Add(Done);
         ResetTools();
@@ -392,6 +393,33 @@ internal sealed class OnboardingWindow : Window
             : Tr("Claude Haiku로 화면 글자를 읽고 번역합니다.", "Reads and translates screen text with Claude Haiku."));
         lens.Margin = new Thickness(0, 14, 0, 0);
         sp.Children.Add(lens);
+        return sp;
+    }
+
+    /// How the home asks ChatGPT's usage: Codex's own app-server per account, or one HTTPS request with its sign-in.
+    /// 설정 > AI 계정 has the same choice, with the accounts.
+    private FrameworkElement PickUsage()
+    {
+        var s = Settings.Current;
+        var sp = Column(Tr("ChatGPT 사용량 조회", "ChatGPT usage checks"), Tr("홈의 AI 사용량을 받는 방식입니다. 계정 추가와 AI 채팅 계정은 설정 > AI 계정에서 고릅니다.", "How the home gets ChatGPT's usage. Add accounts and pick the AI chat account in Settings > AI accounts."));
+        var list = new StackPanel();
+        void Build()
+        {
+            list.Children.Clear();
+            foreach (var (value, name, about) in new[]
+            {
+                ("cli", Tr("공식 CLI", "Official CLI"), Tr("계정마다 Codex를 잠깐 실행 · 1회 약 110 MB · 1초", "Runs Codex briefly per account · ~110 MB for 1 s each")),
+                ("light", Tr("가벼운 방식", "Lightweight"), Tr("Codex 로그인으로 HTTPS 요청 1번 · 비공식 경로라 바뀔 수 있음", "One HTTPS request with the Codex sign-in · unofficial, may change")),
+            })
+                list.Children.Add(Option(Icons.Tile(value == "cli" ? G.Code : G.Speed, false, 26), name, about, (s.ChatGptUsage == "light" ? "light" : "cli") == value, () =>
+                {
+                    s.ChatGptUsage = value;
+                    Settings.Save();
+                    Build();
+                }));
+        }
+        Build();
+        sp.Children.Add(list);
         return sp;
     }
 

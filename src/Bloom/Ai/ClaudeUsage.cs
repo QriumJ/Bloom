@@ -32,10 +32,12 @@ internal static partial class ClaudeUsage
 
     private static readonly string[] Months = { "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec" };
 
-    /// One look (no MCP servers, hooks or saved session: /usage needs none of them); null when it gave no numbers.
-    public static async Task<UsageAccount?> Ask(string cli)
+    /// One look at one account (no MCP servers, hooks or saved session: /usage needs none of them); null when it gave
+    /// no numbers. An added account's folder goes in as CLAUDE_CONFIG_DIR.
+    public static async Task<UsageAccount?> Ask(string cli, AiAccount account)
     {
         var psi = OneShot.Psi(cli);
+        if (account.Home is { } home) psi.Environment["CLAUDE_CONFIG_DIR"] = home;
         foreach (string a in new[] { "-p", "/usage", "--output-format", "json", "--no-session-persistence", "--strict-mcp-config", "--name", "Bloom", "--settings", "{\"disableAllHooks\":true}" })
             psi.ArgumentList.Add(a);
         var (_, output, error) = await OneShot.RunCli(psi, "", CancellationToken.None);
@@ -50,7 +52,11 @@ internal static partial class ClaudeUsage
             /* not JSON: an error line, read as text */
         }
         var limits = Parse(text, DateTime.Now);
-        if (limits.Count > 0) return new UsageAccount("Claude", Plan(), limits, DateTime.Now);
+        if (limits.Count > 0)
+        {
+            var (plan, email) = Account(account.Home);
+            return new UsageAccount("Claude", plan, limits, DateTime.Now) { Who = email };
+        }
         Log.Write("ai usage: claude gave no limits — " + OneShot.Short((text + " " + error).Trim()));
         return null;
     }
@@ -98,24 +104,32 @@ internal static partial class ClaudeUsage
         return t < now.AddDays(-3) ? t.AddYears(1) : t; // "Jan 2" seen in late December
     }
 
-    /// "Max 20x", "Pro" … from the account details Claude Code keeps in ~/.claude.json (not the login).
-    private static string? Plan()
+    /// "Max 20x", "Pro" … and the e-mail, from the account details Claude Code keeps beside its sign-in (not the login
+    /// itself): ~/.claude.json for the default folder, <folder>\.claude.json for an added one.
+    private static (string? plan, string? email) Account(string? home)
     {
         try
         {
-            using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(Paths.Home, ".claude.json")));
-            if (!doc.RootElement.TryGetProperty("oauthAccount", out var oa) || oa.ValueKind != JsonValueKind.Object) return null;
-            string tier = Str(oa, "userRateLimitTier") is { Length: > 0 } u ? u : Str(oa, "organizationRateLimitTier") ?? "";
-            if (MaxTier().Match(tier) is { Success: true } x) return $"Max {x.Groups[1].Value}x";
-            string type = Str(oa, "organizationType") ?? "";
-            foreach (string plan in new[] { "Max", "Pro", "Team", "Enterprise" })
-                if (type.Contains(plan, StringComparison.OrdinalIgnoreCase)) return plan;
-            return null;
+            // the default folder is the user's own CLAUDE_CONFIG_DIR when set (Claude Code keeps .claude.json in it), else ~
+            home ??= Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR") is { Length: > 0 } dir ? dir : Paths.Home;
+            using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(home, ".claude.json")));
+            if (!doc.RootElement.TryGetProperty("oauthAccount", out var oa) || oa.ValueKind != JsonValueKind.Object) return (null, null);
+            return (Plan(oa), Str(oa, "emailAddress"));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
         {
-            return null;
+            return (null, null);
         }
+    }
+
+    private static string? Plan(JsonElement oa)
+    {
+        string tier = Str(oa, "userRateLimitTier") is { Length: > 0 } u ? u : Str(oa, "organizationRateLimitTier") ?? "";
+        if (MaxTier().Match(tier) is { Success: true } x) return $"Max {x.Groups[1].Value}x";
+        string type = Str(oa, "organizationType") ?? "";
+        foreach (string plan in new[] { "Max", "Pro", "Team", "Enterprise" })
+            if (type.Contains(plan, StringComparison.OrdinalIgnoreCase)) return plan;
+        return null;
     }
 
     private static string? Str(JsonElement e, string name) => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;

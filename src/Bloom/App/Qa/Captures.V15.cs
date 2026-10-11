@@ -127,8 +127,9 @@ internal static partial class Captures
         }
     }
 
-    /// `--qa-set usage`: the AI usage block asked of the real CLIs (no model call) with its ↻, dark and light, and the
-    /// 새로 받는 간격 row; what came back (and how long it took) in usage.txt.
+    /// `--qa-set usage`: the AI usage block asked of the real CLIs (no model call) with its ↻, dark and light, the
+    /// 새로 받는 간격 row and 설정 > AI 계정; what came back (and how long it took) in usage.txt, e-mails masked. Then four
+    /// made-up accounts (two of a kind) for the wrapped cards.
     private static async Task UsageScreens(Host host, Launcher w, string dir)
     {
         string l = En ? "en" : "ko";
@@ -136,8 +137,9 @@ internal static partial class Captures
         await AiUsage.Refresh();
         var log = new System.Text.StringBuilder($"refresh {clock.Elapsed.TotalSeconds:0.0} s · CLIs found: {AiUsage.Available}\n");
         foreach (var a in AiUsage.Accounts)
-            log.AppendLine($"{a.Name} ({a.Plan}): " + string.Join(" · ", a.Limits.ConvertAll(x => $"{x.Title} {x.Percent}% → {x.Resets:M/d HH:mm}")));
+            log.AppendLine($"{a.Name} ({a.Plan}) [{Mask(a.Who)}] failed={AiUsage.Failed(a.Id)}: " + string.Join(" · ", a.Limits.ConvertAll(x => $"{x.Title} {x.Percent}% → {x.Resets:M/d HH:mm}")));
         await File.WriteAllTextAsync(Path.Combine(dir, "usage.txt"), log.ToString());
+        static string Mask(string? who) => who is not { Length: > 1 } ? "-" : who[0] + "***" + (who.IndexOf('@') is var at && at >= 0 ? who[at..] : "");
         foreach (string theme in new[] { "dark", "light" })
         {
             Theme.Apply(theme);
@@ -149,7 +151,23 @@ internal static partial class Captures
         sw.Filter(Tr("간격", "Refresh every"));
         await Task.Delay(350);
         await sw.Dispatcher.InvokeAsync(() => sw.Capture(Path.Combine(dir, $"{l}-dark-u2-settings-interval.png")), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        sw.Filter(Tr("계정", "account"));
+        await Task.Delay(350);
+        await sw.Dispatcher.InvokeAsync(() => sw.Capture(Path.Combine(dir, $"{l}-dark-u3-settings-accounts.png")), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         sw.Close();
+        static UsageAccount Plan(string name, string plan, string who, double? fiveHour, double week)
+        {
+            var limits = new System.Collections.Generic.List<UsageLimit>();
+            if (fiveHour is { } h) limits.Add(new UsageLimit(Tr("5시간", "5h"), h, DateTime.Now.AddHours(3).AddMinutes(12)));
+            limits.Add(new UsageLimit(Tr("주간", "Weekly"), week, DateTime.Now.AddDays(4)));
+            return new UsageAccount(name, plan, limits, DateTime.Now) { Who = who };
+        }
+        var four = new[] { Plan("Claude", "Max 20x", "work@example.com", 32, 47), Plan("Claude", "Pro", "side@example.com", 81, 64), Plan("ChatGPT", "Pro", "work@example.com", null, 21), Plan("ChatGPT", "Plus", "home@example.com", 12, 5) };
+        foreach (int n in new[] { 3, 4 })
+        {
+            AiUsage.SetForQa(four[..n]);
+            await Shot(w, dir, $"{l}-dark-u4-home-{n}", Mode.Root, "", 700);
+        }
     }
 
     // Made-up work notices worded exactly as Notices words the real ones (the pictures show the app's own text).

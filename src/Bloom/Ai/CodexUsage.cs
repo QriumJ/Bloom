@@ -9,14 +9,17 @@ using Bloom.Core;
 namespace Bloom.Ai;
 
 /// ChatGPT's plan usage from Codex's own app-server (`codex app-server`, JSON-RPC over stdin/stdout): initialize, then
-/// `account/rateLimits/read`. No model call; the login stays Codex's. The server is closed as soon as it answers.
+/// `account/rateLimits/read` and `account/read` (the e-mail). No model call; the login stays Codex's, and Codex keeps
+/// its tokens fresh itself. The server is closed as soon as it answers.
 internal static class CodexUsage
 {
-    /// One look; null when Codex gave no numbers (not signed in, an old Codex, no answer in 20 s).
-    public static async Task<UsageAccount?> Ask(string exe)
+    /// One look at one account (an added one's folder goes in as CODEX_HOME); null when Codex gave no numbers (not
+    /// signed in, an old Codex, no answer in 20 s).
+    public static async Task<UsageAccount?> Ask(string exe, AiAccount account)
     {
         var psi = OneShot.Psi(exe);
         psi.ArgumentList.Add("app-server");
+        if (account.Home is { } home) psi.Environment["CODEX_HOME"] = home;
         psi.RedirectStandardError = false; // its log is not read: left unredirected, it can never fill a pipe and block
         psi.StandardErrorEncoding = null;
         Process? p = null;
@@ -28,19 +31,37 @@ internal static class CodexUsage
             await p.StandardInput.WriteLineAsync("{\"method\":\"initialize\",\"id\":0,\"params\":{\"clientInfo\":{\"name\":\"bloom\",\"title\":\"Bloom\",\"version\":\"" + version + "\"}}}");
             await p.StandardInput.WriteLineAsync("{\"method\":\"initialized\"}");
             await p.StandardInput.WriteLineAsync("{\"method\":\"account/rateLimits/read\",\"id\":1}");
+            await p.StandardInput.WriteLineAsync("{\"method\":\"account/read\",\"id\":2,\"params\":{}}");
             await p.StandardInput.FlushAsync();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-            while (await p.StandardOutput.ReadLineAsync(timeout.Token) is { } line)
+            UsageAccount? usage = null;
+            string? email = null;
+            bool limitsDone = false, accountDone = false;
+            while (!(limitsDone && accountDone) && await p.StandardOutput.ReadLineAsync(timeout.Token) is { } line)
             {
                 if (!line.StartsWith('{')) continue;
                 using var doc = JsonDocument.Parse(line);
-                if (!doc.RootElement.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.Number || !id.TryGetInt32(out int n) || n != 1) continue; // the initialize answer, notifications
-                if (doc.RootElement.TryGetProperty("result", out var result) && result.TryGetProperty("rateLimits", out var rl) && rl.ValueKind == JsonValueKind.Object)
-                    return Read(rl);
-                Log.Write("ai usage: codex said " + OneShot.Short(line));
-                return null;
+                if (!doc.RootElement.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.Number || !id.TryGetInt32(out int n)) continue; // notifications
+                if (n == 1)
+                {
+                    limitsDone = true;
+                    if (doc.RootElement.TryGetProperty("result", out var result) && result.TryGetProperty("rateLimits", out var rl) && rl.ValueKind == JsonValueKind.Object)
+                        usage = Read(rl);
+                    else
+                    {
+                        Log.Write("ai usage: codex said " + OneShot.Short(line));
+                        return null;
+                    }
+                }
+                else if (n == 2)
+                {
+                    accountDone = true; // an older Codex without account/read answers with an error: no e-mail, nothing else lost
+                    if (doc.RootElement.TryGetProperty("result", out var r2) && r2.TryGetProperty("account", out var acc) && acc.ValueKind == JsonValueKind.Object
+                        && acc.TryGetProperty("email", out var e) && e.ValueKind == JsonValueKind.String)
+                        email = e.GetString();
+                }
             }
-            return null;
+            return usage is null ? null : usage with { Who = email };
         }
         catch (Exception e)
         {
@@ -78,7 +99,7 @@ internal static class CodexUsage
     }
 
     /// 300 → "5시간", 10080 → "주간".
-    private static string Window(int mins) => mins switch
+    public static string Window(int mins) => mins switch
     {
         10080 => Tr("주간", "Weekly"),
         >= 1440 when mins % 1440 == 0 => Tr($"{mins / 1440}일", $"{mins / 1440}d"),

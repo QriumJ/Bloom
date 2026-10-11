@@ -36,7 +36,7 @@ internal static partial class Captures
 
         var sw = new SettingsWindow(host) { WindowStartupLocation = WindowStartupLocation.Manual, Left = -32000, Top = -32000, ShowActivated = false };
         sw.Show();
-        foreach (var page in new[] { "general", "home", "search", "ai", "mcp", "features", "clipboard", "screen", "tools", "notices", "performance", "about" })
+        foreach (var page in new[] { "general", "home", "search", "ai", "accounts", "mcp", "features", "clipboard", "screen", "tools", "notices", "performance", "about" })
         {
             sw.Page(page);
             await Task.Delay(350);
@@ -46,7 +46,7 @@ internal static partial class Captures
 
         var ob = new OnboardingWindow(host) { WindowStartupLocation = WindowStartupLocation.Manual, Left = -32000, Top = -32000, ShowActivated = false };
         ob.Show();
-        for (int i = 0; i < 9; i++)
+        for (int i = 0; i < ob.StepCount; i++)
         {
             ob.Go(i);
             await Task.Delay(250);

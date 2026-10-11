@@ -13,8 +13,9 @@ namespace Bloom.Ui;
 /// The home's own blocks (not result rows): the AI usage cards and the week strip.
 internal static class HomeViews
 {
-    /// One card per plan (Claude, ChatGPT; up to three side by side): each limit as a thin bar, its
-    /// percent and how long until it resets.
+    /// One card per account (Claude, ChatGPT; up to four in a row, more rows below — the user found two by two untidy):
+    /// each limit as a thin bar, its percent and how long until it resets. With two accounts of one kind each card names
+    /// its account.
     public static FrameworkElement Usage(List<UsageAccount> accounts)
     {
         if (accounts.Count == 0)
@@ -24,19 +25,25 @@ internal static class HomeViews
             return none;
         }
         var grid = new Grid { Margin = new Thickness(16, 0, 16, 6) };
-        var shown = accounts.Take(3).ToList();
-        for (int i = 0; i < shown.Count; i++)
+        int columns = Math.Min(accounts.Count, PerRow);
+        for (int c = 0; c < columns; c++) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        for (int i = 0; i < accounts.Count; i++)
         {
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            var card = Card(shown[i]);
-            card.Margin = new Thickness(4, 0, 4, 0);
-            Grid.SetColumn(card, i);
+            if (i % PerRow == 0) grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var a = accounts[i];
+            var card = Card(a, accounts.Count(o => o.Name == a.Name) > 1 ? a.Who : null);
+            card.Margin = new Thickness(4, i >= PerRow ? 8 : 0, 4, 0);
+            Grid.SetColumn(card, i % PerRow);
+            Grid.SetRow(card, i / PerRow);
             grid.Children.Add(card);
         }
         return grid;
     }
 
-    private static Border Card(UsageAccount a)
+    private const int PerRow = 4;
+
+    /// `who`: the account's e-mail under the name, when one kind has more than one card.
+    private static Border Card(UsageAccount a, string? who)
     {
         var stack = new StackPanel();
         var head = new Grid { Margin = new Thickness(0, 0, 0, 5) };
@@ -55,6 +62,20 @@ internal static class HomeViews
             head.Children.Add(age);
         }
         stack.Children.Add(head);
+        if (who is { Length: > 0 })
+        {
+            var mail = Theme.T(who, 11, Theme.P.TextFaint, Theme.Regular, false);
+            mail.TextTrimming = TextTrimming.CharacterEllipsis;
+            mail.Margin = new Thickness(0, -3, 0, 4);
+            stack.Children.Add(mail);
+        }
+        if (AiUsage.Failed(a.Id) && Core.AiAccounts.Find(a.Id) is { } account)
+        {
+            var need = Theme.T(Core.AiAccounts.NeedsSignIn(account, false), 11, Theme.P.Danger, Theme.Regular, false);
+            need.TextTrimming = TextTrimming.CharacterEllipsis;
+            need.Margin = new Thickness(0, -2, 0, 3);
+            stack.Children.Add(need);
+        }
         bool left = Core.Settings.Current.UsageLeft;
         foreach (var l in a.Limits.Take(3))
         {

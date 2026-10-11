@@ -111,7 +111,7 @@ irm https://raw.githubusercontent.com/hyeon1035298/Bloom/main/install.ps1 | iex
 - **AI 操作**（Ctrl+Alt+A）：在任何应用中，把选中的文字（未选中时为剪贴板内容）转换后再粘贴回去。
   - 总结 · 翻译 · 修正拼写 · 润色 · 缩短 · 扩写 · 正式 · 口语 · 要点列表 · 通俗解释 · 起草回复
   - 也可以写自己的指令。
-- **用量**：主页显示 Claude 和 ChatGPT 的 5 小时与每周额度（已用或剩余），每 5 或 10 分钟刷新。
+- **用量**：主页显示 Claude 和 ChatGPT 的 5 小时与每周额度（已用或剩余），每 5 或 10 分钟刷新。支持多个账户（设置 › AI 账户）：每个账户使用 CLI 的官方登录，AI 聊天使用你选择的账户。账户不会自动切换。
 - **工作通知**：Claude Code 或 Codex 的任务开始、完成、等待批准，或额度将尽、恢复时，在屏幕一角弹出卡片并播放提示音。
   - 可选择 6 个位置之一、大小、声音和通知的事件。
   - 全屏游戏和演示时不显示通知。
@@ -240,7 +240,7 @@ AI 功能使用本机已安装并登录的官方 CLI。登录凭据保存在这�
   - 服务器只通过每次对话运行时的 `-c mcp_servers.bloom…` 连接。
   - Codex 只在需要时加载 MCP 工具说明，因此每次请求都附上一行工具名称和操作（约 +250 token，按同样方法估算）。
 
-AI 用量来自 `claude -p /usage`（不调用模型）和 `codex app-server` 的额度查询。工作通知读取本机的 Claude Code 和 Codex 日志（`~/.claude/sessions`、`~/.codex/sessions`），日志不会离开本机。
+AI 用量来自 `claude -p /usage`（不调用模型）和 `codex app-server` 的额度查询，按账户依次获取（添加的账户使用 `%LOCALAPPDATA%\Bloom\accounts` 下的文件夹作为 `CLAUDE_CONFIG_DIR` / `CODEX_HOME`）。选择 ChatGPT 轻量方式时，会用该账户的 Codex 登录向 Codex 状态页读取的地址发送一次 HTTPS 请求。这不是官方 API；Bloom 只在自己创建的文件夹中刷新令牌，不会在 `~/.codex` 中刷新。Bloom 不读取 Claude 登录信息。工作通知读取本机的 Claude Code 和 Codex 日志（`~/.claude/sessions`、`~/.codex/sessions`），日志不会离开本机。
 检查更新时通过 GitHub API（`api.github.com`）查询本仓库的最新版本，并从 GitHub 下载新版本。请求中只包含仓库信息；设置、文件和对话都留在本机。可在 设置 › 关于 中关闭检查。
 发送给 AI 的只有你自己发送的内容（问题、附件、用 Bloom Lens 选中的屏幕区域、要翻译的文字），以及电脑工具返回的结果。
 Claude 只能读写该对话的文件夹（`%LOCALAPPDATA%\Bloom\ai\files\<chat>`）。ChatGPT（Codex）不直接处理文件，因此文本附件会放进消息中，生成的文件会从回答中取出并保存。

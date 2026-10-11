@@ -111,7 +111,7 @@ No API key. Answers come from the Claude Code or Codex CLI you have installed an
 - **AI actions** (Ctrl+Alt+A): in any app, turn the selected text (or the clipboard when nothing is selected) into something else and paste it back.
   - Summarize · translate · fix spelling · polish · shorter · longer · formal · casual · key points as a list · explain simply · draft a reply
   - Or write your own instruction.
-- **Usage**: the home shows Claude's and ChatGPT's 5-hour and weekly limits, as used or as left, refreshed every 5 or 10 minutes.
+- **Usage**: the home shows Claude's and ChatGPT's 5-hour and weekly limits, as used or as left, refreshed every 5 or 10 minutes. Several accounts of each are supported (Settings › AI accounts): each one signs in with the CLI's own login, and AI chat uses the account you pick. Nothing switches accounts on its own.
 - **Work notifications**: a card in a screen corner and a sound when a Claude Code or Codex task starts, finishes, waits for approval, or nears or regains its usage limit.
   - Pick one of six positions, the size, the sound and which events.
   - Notifications are hidden during full-screen games and presentations.
@@ -240,7 +240,7 @@ Usage and terms are those of your own accounts. Without the CLIs only the AI fea
   - The server is attached per chat run with `-c mcp_servers.bloom…` only.
   - Codex loads MCP tool descriptions only when needed, so a one-line note of the tool's name and actions goes with each request (about +250 tokens, worked out the same way).
 
-AI usage comes from `claude -p /usage` (no model call) and the limit lookup of `codex app-server`. Work notifications read local Claude Code and Codex logs (`~/.claude/sessions`, `~/.codex/sessions`); the logs stay on this PC.
+AI usage comes from `claude -p /usage` (no model call) and the limit lookup of `codex app-server`, one account at a time (`CLAUDE_CONFIG_DIR` / `CODEX_HOME` per added account, folders under `%LOCALAPPDATA%\Bloom\accounts`). The optional lightweight ChatGPT mode instead sends one HTTPS request to the endpoint Codex's own status reads, with that account's Codex sign-in; it is not an official API, and Bloom refreshes tokens only in folders it made, never in `~/.codex`. Bloom never reads Claude sign-ins. Work notifications read local Claude Code and Codex logs (`~/.claude/sessions`, `~/.codex/sessions`); the logs stay on this PC.
 Update checks use GitHub's API (`api.github.com`) to find this repository's latest release and download new versions from GitHub. The request contains repository information only; settings, files and chats stay on this PC. Switch checking off in Settings › About.
 Only what you send yourself reaches the AI — your question, attached files, the screen area picked with Bloom Lens, the text to translate — and what the PC tool returns.
 Claude can read and write files only inside that chat's folder (`%LOCALAPPDATA%\Bloom\ai\files\<chat>`). ChatGPT (Codex) doesn't handle files itself, so text attachments go in the message and files it makes are taken out of the answer and saved.

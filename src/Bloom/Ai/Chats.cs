@@ -32,6 +32,7 @@ internal sealed class ChatThread
     public string? Effort { get; set; } // a level of AiModels.Efforts(Model); null = the settings' level
     public string? SessionId { get; set; }
     public string? SessionProvider { get; set; } // whose session SessionId is (null: claude, older files)
+    public string? SessionAccount { get; set; } // the AiAccount it lives in (null: the default one, older files)
     public long Created { get; set; }
     public long Updated { get; set; }
     public string? Group { get; set; } // ChatGroup.Id; null = not in a group
@@ -336,14 +337,18 @@ internal sealed partial class Chats
         error = null;
         fresh = false;
         string effort = EffortOf(t), provider = AiModels.Provider(t.Model);
-        if (sessions.TryGetValue(t.Id, out var s) && s.Alive && s.Model == t.Model && s.Effort == effort) return s;
+        var account = AiAccounts.Chat(provider);
+        if (sessions.TryGetValue(t.Id, out var s) && s.Alive && s.Model == t.Model && s.Effort == effort) return s; // 설정's account change ends them (EndAll)
         if (s is not null)
         {
             s.Dispose();
             sessions.Remove(t.Id);
         }
-        s = Demo.On ? new DemoSession(t.Model, effort) : provider == "chatgpt" ? new CodexSession(t.Model, effort, FilesRel(t), t.Id) : new ClaudeSession(t.Model, effort, FilesRel(t), "Bloom · " + (t.Messages.Count > 0 ? (t.Title.Length > 40 ? t.Title[..40] + "…" : t.Title) : Tr("새 대화", "New chat")));
-        string? resume = (t.SessionProvider ?? "claude") == provider ? t.SessionId : null;
+        s = Demo.On ? new DemoSession(t.Model, effort)
+            : provider == "chatgpt" ? new CodexSession(t.Model, effort, FilesRel(t), t.Id) { AccountHome = account.Home }
+            : new ClaudeSession(t.Model, effort, FilesRel(t), "Bloom · " + (t.Messages.Count > 0 ? (t.Title.Length > 40 ? t.Title[..40] + "…" : t.Title) : Tr("새 대화", "New chat"))) { AccountHome = account.Home };
+        // a session lives in its account's folder: under another account it starts fresh, with the chat so far given to it
+        string? resume = (t.SessionProvider ?? "claude") == provider && (t.SessionAccount ?? provider) == account.Id ? t.SessionId : null;
         fresh = resume is null && t.Messages.Count > 2;
         ChatMessage? Current() => t.Messages.Count > 0 && t.Messages[^1].Role == "assistant" && t.Messages[^1].Streaming ? t.Messages[^1] : null;
         bool needBreak = false;
@@ -351,6 +356,7 @@ internal sealed partial class Chats
         {
             t.SessionId = id;
             t.SessionProvider = provider;
+            t.SessionAccount = account.Id;
             Save(t);
         });
         s.TextDelta += d => ui.BeginInvoke(() =>

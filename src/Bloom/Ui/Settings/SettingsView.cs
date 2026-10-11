@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Bloom.Ai;
 using Bloom.App;
 using Bloom.Core;
 
@@ -49,9 +50,17 @@ internal sealed partial class SettingsView : ScrollViewer
         HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
         Focusable = false;
         Template = Launcher.ThinScroll();
-        // 업데이트 확인's line follows the look while the window is open
-        Loaded += (_, _) => Updates.Changed += OnUpdates;
-        Unloaded += (_, _) => Updates.Changed -= OnUpdates;
+        // 업데이트 확인's line and the AI accounts' sign-in lines follow while the window is open
+        Loaded += (_, _) =>
+        {
+            Updates.Changed += OnUpdates;
+            UsageLogin.Changed += OnUpdates;
+        };
+        Unloaded += (_, _) =>
+        {
+            Updates.Changed -= OnUpdates;
+            UsageLogin.Changed -= OnUpdates;
+        };
     }
 
     private void OnUpdates() => Dispatcher.BeginInvoke(() => Build(lastFilter));
@@ -279,6 +288,7 @@ internal sealed partial class SettingsView : ScrollViewer
         PageSearch(s, filter);
         section = "AI";
         PageAi(s, filter);
+        PageAccounts(s, filter);
         PageMcp(s, filter);
         PageNotices(s, filter);
         section = Tr("도구", "Tools");

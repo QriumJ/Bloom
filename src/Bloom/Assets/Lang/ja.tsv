@@ -85,6 +85,10 @@ Korean	韓国語
 English	英語
 Japanese	日本語
 Chinese	中国語
+Another sign-in is running	別のアカウントのサインイン中
+Sign the default account in from Claude Code or Codex itself	既定のアカウントは Claude Code または Codex で直接サインインしてください
+This account's sign-in terminal is still open. Close it first.	このアカウントのサインイン用ターミナルがまだ開いています。先に閉じてください。
+Not signed in · Try again	サインインされていません · もう一度お試しください
 Shortcut · Error	ショートカット · エラー
 Item not found. Check its location or reassign the shortcut.	項目が見つかりません。場所を確認するかショートカットを再設定してください。
 Reading the app list again…	アプリの一覧を読み直しています…
@@ -816,6 +820,7 @@ Q3 went up every month.\n\n- **July** 120 → **September** 151, about 26% up\n-
 Now estimate Q4 from this	これをもとに第4四半期も予測して
 sum	sum
 Refresh every	更新間隔
+account	アカウント
 Refactor the sign-in screen, session expiry and the error wording in one go	サインイン画面、セッション切れ、エラー文言をまとめてリファクタリング
 “Also fix signing in again after the session drops, and add tests”	「セッションが切れたあとの再サインインも直して、テストも追加して」
 Tidy the build script	ビルド スクリプトを整理
@@ -838,6 +843,10 @@ Image {0}×{1}	画像 {0}×{1}
 {0} and {1} more	{0} ほか {1} 件
 {0:#,0} chars · {1} lines	{0:#,0} 文字 · {1} 行
 {0:#,0} chars	{0:#,0} 文字
+Sign-in needed · sign in from Codex	サインインが必要 · Codex でサインインしてください
+Sign-in needed · sign in from Claude Code	サインインが必要 · Claude Code でサインインしてください
+Sign-in needed · click to sign in again	サインインが必要 · クリックして再サインイン
+Sign-in needed · Settings > AI accounts	サインインが必要 · 設定 > AI アカウント
 Black	黒
 White	白
 Dark grey	濃いグレー
@@ -1312,6 +1321,12 @@ Answers through Claude Code and runs approved PC actions.	Claude Code で回答�
 Bloom Lens · translation	Bloom Lens · 翻訳
 Reads and translates screen text with ChatGPT.	ChatGPT で画面の文字を読み取り、翻訳します。
 Reads and translates screen text with Claude Haiku.	Claude Haiku で画面の文字を読み取り、翻訳します。
+ChatGPT usage checks	ChatGPT 使用量の確認
+How the home gets ChatGPT's usage. Add accounts and pick the AI chat account in Settings > AI accounts.	ホームで ChatGPT の使用量を取得する方式です。アカウントの追加と AI チャットのアカウントは 設定 > AI アカウント で選びます。
+Official CLI	公式 CLI
+Runs Codex briefly per account · ~110 MB for 1 s each	アカウントごとに Codex を短時間実行 · 1 回約 110 MB · 1 秒
+Lightweight	軽量方式
+One HTTPS request with the Codex sign-in · unofficial, may change	Codex のサインインで HTTPS リクエスト 1 回 · 非公式で変わる可能性あり
 Basic shortcuts	基本ショートカット
 Open and type — apps, settings, maths (12*3), files, web search	開いて入力 — アプリ、設定、計算 (12*3)、ファイル、ウェブ検索
 Ask AI what you typed	入力した内容を AI に聞く
@@ -1585,6 +1600,33 @@ No Codex model list yet — run Codex once to get it	Codex のモデル一覧が
 ChatGPT thinking level	ChatGPT の思考レベル
 The levels depend on the model · Ctrl+E during a chat	レベルはモデルによって異なります · チャット中は Ctrl+E
 {0} · uses your ChatGPT login	{0} · ChatGPT のサインインを使用
+AI accounts	AI アカウント
+Each account signs in on its own. The home shows each one's usage, and AI chat uses the account you pick. Nothing switches accounts when a limit is reached.	アカウントごとに個別にサインインします。ホームでアカウント別の使用量を確認し、AI チャットに使うアカウントを選びます。上限に達してもアカウントは自動で切り替わりません。
+Signing in · finish in the terminal that opened	サインイン中 · 開いたターミナルで完了してください
+Sign-in terminal still open · close it to change the account	サインイン用のターミナルが開いたままです · 閉じるとアカウントを変更できます
+Default account · Codex's own sign-in	既定のアカウント · Codex のサインイン
+Default account · Claude Code's own sign-in	既定のアカウント · Claude Code のサインイン
+Added in Bloom	Bloom で追加したアカウント
+ · hidden on the home	 · ホームで非表示
+Used for AI chat	AI チャットで使用中
+Add a {0} account…	{0} アカウントを追加…
+Runs the official sign-in in a new terminal · sign in in the browser	新しいターミナルで公式サインインを実行 · ブラウザでサインイン
+Add a {0} account	{0} アカウントを追加
+Usage checks	使用量の確認
+ChatGPT checks	ChatGPT の確認方式
+Lightweight: one HTTPS request with the Codex sign-in · no CLI · not an official API, may change	軽量方式: Codex のサインインで HTTPS リクエスト 1 回 · CLI 実行なし · 公式 API ではないため変わる可能性あり
+Official CLI: runs Codex per account · ~110 MB for 1 s	公式 CLI: アカウントごとに Codex を実行 · 約 110 MB 1 秒
+How often	確認間隔
+Default accounts as set on the home page · added ones every {0} min · the home's ↻ checks all	既定のアカウントはホーム画面設定の間隔 · 追加したアカウントは {0} 分ごと · ホームの ↻ はすべてのアカウント
+The sign-in terminal is open. Finish signing in or close it.	サインイン用のターミナルが開いています。サインインを完了するか、ターミナルを閉じてください。
+Use for AI chat	AI チャットで使用
+Show on the home	ホームに表示
+Hide on the home	ホームで非表示
+Sign in again	再サインイン
+Default account	既定のアカウント
+This account's renewed sign-in isn't saved yet. Try again in a moment.	このアカウントの更新されたサインイン情報をまだ保存できていません。しばらくしてからもう一度お試しください。
+Remove account	アカウントを外す
+Moves this account's sign-in folder to the Recycle Bin.	このアカウントのサインインフォルダーをごみ箱に移動します。
 PC actions · MCP	PC の操作 · MCP
 Use AI chat to open apps, find and move files, and set timers on this PC.	AI チャットから、この PC のアプリ起動、ファイル検索・移動、タイマー設定を使えます。
 In Claude chats	Claude のチャットで

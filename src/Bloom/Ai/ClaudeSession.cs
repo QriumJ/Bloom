@@ -26,6 +26,7 @@ internal sealed class ClaudeSession : IChatSession
 
     public string Model { get; }
     public string Effort { get; }
+    public string? AccountHome { get; init; } // the chat account's folder (CLAUDE_CONFIG_DIR); null = Claude Code's default
     public string? SessionId { get; private set; }
     public bool Busy { get; private set; }
     public DateTime LastUsed { get; private set; } = DateTime.UtcNow;
@@ -188,6 +189,7 @@ internal sealed class ClaudeSession : IChatSession
             psi.ArgumentList.Add(resume);
         }
         Cli.CleanEnvironment(psi); // a Claude session that launched us must not leak its routing into the user's CLI
+        AiAccounts.UseChatAccount(psi, "claude", AccountHome);
         try
         {
             var p = Process.Start(psi);

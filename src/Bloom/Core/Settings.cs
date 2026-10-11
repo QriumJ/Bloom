@@ -47,6 +47,10 @@ internal sealed class Settings
     public List<HomeWidget>? Home { get; set; } // the empty view's blocks, in order (Core\Home.cs)
     public int UsageMinutes { get; set; } = 10; // the home's AI usage: asked of Claude Code / Codex every 5 or 10 minutes (App\AiUsage.cs)
     public bool UsageLeft { get; set; } // the usage cards count what's left ("68% 남음", the bar shrinking) instead of what's used
+    public List<AiAccount> AiAccounts { get; set; } = new(); // whose usage the home shows (Core\AiAccounts.cs); the two defaults are added on read
+    public string ClaudeChatAccount { get; set; } = "claude"; // the AiAccount id AI chat, Bloom Lens and translation use for Claude
+    public string GptChatAccount { get; set; } = "chatgpt"; // … and for ChatGPT (Codex)
+    public string ChatGptUsage { get; set; } = "cli"; // cli (Codex's app-server per account) | light (one HTTPS request with the account's Codex sign-in, Ai\ChatGptLight.cs)
     public bool ClipHistory { get; set; } = true;
     public int ClipKeepMinutes { get; set; } = 30 * 24 * 60; // how long unpinned entries stay; 0 = for good (pinned ones always stay)
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

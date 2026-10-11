@@ -26,6 +26,7 @@ internal static partial class IconMaker
         string? cli = ClaudeSession.FindCli(Settings.Current.ClaudePath);
         if (cli is null) return (null, AiErrors.ClaudeMissing);
         var psi = OneShot.Psi(cli);
+        AiAccounts.UseChatAccount(psi, "claude", AiAccounts.ChatHome("claude"));
         foreach (string a in new[]
         {
             "-p", "--model", "sonnet", "--output-format", "text", "--system-prompt", System,

@@ -163,16 +163,17 @@ internal static class Notices
     private static void Limits()
     {
         var s = Settings.Current;
-        foreach (var a in AiUsage.Accounts)
+        var all = AiUsage.Accounts;
+        foreach (var a in all)
             foreach (var l in a.Limits)
             {
-                string key = a.Name + "|" + l.Title;
+                string key = a.Id + "|" + l.Title;
                 double left = Math.Max(0, 100 - l.Percent);
                 int level = l.Percent >= 99.5 ? 2 : left <= 20 ? 1 : 0;
                 bool had = levels.TryGetValue(key, out var before);
                 levels[key] = (level, l.Resets ?? before.resets);
                 if (!had || level == before.level) continue;
-                string who = a.Plan is { Length: > 0 } plan ? $"{a.Name} {plan}" : a.Name;
+                string who = (a.Plan is { Length: > 0 } plan ? $"{a.Name} {plan}" : a.Name) + (all.Count(o => o.Name == a.Name) > 1 && a.Who is { Length: > 0 } mail ? $" · {mail}" : "");
                 if (level == 0)
                 {
                     if (s.NoticeRecover && before.resets is { } r && DateTime.Now >= r.AddMinutes(-1))

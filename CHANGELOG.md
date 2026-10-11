@@ -2,6 +2,22 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.13.0
+
+- Several Claude and ChatGPT accounts. Settings › AI accounts adds an account by running the CLI's own sign-in in a new terminal (you sign in in the browser); each account keeps its sign-in in a folder of its own. The home shows a card per account, up to four in a row; with two accounts of one kind each card shows its e-mail.
+- AI chat, Bloom Lens and translation use the account you pick for each of Claude and ChatGPT. A chat started under another account continues as a new session with the conversation so far. Nothing switches accounts on its own, even at a limit.
+- ChatGPT usage can be checked two ways, chosen in the first-run screens or in Settings › AI accounts: the official CLI (Codex runs briefly per account) or a lightweight mode (one HTTPS request with the Codex sign-in, no CLI; not an official API).
+- Added accounts are checked every 30 minutes; the default ones as before. The home's ↻ checks all of them. Limit notices name the account.
+- Fixed: on a fresh install the first usage check could fail because the Claude and Codex checks started at the same moment.
+
+### 한국어
+
+- Claude · ChatGPT 계정을 여러 개 쓸 수 있습니다. 설정 › AI 계정에서 계정을 추가하면 새 터미널에서 CLI의 공식 로그인이 실행되고, 브라우저에서 로그인합니다. 계정마다 로그인 정보가 따로 저장됩니다. 홈에는 계정마다 카드가 한 줄에 4개까지 표시되고, 같은 종류 계정이 2개 이상이면 카드에 이메일이 표시됩니다.
+- AI 채팅 · Bloom Lens · 번역은 Claude와 ChatGPT 각각 직접 고른 계정을 씁니다. 다른 계정에서 시작한 대화는 지금까지의 대화를 넘겨 새 세션으로 이어집니다. 한도에 닿아도 계정은 자동으로 바뀌지 않습니다.
+- ChatGPT 사용량 조회 방식을 처음 설정 화면이나 설정 › AI 계정에서 고릅니다. 공식 CLI(계정마다 Codex를 잠깐 실행) 또는 가벼운 방식(Codex 로그인으로 HTTPS 요청 1번, CLI 실행 없음, 공식 API 아님)입니다.
+- 추가한 계정은 30분마다, 기본 계정은 이전처럼 조회합니다. 홈의 ↻는 모든 계정을 조회합니다. 한도 알림에 계정이 표시됩니다.
+- 수정: 새로 설치한 뒤 첫 사용량 조회가 Claude와 Codex 조회가 동시에 시작되면서 실패할 수 있던 문제를 고쳤습니다.
+
 ## 0.12.3
 
 - Fixed: opening the launcher could flash a light background for a moment, more often with Notes or Clipboard attached beside it. The launcher and its attached tools now stay hidden until their new picture is on screen, and appear together.

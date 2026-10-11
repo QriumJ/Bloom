@@ -36,6 +36,7 @@ internal sealed class CodexSession : IChatSession
 
     public string Model { get; }
     public string Effort { get; }
+    public string? AccountHome { get; init; } // the chat account's folder (CODEX_HOME); null = Codex's default
     public string? SessionId { get; private set; }
     public bool Busy { get; private set; }
     public bool Alive { get; private set; }
@@ -232,6 +233,8 @@ internal sealed class CodexSession : IChatSession
             args.Add("-"); // the prompt comes on stdin
             foreach (string a in args) psi.ArgumentList.Add(a);
             Cli.CleanEnvironment(psi); // the ChatGPT login only
+            AiAccounts.UseChatAccount(psi, "chatgpt", AccountHome);
+            _ = CodexAuth.Unsaved(AccountHome); // tokens the light way refreshed go in first (they were the folder's before it was picked)
             Process p;
             try
             {

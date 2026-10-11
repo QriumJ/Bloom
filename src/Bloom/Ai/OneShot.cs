@@ -30,6 +30,7 @@ internal static class OneShot
         string? cli = ClaudeSession.FindCli(Settings.Current.ClaudePath);
         if (cli is null) return (null, AiErrors.ClaudeMissing);
         var psi = Psi(cli);
+        AiAccounts.UseChatAccount(psi, "claude", AiAccounts.ChatHome("claude"));
         bool fast = effort is null or "fast";
         foreach (string a in new[]
         {
@@ -56,6 +57,8 @@ internal static class OneShot
         string instructions = Path.Combine(cwd, name + ".md");
         await File.WriteAllTextAsync(instructions, system, ct);
         var psi = Psi(exe);
+        AiAccounts.UseChatAccount(psi, "chatgpt", AiAccounts.ChatHome("chatgpt"));
+        _ = CodexAuth.Unsaved(AiAccounts.ChatHome("chatgpt")); // tokens the light way refreshed go in first
         var args = new List<string> { "exec", "--json", "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "read-only", "--cd", cwd, "--color", "never" };
         if (AiModels.GptSlug(model) is { } slug)
         {
@@ -106,7 +109,17 @@ internal static class OneShot
     public static string WorkDir()
     {
         string keep = Paths.InLocal(@"ai\.keep");
-        if (!File.Exists(keep)) File.WriteAllText(keep, "");
+        if (!File.Exists(keep))
+        {
+            try
+            {
+                using (new FileStream(keep, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite)) { } // the usage looks start two CLIs at once
+            }
+            catch (IOException)
+            {
+                /* the other one made it */
+            }
+        }
         return Path.GetDirectoryName(keep)!;
     }
 

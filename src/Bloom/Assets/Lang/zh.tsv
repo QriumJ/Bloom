@@ -85,6 +85,10 @@ Korean	韩语
 English	英语
 Japanese	日语
 Chinese	中文
+Another sign-in is running	另一个账户正在登录
+Sign the default account in from Claude Code or Codex itself	默认账户请直接在 Claude Code 或 Codex 中登录
+This account's sign-in terminal is still open. Close it first.	此账户的登录终端仍处于打开状态。请先将其关闭。
+Not signed in · Try again	未登录 · 请重试
 Shortcut · Error	快捷键 · 错误
 Item not found. Check its location or reassign the shortcut.	未找到项目。请检查位置或重新分配快捷键。
 Reading the app list again…	正在重新读取应用列表…
@@ -816,6 +820,7 @@ Q3 went up every month.\n\n- **July** 120 → **September** 151, about 26% up\n-
 Now estimate Q4 from this	再根据这些预测一下第四季度
 sum	sum
 Refresh every	刷新间隔
+account	账户
 Refactor the sign-in screen, session expiry and the error wording in one go	一次性重构登录界面、会话过期处理和错误文案
 “Also fix signing in again after the session drops, and add tests”	“会话断开后重新登录的流程也一起修好，再加上测试”
 Tidy the build script	整理构建脚本
@@ -838,6 +843,10 @@ Image {0}×{1}	图片 {0}×{1}
 {0} and {1} more	{0} 等 {1} 项
 {0:#,0} chars · {1} lines	{0:#,0} 字 · {1} 行
 {0:#,0} chars	{0:#,0} 字
+Sign-in needed · sign in from Codex	需要登录 · 请在 Codex 中登录
+Sign-in needed · sign in from Claude Code	需要登录 · 请在 Claude Code 中登录
+Sign-in needed · click to sign in again	需要登录 · 点击重新登录
+Sign-in needed · Settings > AI accounts	需要登录 · 设置 > AI 账户
 Black	黑色
 White	白色
 Dark grey	深灰色
@@ -1312,6 +1321,12 @@ Answers through Claude Code and runs approved PC actions.	通过 Claude Code 回
 Bloom Lens · translation	Bloom Lens · 翻译
 Reads and translates screen text with ChatGPT.	使用 ChatGPT 读取并翻译屏幕文字。
 Reads and translates screen text with Claude Haiku.	使用 Claude Haiku 读取并翻译屏幕文字。
+ChatGPT usage checks	ChatGPT 用量查询
+How the home gets ChatGPT's usage. Add accounts and pick the AI chat account in Settings > AI accounts.	主页获取 ChatGPT 用量的方式。在 设置 > AI 账户 中添加账户并选择 AI 聊天账户。
+Official CLI	官方 CLI
+Runs Codex briefly per account · ~110 MB for 1 s each	每个账户短暂运行 Codex · 每次约 110 MB · 1 秒
+Lightweight	轻量方式
+One HTTPS request with the Codex sign-in · unofficial, may change	使用 Codex 登录发送 1 次 HTTPS 请求 · 非官方，可能变化
 Basic shortcuts	基本快捷键
 Open and type — apps, settings, maths (12*3), files, web search	打开后输入 — 应用、设置、计算 (12*3)、文件、网页搜索
 Ask AI what you typed	把输入的内容问 AI
@@ -1585,6 +1600,33 @@ No Codex model list yet — run Codex once to get it	还没有 Codex 的模型�
 ChatGPT thinking level	ChatGPT 思考级别
 The levels depend on the model · Ctrl+E during a chat	级别因模型而异 · 对话中按 Ctrl+E
 {0} · uses your ChatGPT login	{0} · 使用已登录的 ChatGPT 账号
+AI accounts	AI 账户
+Each account signs in on its own. The home shows each one's usage, and AI chat uses the account you pick. Nothing switches accounts when a limit is reached.	每个账户单独登录。主页显示各账户的用量，AI 聊天使用你选择的账户。达到限额时不会自动切换账户。
+Signing in · finish in the terminal that opened	正在登录 · 请在打开的终端中完成
+Sign-in terminal still open · close it to change the account	登录终端仍处于打开状态 · 关闭后即可更改账户
+Default account · Codex's own sign-in	默认账户 · Codex 的登录
+Default account · Claude Code's own sign-in	默认账户 · Claude Code 的登录
+Added in Bloom	在 Bloom 中添加的账户
+ · hidden on the home	 · 在主页隐藏
+Used for AI chat	用于 AI 聊天
+Add a {0} account…	添加 {0} 账户…
+Runs the official sign-in in a new terminal · sign in in the browser	在新终端中运行官方登录 · 在浏览器中登录
+Add a {0} account	添加 {0} 账户
+Usage checks	用量查询
+ChatGPT checks	ChatGPT 查询方式
+Lightweight: one HTTPS request with the Codex sign-in · no CLI · not an official API, may change	轻量方式：使用 Codex 登录发送 1 次 HTTPS 请求 · 不运行 CLI · 非官方 API，可能变化
+Official CLI: runs Codex per account · ~110 MB for 1 s	官方 CLI：每个账户运行 Codex · 约 110 MB 1 秒
+How often	查询间隔
+Default accounts as set on the home page · added ones every {0} min · the home's ↻ checks all	默认账户按主页设置的间隔 · 添加的账户每 {0} 分钟 · 主页的 ↻ 查询全部账户
+The sign-in terminal is open. Finish signing in or close it.	登录终端已打开。请完成登录或关闭终端。
+Use for AI chat	用于 AI 聊天
+Show on the home	在主页显示
+Hide on the home	在主页隐藏
+Sign in again	重新登录
+Default account	默认账户
+This account's renewed sign-in isn't saved yet. Try again in a moment.	尚未能保存此账户更新后的登录信息。请稍后再试。
+Remove account	移除账户
+Moves this account's sign-in folder to the Recycle Bin.	将此账户的登录文件夹移到回收站。
 PC actions · MCP	电脑操作 · MCP
 Use AI chat to open apps, find and move files, and set timers on this PC.	可在 AI 聊天中打开本机应用、查找和移动文件、设置计时器。
 In Claude chats	在 Claude 对话中
