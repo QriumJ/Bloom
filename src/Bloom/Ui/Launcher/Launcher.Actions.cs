@@ -99,7 +99,7 @@ internal sealed partial class Launcher
 
     public static bool ShowHomeToolsForQa;
 
-    /// 홈 편집: the blocks show ▲ ▼ 숨기기 and the hidden ones come back as rows at the end.
+    /// 홈 편집: the blocks show ▲ ▼ 숨기기, the AI usage cards ‹ › ✎, and the hidden blocks come back as rows at the end.
     public bool HomeEditing { get; private set; }
 
     public void ToggleHomeEdit()
@@ -107,7 +107,7 @@ internal sealed partial class Launcher
         HomeEditing = !HomeEditing;
         if (HomeEditing && (Mode != Mode.Root || box.Text.Length > 0)) Go(Mode.Root);
         else Refresh(true);
-        if (HomeEditing) ShowToast(Tr("홈 편집 · 블록 오른쪽 위 ▲ ▼ ✕ · 끝내려면 Esc 또는 ‘편집 끝’", "Editing home · ▲ ▼ ✕ at each block's top right · Esc or ‘Done’ to finish"));
+        if (HomeEditing) ShowToast(Tr("홈 편집 · 블록은 ▲ ▼ ✕ · AI 사용량 카드는 ‹ › 순서, ✎ 이름 · 끝내려면 Esc 또는 ‘편집 끝’", "Editing home · ▲ ▼ ✕ on blocks · ‹ › order and ✎ names the AI usage cards · Esc or ‘Done’ to finish"));
     }
 
     /// AI draws a favorite's icon (one Claude call); the toast says when it starts and how it ended.
@@ -129,53 +129,20 @@ internal sealed partial class Launcher
     private FrameworkElement HomeTools(string key)
     {
         var (first, last) = Home.Ends();
-        var bar = new StackPanel { Orientation = Orientation.Horizontal };
-        void Tool(char glyph, string tip, bool enabled, Action run)
+        void Move(int by)
         {
-            var g = Theme.Glyph(glyph, 10.5, enabled ? Theme.P.TextDim : Theme.P.Track);
-            g.HorizontalAlignment = HorizontalAlignment.Center;
-            g.VerticalAlignment = VerticalAlignment.Center;
-            var b = new SmoothBorder { Width = 26, Height = 22, CornerRadius = new CornerRadius(5), Background = Brushes.Transparent, Child = g, ToolTip = tip, Cursor = enabled ? Cursors.Hand : Cursors.Arrow };
-            if (enabled)
-            {
-                b.MouseEnter += (_, _) => b.Background = Theme.P.Hover;
-                b.MouseLeave += (_, _) => b.Background = Brushes.Transparent;
-                b.MouseLeftButtonUp += (_, e) =>
-                {
-                    run();
-                    e.Handled = true;
-                };
-            }
-            bar.Children.Add(b);
+            Home.MoveShown(key, by);
+            Refresh(true);
         }
-        Tool('\uE70E', Tr("위로", "Up"), key != first, () =>
-        {
-            Home.MoveShown(key, -1);
-            Refresh(true);
-        });
-        Tool('\uE70D', Tr("아래로", "Down"), key != last, () =>
-        {
-            Home.MoveShown(key, 1);
-            Refresh(true);
-        });
-        Tool(G.Close, Tr("홈에서 숨기기", "Hide from home"), true, () =>
+        void Hide()
         {
             Home.Set(key, false);
             ShowToast(Tr($"‘{Home.Name(key)}’ 숨김 · 홈 편집에서 다시 표시", $"‘{Home.Name(key)}’ hidden · restore in Edit home"));
             Refresh(true);
-        });
-        return new SmoothBorder
-        {
-            Child = bar,
-            Background = Theme.P.Popup,
-            BorderBrush = Theme.P.PopupLine,
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(7),
-            Padding = new Thickness(2),
-            HorizontalAlignment = HorizontalAlignment.Right,
-            VerticalAlignment = VerticalAlignment.Top,
-            Margin = new Thickness(0, 6, 16, 0),
-        };
+        }
+        var bar = HomeViews.EditBar((G.Up, Tr("위로", "Up"), key != first, () => Move(-1)), (G.Down, Tr("아래로", "Down"), key != last, () => Move(1)), (G.Close, Tr("홈에서 숨기기", "Hide from home"), true, Hide));
+        bar.Margin = new Thickness(0, 6, 16, 0);
+        return bar;
     }
 
     /// Which folder an item goes into (or a new one).

@@ -176,7 +176,7 @@ Shows drive and folder space as a map. Each file and folder occupies a block pro
   - Chains: lines for the search line, run in turn (`notepad ; volume 30 ; wait 2 ; yt lofi`).
   - Words after the keyword fill the `{input}` spot (`bk D:\photos`).
   - Script files are added from Ctrl+K › Custom commands.
-- **Home** (Ctrl+E): pick the blocks the empty search line shows (favorites · AI usage · this week · timers · recently used · commands …) and their order.
+- **Home** (Ctrl+E): pick the blocks the empty search line shows (favorites · AI usage · this week · timers · recently used · commands …) and their order. The AI usage cards can be reordered there too, and each account can show a name of your own instead of its e-mail.
 - **Features on and off**: disabling a feature (AI chat · Bloom Lens · calculator · timers · color picker · emoji · window switching …) removes it from search results, commands, home and favorites, and releases its shortcut. Saved data is retained.
 - **Look · performance**
   - Dark, light or system theme, and accent color presets

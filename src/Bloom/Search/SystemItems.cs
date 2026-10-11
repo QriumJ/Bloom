@@ -168,6 +168,6 @@ internal static class G
         Lock = '', Power = '', Calculator = '', Folder = '', Document = '', Link = '',
         Copy = '', Star = '', StarFill = '', Unstar = '', Delete = '', NewWindow = '',
         Back = '', Send = '', Close = '', Tab = '', Bookmark = '', Shield = '',
-        Up = '', Down = '', Add = '', Check = '', Info = '', Chat = '', Plug = '',
+        Up = '', Down = '', Left = '', Right = '', Add = '', Check = '', Info = '', Chat = '', Plug = '',
         Stop = '', Page = '', Keyboard = '', App = '', Paste = '', Model = '';
 }

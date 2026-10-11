@@ -21,11 +21,7 @@ internal sealed partial class Engine
         if (a.Target is not { } exe || !exe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) || IsBloom(exe)) return null;
         if (Uninstalls.For(exe, name) is not { } p) return null;
         // the answer names the program removed (it can be bigger than the shortcut: Acrobat Distiller → Adobe Acrobat)
-        return Ask(a.Name, Tr($"제거 · {Clip(p.Name, 30)}", $"Uninstall · {Clip(p.Name, 30)}"), () =>
-        {
-            if (!Uninstalls.Run(p))
-                Notices.Result(false, Tr("Bloom · 제거", "Bloom · Uninstall"), Tr($"‘{p.Name}’ 제거 프로그램 실행 실패", $"Could not open the uninstaller for ‘{p.Name}’"), Tr("관리자 권한이 거절되었거나 제거 파일이 없습니다. Windows 앱 설정에서 제거하세요.", "Admin permission was declined or the uninstaller is missing. Remove the app in Windows app settings."), Tr("Windows 앱 설정", "Windows app settings"), () => Launch.Open("ms-settings:appsfeatures"));
-        });
+        return Ask(a.Name, Tr($"제거 · {Clip(p.Name, 30)}", $"Uninstall · {Clip(p.Name, 30)}"), () => _ = RunUninstaller(p));
 
         ActionItem Ask(string title, string yes, Action remove) => new()
         {
@@ -42,6 +38,13 @@ internal sealed partial class Engine
                 Run = remove,
             }),
         };
+    }
+
+    /// The program's own uninstaller; when it doesn't start, a notice points to Windows app settings.
+    private static async Task RunUninstaller(Installed p)
+    {
+        if (!await Uninstalls.Run(p))
+            Notices.Result(false, Tr("Bloom · 제거", "Bloom · Uninstall"), Tr($"‘{p.Name}’ 제거 프로그램 실행 실패", $"Could not open the uninstaller for ‘{p.Name}’"), Tr("관리자 권한이 거절되었거나 제거 파일이 없습니다. Windows 앱 설정에서 제거하세요.", "Admin permission was declined or the uninstaller is missing. Remove the app in Windows app settings."), Tr("Windows 앱 설정", "Windows app settings"), () => Launch.Open("ms-settings:appsfeatures"));
     }
 
     private async Task RemoveStore(AppEntry a)

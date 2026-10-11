@@ -207,3 +207,14 @@ internal static class AiTextTests
         Check.True(QuickActions.System("explain", null, "x").Contains("Answer in Korean", StringComparison.Ordinal), "explain answers in the UI language");
     }
 }
+
+/// Starting things off the UI thread (Launch.Start): the answer still comes back.
+internal static class LaunchTests
+{
+    public static void MissingFileAnswersFalse()
+    {
+        var started = Launch.Start(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "bloom-test-" + Guid.NewGuid().ToString("N"), "missing.exe"));
+        Check.Eq(started.Wait(TimeSpan.FromSeconds(10)), true, "the launch thread answers");
+        Check.Eq(started.Result, false, "a missing file did not start");
+    }
+}

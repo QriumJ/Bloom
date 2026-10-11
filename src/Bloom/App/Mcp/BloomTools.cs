@@ -179,7 +179,7 @@ internal sealed class BloomTools : IToolPolicy
         new("find_timers", "look", (q, _) => Look("timers", q), (_, _) => Tr("타이머 보기", "Timers")),
         new("find_commands", "look", (q, _) => Look("commands", q), (_, _) => Tr("사용자 명령 보기", "Custom commands")),
         new("find_notes", "look", (q, _) => OnUi(() => FindNotes(q)), (q, _) => Tr($"메모 찾기: {q}", $"Find notes: {q}").TrimEnd(' ', ':')),
-        new("open", "open", (q, _) => OnUi(() => Open(q)), (q, _) => Tr($"열기: {Clip(q)}", $"Open: {Clip(q)}")),
+        new("open", "open", (q, _) => OnUi(() => Open(q)).Unwrap(), (q, _) => Tr($"열기: {Clip(q)}", $"Open: {Clip(q)}")),
         new("run_line", "open", (q, _) => OnUi(() => RunLine(q)), (q, _) => Tr($"Bloom에서 실행: {Clip(q)}", $"Run in Bloom: {Clip(q)}")),
         new("run_command", "open", (q, to) => OnUi(() => RunCommand(q, to)), (q, to) => Tr($"사용자 명령 실행: {q} {Clip(to, 40)}", $"Run custom command: {q} {Clip(to, 40)}").Trim()),
         new("note", "bloom", (q, to) => OnUi(() => WriteNote(q, to)), (q, to) => to.Trim().Length > 0
@@ -336,7 +336,7 @@ internal sealed class BloomTools : IToolPolicy
         return Directory.Exists(path) ? path : throw new ArgumentException($"There is no folder at {path}.");
     }
 
-    private string Open(string target)
+    private async Task<string> Open(string target)
     {
         target = target.Trim().Trim('"');
         if (Web.AsUrl(target) is { } url)
@@ -345,7 +345,7 @@ internal sealed class BloomTools : IToolPolicy
             return $"Opened {url} in the browser.";
         }
         string path = Environment.ExpandEnvironmentVariables(target);
-        if (File.Exists(path) || Directory.Exists(path)) return Launch.Open(path) ? $"Opened {path}." : $"Couldn't open {path}.";
+        if (File.Exists(path) || Directory.Exists(path)) return await Launch.Start(path) ? $"Opened {path}." : $"Couldn't open {path}.";
         var q = new Query(target);
         var app = host.Apps.Apps.Select(x => (x, score: Matcher.Score(q, x.Match))).Where(x => x.score > 0).OrderByDescending(x => x.score).Select(x => x.x).FirstOrDefault();
         if (app is null) return $"No app, file or address matches \"{target}\".";

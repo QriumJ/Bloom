@@ -66,7 +66,7 @@ internal sealed partial class Launcher
             FormKeys(e); // before Ctrl+K, Ctrl+P …, which could be the shortcut being pressed in
             return;
         }
-        if (key == Key.Escape && HomeEditing)
+        if (key == Key.Escape && HomeEditing && Mode == Mode.Root) // in a form (✎ on a usage card) Esc leaves the form first
         {
             e.Handled = true;
             ToggleHomeEdit();

@@ -42,6 +42,12 @@ internal static class AiUsage
     public static bool Failed(string id) => failed.Contains(id);
 
     /// What is known so far, in the accounts' order; a limit whose reset time has passed starts again from 0.
+    /// The line under a card's name: the user's own words for the account (홈 편집 ✎), else its e-mail when one kind
+    /// has more than one card (`all`: the cards shown); null = none. The card and the limit notices say the same.
+    public static string? Who(UsageAccount a, List<UsageAccount> all) =>
+        AiAccounts.Find(a.Id)?.Alias is { Length: > 0 } alias ? alias
+        : all.Count(o => o.Name == a.Name) > 1 && a.Who is { Length: > 0 } mail ? mail : null;
+
     public static List<UsageAccount> Accounts
     {
         get

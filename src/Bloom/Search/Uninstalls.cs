@@ -74,11 +74,11 @@ internal static class Uninstalls
 
     /// Starts the program's own uninstaller (its window asks the rest); a machine-wide one asks Windows for admin first
     /// (msiexec asks by itself). False when it couldn't start (UAC declined, the file gone).
-    public static bool Run(Installed p)
+    public static Task<bool> Run(Installed p)
     {
         var (file, args) = Split(p.Command);
-        if (file.Length == 0) return false;
-        return Launch.Open(file, args.Length == 0 ? null : args, p.Machine && !p.Msi ? "runas" : "open");
+        if (file.Length == 0) return Task.FromResult(false);
+        return Launch.Start(file, args.Length == 0 ? null : args, p.Machine && !p.Msi ? "runas" : "open");
     }
 
     /// A Store app (shell:AppsFolder\<family>!<app>) removed for this user; the result as (ok, what PowerShell said).

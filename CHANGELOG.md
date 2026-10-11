@@ -2,6 +2,18 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.13.1
+
+- Edit home (Ctrl+E) now reorders the AI usage cards (‹ › on each card) and lets each account show a name of your own instead of its e-mail (✎). A card with its own name shows it even when it is the only one of its kind; limit notices use the same name.
+- ChatGPT Pro plans show their tier: Pro 100, Pro 200 or Pro 500.
+- Fixed: Bloom could stop responding for a moment while an app started (Store apps take a few seconds to activate, and run as administrator waited for the UAC prompt). Apps, files and links now start in the background.
+
+### 한국어
+
+- 홈 편집(Ctrl+E)에서 AI 사용량 카드의 순서를 바꾸고(카드마다 ‹ ›), 계정마다 이메일 대신 원하는 이름을 붙일 수 있습니다(✎). 이름을 붙인 카드는 같은 종류 계정이 하나뿐이어도 그 이름을 표시하고, 한도 알림도 같은 이름을 씁니다.
+- ChatGPT Pro 요금제를 Pro 100 · Pro 200 · Pro 500으로 구분해 표시합니다.
+- 수정: 앱을 실행할 때 Bloom이 잠깐 응답하지 않던 문제를 고쳤습니다(Store 앱은 활성화에 몇 초가 걸리고, 관리자 권한 실행은 UAC 창을 기다렸습니다). 이제 앱 · 파일 · 링크를 백그라운드에서 실행합니다.
+
 ## 0.13.0
 
 - Several Claude and ChatGPT accounts. Settings › AI accounts adds an account by running the CLI's own sign-in in a new terminal (you sign in in the browser); each account keeps its sign-in in a folder of its own. The home shows a card per account, up to four in a row; with two accounts of one kind each card shows its e-mail.

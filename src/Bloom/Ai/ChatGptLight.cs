@@ -69,7 +69,7 @@ internal static class ChatGptLight
         }
         if (limits.Count == 0) return null;
         string? plan = Str(body, "plan_type") ?? Str(claims?["https://api.openai.com/auth"], "chatgpt_plan_type");
-        return new UsageAccount("ChatGPT", plan is { Length: > 0 } p ? char.ToUpperInvariant(p[0]) + p[1..] : null, limits, DateTime.Now) { Who = Str(claims, "email") };
+        return new UsageAccount("ChatGPT", UsageAccount.ChatGptPlan(plan), limits, DateTime.Now) { Who = Str(claims, "email") };
     }
 
     private static UsageAccount? Fail(string why)

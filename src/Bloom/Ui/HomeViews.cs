@@ -7,6 +7,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using Bloom.Ai;
+using Bloom.Search;
 
 namespace Bloom.Ui;
 
@@ -14,9 +15,10 @@ namespace Bloom.Ui;
 internal static class HomeViews
 {
     /// One card per account (Claude, ChatGPT; up to four in a row, more rows below — the user found two by two untidy):
-    /// each limit as a thin bar, its percent and how long until it resets. With two accounts of one kind each card names
-    /// its account.
-    public static FrameworkElement Usage(List<UsageAccount> accounts)
+    /// each limit as a thin bar, its percent and how long until it resets. A card names its account in the user's own
+    /// words, or by e-mail when one kind has two (AiUsage.Who). `edit` (홈 편집): ‹ › swap a card with its neighbour in
+    /// 설정's account order, then Moved draws the home again; ✎ asks Rename for the account's words.
+    public static FrameworkElement Usage(List<UsageAccount> accounts, (Action Moved, Action<string> Rename)? edit = null)
     {
         if (accounts.Count == 0)
         {
@@ -31,7 +33,7 @@ internal static class HomeViews
         {
             if (i % PerRow == 0) grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             var a = accounts[i];
-            var card = Card(a, accounts.Count(o => o.Name == a.Name) > 1 ? a.Who : null);
+            var card = Card(a, AiUsage.Who(a, accounts), edit is { } e ? CardTools(accounts, i, e) : null);
             card.Margin = new Thickness(4, i >= PerRow ? 8 : 0, 4, 0);
             Grid.SetColumn(card, i % PerRow);
             Grid.SetRow(card, i / PerRow);
@@ -42,8 +44,59 @@ internal static class HomeViews
 
     private const int PerRow = 4;
 
-    /// `who`: the account's e-mail under the name, when one kind has more than one card.
-    private static Border Card(UsageAccount a, string? who)
+    /// 홈 편집's ‹ › ✎ for a card (as a block has ▲ ▼ ✕).
+    private static SmoothBorder CardTools(List<UsageAccount> accounts, int i, (Action Moved, Action<string> Rename) edit)
+    {
+        string id = accounts[i].Id;
+        void Swap(int with)
+        {
+            Core.AiAccounts.Swap(id, accounts[with].Id);
+            edit.Moved();
+        }
+        return EditBar(
+            (G.Left, Tr("앞으로", "Move earlier"), i > 0, () => Swap(i - 1)),
+            (G.Right, Tr("뒤로", "Move later"), i < accounts.Count - 1, () => Swap(i + 1)),
+            (G.Pen, Tr("표시 이름 바꾸기", "Rename"), true, () => edit.Rename(id)));
+    }
+
+    /// 홈 편집's small bar of glyph buttons (a block's ▲ ▼ ✕, a usage card's ‹ › ✎), at the right of where it is put.
+    public static SmoothBorder EditBar(params (char glyph, string tip, bool enabled, Action run)[] tools)
+    {
+        var bar = new StackPanel { Orientation = Orientation.Horizontal };
+        foreach (var (glyph, tip, enabled, run) in tools)
+        {
+            var g = Theme.Glyph(glyph, 10.5, enabled ? Theme.P.TextDim : Theme.P.Track);
+            g.HorizontalAlignment = HorizontalAlignment.Center;
+            g.VerticalAlignment = VerticalAlignment.Center;
+            var b = new SmoothBorder { Width = 26, Height = 22, CornerRadius = new CornerRadius(5), Background = Brushes.Transparent, Child = g, ToolTip = tip, Cursor = enabled ? Cursors.Hand : Cursors.Arrow };
+            if (enabled)
+            {
+                b.MouseEnter += (_, _) => b.Background = Theme.P.Hover;
+                b.MouseLeave += (_, _) => b.Background = Brushes.Transparent;
+                b.MouseLeftButtonUp += (_, e) =>
+                {
+                    run();
+                    e.Handled = true;
+                };
+            }
+            bar.Children.Add(b);
+        }
+        return new SmoothBorder
+        {
+            Child = bar,
+            Background = Theme.P.Popup,
+            BorderBrush = Theme.P.PopupLine,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(7),
+            Padding = new Thickness(2),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+        };
+    }
+
+    /// `who`: the line under the name that says whose account it is (AiUsage.Who). `tools` (홈 편집): a row of their own
+    /// at the card's foot, over none of its words (on top they hid the plan; the cards were too narrow).
+    private static Border Card(UsageAccount a, string? who, FrameworkElement? tools = null)
     {
         var stack = new StackPanel();
         var head = new Grid { Margin = new Thickness(0, 0, 0, 5) };
@@ -96,6 +149,18 @@ internal static class HomeViews
             stack.Children.Add(row);
             stack.Children.Add(Bar(left ? Shown(l.Percent, true) : l.Percent, l.Percent >= 90));
         }
+        FrameworkElement body = stack;
+        if (tools is not null)
+        {
+            var g = new Grid(); // the foot row lines up across a row of cards (they stretch to the tallest)
+            g.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            g.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            g.Children.Add(stack);
+            tools.Margin = new Thickness(0, 6, -6, -4);
+            Grid.SetRow(tools, 1);
+            g.Children.Add(tools);
+            body = g;
+        }
         return new SmoothBorder
         {
             Background = Theme.P.Card,
@@ -103,7 +168,7 @@ internal static class HomeViews
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(10),
             Padding = new Thickness(12, 9, 12, 10),
-            Child = stack,
+            Child = body,
             ToolTip = string.Join("\n", a.Limits.Select(l => $"{l.Title}: {Shown(l.Percent, left)}%" + (left ? Tr(" 남음", " left") : "") + (l.Resets is { } r ? Tr($" · {r:M/d HH:mm} 초기화", $" · resets {r:M/d HH:mm}") : ""))),
         };
     }

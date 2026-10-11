@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -7,7 +8,7 @@ using Bloom.Core;
 
 namespace Bloom.Tests;
 
-/// The AI 계정 list, the light ChatGPT usage answer (wham/usage, the shape seen on 2026-10-11) and refreshed tokens
+/// The AI 계정 list (its order and the user's names for accounts), ChatGPT's plan names, the light ChatGPT usage answer (wham/usage, the shape seen on 2026-10-11) and refreshed tokens
 /// whose save failed, including login markers that keep the terminal's sign-in file protected.
 internal static class UsageAccountTests
 {
@@ -33,6 +34,49 @@ internal static class UsageAccountTests
         }
     }
 
+    /// ChatGPT's plan names on the card: the Pro tiers by price (Codex's prolite / pro / promax), the rest capitalized.
+    public static void ProTiers()
+    {
+        foreach (var (type, shown) in new[] { ("prolite", "Pro 100"), ("pro", "Pro 200"), ("promax", "Pro 500"), ("PRO", "Pro 200"), ("plus", "Plus"), ("team", "Team") })
+            Check.Eq(Ai.UsageAccount.ChatGptPlan(type), (string?)shown, type);
+        Check.Eq(Ai.UsageAccount.ChatGptPlan(null), null, "no plan");
+        Check.Eq(Ai.UsageAccount.ChatGptPlan(""), null, "empty plan");
+    }
+
+    /// 홈 편집: ‹ › swap two accounts (one hidden between them keeps its place), ✎'s words replace the e-mail.
+    public static void OrderAndAlias()
+    {
+        var list = Settings.Current.AiAccounts;
+        list.Clear();
+        list.Add(new AiAccount { Id = "claude-1", Kind = "claude", Home = @"C:\x\accounts\claude-1", Email = "a@example.com" });
+        list.Add(new AiAccount { Id = "chatgpt-1", Kind = "chatgpt", Home = @"C:\x\accounts\chatgpt-1", Email = "b@example.com" });
+        try
+        {
+            AiAccounts.All[1].Hidden = true; // chatgpt (default)
+            AiAccounts.Swap("claude", "claude-1");
+            Check.Eq(string.Join(",", AiAccounts.All.ConvertAll(a => a.Id)), "claude-1,chatgpt,claude,chatgpt-1", "swapped; the hidden one between stays");
+            AiAccounts.Swap("claude", "nobody");
+            Check.Eq(string.Join(",", AiAccounts.All.ConvertAll(a => a.Id)), "claude-1,chatgpt,claude,chatgpt-1", "an unknown id moves nothing");
+
+            var cards = new List<Ai.UsageAccount>
+            {
+                new("Claude", "Max 20x", new(), DateTime.Now) { Id = "claude-1", Who = "a@example.com" },
+                new("Claude", "Pro", new(), DateTime.Now) { Id = "claude", Who = "c@example.com" },
+                new("ChatGPT", "Plus", new(), DateTime.Now) { Id = "chatgpt-1", Who = "b@example.com" },
+            };
+            Check.Eq(Ai.AiUsage.Who(cards[0], cards), (string?)"a@example.com", "two of a kind: the e-mail");
+            Check.Eq(Ai.AiUsage.Who(cards[2], cards), null, "one of a kind: no line");
+            AiAccounts.Find("chatgpt-1")!.Alias = "Work";
+            Check.Eq(Ai.AiUsage.Who(cards[2], cards), (string?)"Work", "the user's words, even for one of a kind");
+            Check.Eq(AiAccounts.Label(AiAccounts.Find("chatgpt-1")!), "Work", "settings name it the same");
+            Check.Eq(AiAccounts.Label(AiAccounts.Find("claude-1")!), "a@example.com", "no words: the e-mail");
+        }
+        finally
+        {
+            list.Clear();
+        }
+    }
+
     public static void LightAnswer()
     {
         var body = JsonNode.Parse("""
@@ -43,7 +87,7 @@ internal static class UsageAccountTests
         var claims = JsonNode.Parse("""{"email":"someone@example.com"}""");
         var now = new DateTime(2026, 10, 11, 12, 0, 0);
         var a = Ai.ChatGptLight.Parse(body, claims, now)!;
-        Check.Eq((a.Name, a.Plan, a.Who), ("ChatGPT", (string?)"Pro", (string?)"someone@example.com"), "name, plan, e-mail");
+        Check.Eq((a.Name, a.Plan, a.Who), ("ChatGPT", (string?)"Pro 200", (string?)"someone@example.com"), "name, plan, e-mail");
         Check.Eq(a.Limits.Count, 2, "five hours + week");
         Check.Eq((a.Limits[0].Title, a.Limits[0].Percent, a.Limits[0].Resets), ("5시간", 12.0, (DateTime?)now.AddHours(1)), "five hours, reset counted from now");
         Check.Eq((a.Limits[1].Title, a.Limits[1].Percent), ("주간", 48.0), "week");

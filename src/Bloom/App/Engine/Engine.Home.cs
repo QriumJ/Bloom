@@ -10,6 +10,28 @@ namespace Bloom.App;
 /// The home: the blocks the user turned on, in their order.
 internal sealed partial class Engine
 {
+    /// 홈 편집 ✎ on a usage card: the account's own words in place of its e-mail (empty: the e-mail again).
+    private void RenameAccount(string id)
+    {
+        if (AiAccounts.Find(id) is not { } a) return; // a made-up QA card
+        var f = new FormSpec { Title = Tr("AI 계정 표시 이름", "AI account name") };
+        f.Fields.Add(new FormField
+        {
+            Label = Tr("표시 이름", "Name"),
+            Hint = a.Email is { Length: > 0 } mail ? Tr($"카드에 이메일 대신 보일 문구 — 비우면 이메일 ({mail})", $"Shown on the card instead of the e-mail — empty: the e-mail ({mail})") : Tr("카드에 보일 문구", "Shown on the card"),
+            Value = a.Alias ?? "",
+            Optional = true,
+            Check = v => (v.Trim(), null),
+        });
+        f.Done = form =>
+        {
+            a.Alias = form[0].Length == 0 ? null : form[0];
+            Settings.Save();
+            host.Window.Go(Mode.Root);
+        };
+        host.Window.StartForm(f);
+    }
+
     /// The home: the blocks the user turned on, in their order (설정 > 홈 화면).
     private List<Section> RootEmpty(List<Section> sections)
     {
@@ -25,7 +47,8 @@ internal sealed partial class Engine
                     AiUsage.FirstLook();
                     var accounts = AiUsage.Accounts;
                     string? asked = AiUsage.Busy ? Tr("불러오는 중…", "Loading…") : AiUsage.Fetched is { } fetched ? Ago(fetched) : null;
-                    sections.Add(new Section(Tr("AI 사용량", "AI usage"), asked) { Widget = () => Ui.HomeViews.Usage(accounts), Reload = () => _ = AiUsage.Refresh() });
+                    (Action Moved, Action<string> Rename)? edit = host.Window.HomeEditing ? (() => host.Window.Refresh(true), RenameAccount) : null;
+                    sections.Add(new Section(Tr("AI 사용량", "AI usage"), asked) { Widget = () => Ui.HomeViews.Usage(accounts, edit), Reload = () => _ = AiUsage.Refresh() });
                     break;
                 case "timers":
                     var timers = new Section(Tr("타이머 · 알림", "Timers · reminders"), Tr("Ctrl+K 5분 더 · 취소", "Ctrl+K 5 more min · cancel"));

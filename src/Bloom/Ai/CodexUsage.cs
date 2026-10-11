@@ -94,7 +94,7 @@ internal static class CodexUsage
             limits.Add(new UsageLimit(UsageLimit.Window((int)(Num(w, "windowDurationMins") ?? 0)), used, resets));
         }
         if (limits.Count == 0) return null;
-        string? plan = rl.TryGetProperty("planType", out var pt) && pt.GetString() is { Length: > 0 } s ? char.ToUpperInvariant(s[0]) + s[1..] : null;
+        string? plan = rl.TryGetProperty("planType", out var pt) ? UsageAccount.ChatGptPlan(pt.GetString()) : null;
         return new UsageAccount("ChatGPT", plan, limits, DateTime.Now);
     }
 

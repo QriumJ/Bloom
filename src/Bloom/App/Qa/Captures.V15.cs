@@ -129,7 +129,7 @@ internal static partial class Captures
 
     /// `--qa-set usage`: the AI usage block asked of the real CLIs (no model call) with its ↻, dark and light, the
     /// 새로 받는 간격 row and 설정 > AI 계정; what came back (and how long it took) in usage.txt, e-mails masked. Then four
-    /// made-up accounts (two of a kind) for the wrapped cards.
+    /// made-up accounts (two of a kind) for the wrapped cards, and the same in 홈 편집 (‹ › ✎ on each card).
     private static async Task UsageScreens(Host host, Launcher w, string dir)
     {
         string l = En ? "en" : "ko";
@@ -162,12 +162,17 @@ internal static partial class Captures
             limits.Add(new UsageLimit(Tr("주간", "Weekly"), week, DateTime.Now.AddDays(4)));
             return new UsageAccount(name, plan, limits, DateTime.Now) { Who = who };
         }
-        var four = new[] { Plan("Claude", "Max 20x", "work@example.com", 32, 47), Plan("Claude", "Pro", "side@example.com", 81, 64), Plan("ChatGPT", "Pro", "work@example.com", null, 21), Plan("ChatGPT", "Plus", "home@example.com", 12, 5) };
+        var four = new[] { Plan("Claude", "Max 20x", "work@example.com", 32, 47), Plan("Claude", "Pro", "side@example.com", 81, 64), Plan("ChatGPT", "Pro 200", "work@example.com", null, 21), Plan("ChatGPT", "Plus", "home@example.com", 12, 5) };
         foreach (int n in new[] { 3, 4 })
         {
             AiUsage.SetForQa(four[..n]);
             await Shot(w, dir, $"{l}-dark-u4-home-{n}", Mode.Root, "", 700);
         }
+        w.ToggleHomeEdit(); // 홈 편집: ‹ › ✎ on each card
+        await Task.Delay(500);
+        await Snap(w, dir, $"{l}-dark-u5-home-edit");
+        w.ToggleHomeEdit();
+        await Task.Delay(300);
     }
 
     // Made-up work notices worded exactly as Notices words the real ones (the pictures show the app's own text).

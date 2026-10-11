@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using Bloom.Core;
@@ -12,7 +14,28 @@ namespace Bloom.Search;
 /// folder and run-as settings; AppsFolder entries go through `shell:AppsFolder\<AUMID>`.
 internal static class Launch
 {
-    public static bool Open(string target, string? args = null, string verb = "open", string? dir = null)
+    /// Starts it and returns at once; a failure is logged. ShellExecuteEx returns only when the start is done (a Store
+    /// app's activation took 2.4 s on 10-12, a UAC prompt waits for its answer), so it runs on a thread of its own: on
+    /// the UI thread Bloom stopped answering meanwhile.
+    public static void Open(string target, string? args = null, string verb = "open", string? dir = null) => _ = Start(target, args, verb, dir);
+
+    /// Open for a caller that needs the answer: true once it started, false when it couldn't (UAC declined, the file
+    /// gone). The answer comes back on the caller's context (the UI thread for UI code).
+    public static Task<bool> Start(string target, string? args = null, string verb = "open", string? dir = null)
+    {
+        var started = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        // not a background thread: a Bloom quitting right after (설정 › 제거 shows its exe in Explorer, then quits) still
+        // finishes the start
+        var thread = new Thread(() => started.SetResult(Execute(target, args, verb, dir))) { IsBackground = false, Name = "Bloom launch" };
+        thread.SetApartmentState(ApartmentState.STA); // ShellExecuteEx may hand the start to COM shell extensions
+        thread.Start();
+        return started.Task;
+    }
+
+    public static void RunAsAdmin(string target) => Open(target, verb: "runas");
+
+    /// ShellExecuteEx, waiting until the start is done (SEE_MASK_NOASYNC: the thread may end right after).
+    private static bool Execute(string target, string? args, string verb, string? dir)
     {
         var info = new Win32.SHELLEXECUTEINFO
         {
@@ -35,8 +58,6 @@ internal static class Launch
         }
         return false;
     }
-
-    public static bool RunAsAdmin(string target) => Open(target, verb: "runas");
 
     /// Explorer with the item selected (falls back to opening the folder).
     public static void Reveal(string path)

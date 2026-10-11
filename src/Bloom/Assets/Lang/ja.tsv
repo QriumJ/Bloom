@@ -46,10 +46,6 @@ Working with files…	ファイルを操作中…
 Working on the PC…	PC で作業中…
 Using a tool…	ツールを使用中…
 Codex error	Codex のエラー
-{0}d	{0}日
-{0}h	{0}時間
-{0} min	{0}分
-Limit	上限
 Sample answer in recording mode. Actual answers come from Claude or ChatGPT.	録画モードの回答例です。実際の回答は Claude または ChatGPT で生成されます。
 Only sample sentences can be translated in recording mode.	録画モードでは例文のみ翻訳可能です。
 Presentation preparation\n\n1. **Draft slides** by Thursday\n2. **Rehearse** once with the team\n3. **List five likely questions**	発表の準備\n\n1. 木曜日までに**スライド案**を作成\n2. チームで**リハーサル**を1回実施\n3. **想定質問**を5つ整理
@@ -85,6 +81,10 @@ Korean	韓国語
 English	英語
 Japanese	日本語
 Chinese	中国語
+{0}d	{0}日
+{0}h	{0}時間
+{0} min	{0}分
+Limit	上限
 Another sign-in is running	別のアカウントのサインイン中
 Sign the default account in from Claude Code or Codex itself	既定のアカウントは Claude Code または Codex で直接サインインしてください
 This account's sign-in terminal is still open. Close it first.	このアカウントのサインイン用ターミナルがまだ開いています。先に閉じてください。
@@ -392,6 +392,9 @@ Folder name — e.g. Video editing, Design	フォルダー名 — 例: 動画編
 Made the folder ‘{0}’	フォルダー「{0}」作成済み
 A folder to group apps by task	作業ごとにアプリをまとめるフォルダー
 Command	コマンド
+AI account name	AI アカウントの表示名
+Shown on the card instead of the e-mail — empty: the e-mail ({0})	カードにメールの代わりに表示する文言 — 空欄ならメール ({0})
+Shown on the card	カードに表示する文言
 Loading…	読み込み中…
 AI usage	AI の使用量
 Timers · reminders	タイマー · リマインダー
@@ -673,12 +676,12 @@ Enter copies HEX	Enter で HEX をコピー
 Show colour	色を表示
 Uninstall · Store app, for this user	アンインストール · Store アプリ、このユーザーから
 Uninstall · {0}	アンインストール · {0}
+Uninstall…	アンインストール…
+Uninstall ‘{0}’	「{0}」をアンインストール
 Bloom · Uninstall	Bloom · アンインストール
 Could not open the uninstaller for ‘{0}’	「{0}」のアンインストーラー起動失敗
 Admin permission was declined or the uninstaller is missing. Remove the app in Windows app settings.	管理者権限が拒否されたか、削除用ファイルがありません。Windows のアプリ設定で削除してください。
 Windows app settings	Windows のアプリ設定
-Uninstall…	アンインストール…
-Uninstall ‘{0}’	「{0}」をアンインストール
 Uninstalled ‘{0}’	「{0}」アンインストール済み
 Could not uninstall ‘{0}’	「{0}」のアンインストール失敗
 It comes with Windows and can't be removed	Windows に付属しているため削除できません
@@ -1235,6 +1238,9 @@ Delete this chat	このチャットを削除
 OK	OK
 Checking AI usage…	AI 使用量を確認中…
 Could not get usage. Check the Claude Code or Codex sign-in, then press ↻.	使用量を取得できません。Claude Code または Codex のサインインを確認し、↻ を押してください。
+Move earlier	前へ
+Move later	後ろへ
+Rename	名前を変更
 {0} ago	{0}前
 Last fetched	最終取得
  left	 残り
@@ -1349,7 +1355,6 @@ New chat in this group	このグループで新しいチャット
 Group menu	グループのメニュー
 Click to open	クリックで開く
 Drag a chat here, or use its ⋯	チャットをここにドラッグするか、⋯ から追加
-Rename	名前を変更
 Select — delete several	選択 — まとめて削除
 Delete group — the chats stay	グループを削除 — チャットは残ります
 Deleted ‘{0}’ — its chats are still in the list	「{0}」削除済み — チャットは一覧に保持
@@ -1417,12 +1422,12 @@ Remove from recent	最近使ったものから削除
 Customize the home…	ホームをカスタマイズ…
 Draw with AI… (describe the picture)	AI で描く… (絵を言葉で説明)
 Picture icon for ‘{0}’	「{0}」の絵のアイコン
-Editing home · ▲ ▼ ✕ at each block's top right · Esc or ‘Done’ to finish	ホームを編集中 · 各ブロックの右上の ▲ ▼ ✕ · Esc か「完了」で終了
+Editing home · ▲ ▼ ✕ on blocks · ‹ › order and ✎ names the AI usage cards · Esc or ‘Done’ to finish	ホームを編集中 · ブロックは ▲ ▼ ✕ · AI 使用量カードは ‹ › で順序、✎ で名前 · Esc か「完了」で終了
 Creating icon for ‘{0}’… (1 use)	「{0}」のアイコン作成中… (利用 1 回)
 Icon creation failed. Try again.	アイコンの作成に失敗しました。再試行してください。
 Icon changed for ‘{0}’ · Ctrl+K to draw again	「{0}」のアイコン変更済み · Ctrl+K で再作成
-Hide from home	ホームから非表示
 ‘{0}’ hidden · restore in Edit home	「{0}」を非表示 · ホーム編集で再表示
+Hide from home	ホームから非表示
   (here now)	  (現在地)
   · {0}	  · {0} 件
 Added to ‘{0}’	「{0}」に追加済み
@@ -1513,6 +1518,33 @@ Keep on top (Ctrl+P) — stays above other windows when you click elsewhere · d
 Tools	ツール
 Close {0}	{0} を閉じる
 Attach {0}	{0} を並べる
+AI accounts	AI アカウント
+Each account signs in on its own. The home shows each one's usage, and AI chat uses the account you pick. Nothing switches accounts when a limit is reached.	アカウントごとに個別にサインインします。ホームでアカウント別の使用量を確認し、AI チャットに使うアカウントを選びます。上限に達してもアカウントは自動で切り替わりません。
+Signing in · finish in the terminal that opened	サインイン中 · 開いたターミナルで完了してください
+Sign-in terminal still open · close it to change the account	サインイン用のターミナルが開いたままです · 閉じるとアカウントを変更できます
+Default account · Codex's own sign-in	既定のアカウント · Codex のサインイン
+Default account · Claude Code's own sign-in	既定のアカウント · Claude Code のサインイン
+Added in Bloom	Bloom で追加したアカウント
+ · hidden on the home	 · ホームで非表示
+Used for AI chat	AI チャットで使用中
+Add a {0} account…	{0} アカウントを追加…
+Runs the official sign-in in a new terminal · sign in in the browser	新しいターミナルで公式サインインを実行 · ブラウザでサインイン
+Add a {0} account	{0} アカウントを追加
+Usage checks	使用量の確認
+ChatGPT checks	ChatGPT の確認方式
+Lightweight: one HTTPS request with the Codex sign-in · no CLI · not an official API, may change	軽量方式: Codex のサインインで HTTPS リクエスト 1 回 · CLI 実行なし · 公式 API ではないため変わる可能性あり
+Official CLI: runs Codex per account · ~110 MB for 1 s	公式 CLI: アカウントごとに Codex を実行 · 約 110 MB 1 秒
+How often	確認間隔
+Default accounts as set on the home page · added ones every {0} min · the home's ↻ checks all	既定のアカウントはホーム画面設定の間隔 · 追加したアカウントは {0} 分ごと · ホームの ↻ はすべてのアカウント
+The sign-in terminal is open. Finish signing in or close it.	サインイン用のターミナルが開いています。サインインを完了するか、ターミナルを閉じてください。
+Use for AI chat	AI チャットで使用
+Show on the home	ホームに表示
+Hide on the home	ホームで非表示
+Sign in again	再サインイン
+Default account	既定のアカウント
+This account's renewed sign-in isn't saved yet. Try again in a moment.	このアカウントの更新されたサインイン情報をまだ保存できていません。しばらくしてからもう一度お試しください。
+Remove account	アカウントを外す
+Moves this account's sign-in folder to the Recycle Bin.	このアカウントのサインインフォルダーをごみ箱に移動します。
 General	一般
 How Bloom opens and looks	Bloom の開き方と見た目
 Language	言語
@@ -1600,33 +1632,6 @@ No Codex model list yet — run Codex once to get it	Codex のモデル一覧が
 ChatGPT thinking level	ChatGPT の思考レベル
 The levels depend on the model · Ctrl+E during a chat	レベルはモデルによって異なります · チャット中は Ctrl+E
 {0} · uses your ChatGPT login	{0} · ChatGPT のサインインを使用
-AI accounts	AI アカウント
-Each account signs in on its own. The home shows each one's usage, and AI chat uses the account you pick. Nothing switches accounts when a limit is reached.	アカウントごとに個別にサインインします。ホームでアカウント別の使用量を確認し、AI チャットに使うアカウントを選びます。上限に達してもアカウントは自動で切り替わりません。
-Signing in · finish in the terminal that opened	サインイン中 · 開いたターミナルで完了してください
-Sign-in terminal still open · close it to change the account	サインイン用のターミナルが開いたままです · 閉じるとアカウントを変更できます
-Default account · Codex's own sign-in	既定のアカウント · Codex のサインイン
-Default account · Claude Code's own sign-in	既定のアカウント · Claude Code のサインイン
-Added in Bloom	Bloom で追加したアカウント
- · hidden on the home	 · ホームで非表示
-Used for AI chat	AI チャットで使用中
-Add a {0} account…	{0} アカウントを追加…
-Runs the official sign-in in a new terminal · sign in in the browser	新しいターミナルで公式サインインを実行 · ブラウザでサインイン
-Add a {0} account	{0} アカウントを追加
-Usage checks	使用量の確認
-ChatGPT checks	ChatGPT の確認方式
-Lightweight: one HTTPS request with the Codex sign-in · no CLI · not an official API, may change	軽量方式: Codex のサインインで HTTPS リクエスト 1 回 · CLI 実行なし · 公式 API ではないため変わる可能性あり
-Official CLI: runs Codex per account · ~110 MB for 1 s	公式 CLI: アカウントごとに Codex を実行 · 約 110 MB 1 秒
-How often	確認間隔
-Default accounts as set on the home page · added ones every {0} min · the home's ↻ checks all	既定のアカウントはホーム画面設定の間隔 · 追加したアカウントは {0} 分ごと · ホームの ↻ はすべてのアカウント
-The sign-in terminal is open. Finish signing in or close it.	サインイン用のターミナルが開いています。サインインを完了するか、ターミナルを閉じてください。
-Use for AI chat	AI チャットで使用
-Show on the home	ホームに表示
-Hide on the home	ホームで非表示
-Sign in again	再サインイン
-Default account	既定のアカウント
-This account's renewed sign-in isn't saved yet. Try again in a moment.	このアカウントの更新されたサインイン情報をまだ保存できていません。しばらくしてからもう一度お試しください。
-Remove account	アカウントを外す
-Moves this account's sign-in folder to the Recycle Bin.	このアカウントのサインインフォルダーをごみ箱に移動します。
 PC actions · MCP	PC の操作 · MCP
 Use AI chat to open apps, find and move files, and set timers on this PC.	AI チャットから、この PC のアプリ起動、ファイル検索・移動、タイマー設定を使えます。
 In Claude chats	Claude のチャットで

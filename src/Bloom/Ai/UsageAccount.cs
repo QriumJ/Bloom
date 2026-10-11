@@ -8,6 +8,18 @@ internal sealed record UsageAccount(string Name, string? Plan, List<UsageLimit> 
 {
     public string Id { get; init; } = ""; // the AiAccount it belongs to
     public string? Who { get; init; } // the account's e-mail, shown when one kind has more than one card
+
+    /// ChatGPT's plan as Codex's app-server and wham name it, in the card's words: the three Pro tiers by their monthly
+    /// price (the user's call, 10-12), from Codex's own names (prolite, pro, promax; OpenAI publishes no table), the
+    /// rest with a capital (plus → Plus).
+    public static string? ChatGptPlan(string? type) => type?.ToLowerInvariant() switch
+    {
+        null or "" => null,
+        "prolite" => "Pro 100",
+        "pro" => "Pro 200",
+        "promax" => "Pro 500",
+        _ => char.ToUpperInvariant(type[0]) + type[1..],
+    };
 }
 
 /// A limit's title, percent used and reset time (null means the reset time is unknown).

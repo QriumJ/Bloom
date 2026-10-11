@@ -12,13 +12,15 @@ internal sealed class AiAccount
     public string Kind { get; set; } = "claude"; // claude | chatgpt
     public string? Home { get; set; } // a folder Bloom made for this sign-in (Local\accounts\<id>); null = the default one
     public string? Email { get; set; } // last seen, for the card and the list (never sent anywhere)
+    public string? Alias { get; set; } // the user's own words for it, shown instead of the e-mail (홈 편집 ✎); null = the e-mail
     public bool Hidden { get; set; } // a default account the user took off the home
 
     public bool IsDefault => Home is null;
 }
 
-/// The accounts in Settings.AiAccounts: the two defaults always first (kept even when empty), then the added ones.
-/// Each added account is a folder of its own; Bloom never reads a Claude login, only Claude Code does.
+/// The accounts in Settings.AiAccounts, in the home's card order (홈 편집 ‹ ›): the two defaults come first until the
+/// user moves them, and are kept even when empty. Each added account is a folder of its own; Bloom never reads a Claude
+/// login, only Claude Code does.
 internal static class AiAccounts
 {
     public const string DefaultClaude = "claude", DefaultChatGpt = "chatgpt";
@@ -35,6 +37,17 @@ internal static class AiAccounts
     }
 
     public static AiAccount? Find(string id) => All.Find(a => a.Id == id);
+
+    /// Two accounts change places in the order (홈 편집 ‹ › on neighbouring cards: the accounts between them, hidden or
+    /// not asked yet, keep theirs) and the settings are saved.
+    public static void Swap(string a, string b)
+    {
+        var list = All;
+        int i = list.FindIndex(x => x.Id == a), j = list.FindIndex(x => x.Id == b);
+        if (i < 0 || j < 0 || i == j) return;
+        (list[i], list[j]) = (list[j], list[i]);
+        Settings.Save();
+    }
 
     /// The folder of a new sign-in (made empty; the CLI's login fills it).
     public static AiAccount Add(string kind)
@@ -79,8 +92,8 @@ internal static class AiAccounts
         ? a.Kind == "chatgpt" ? Tr("로그인 필요 · Codex에서 로그인하세요", "Sign-in needed · sign in from Codex") : Tr("로그인 필요 · Claude Code에서 로그인하세요", "Sign-in needed · sign in from Claude Code")
         : here ? Tr("로그인 필요 · 클릭하여 다시 로그인", "Sign-in needed · click to sign in again") : Tr("로그인 필요 · 설정 > AI 계정", "Sign-in needed · Settings > AI accounts");
 
-    /// The name on a card: the e-mail, or the kind until the first look.
-    public static string Label(AiAccount a) => a.Email is { Length: > 0 } e ? e : a.Kind == "chatgpt" ? "ChatGPT" : "Claude";
+    /// The account's name in 설정 and its dialogs: the user's own words, the e-mail, or the kind until the first look.
+    public static string Label(AiAccount a) => a.Alias is { Length: > 0 } n ? n : a.Email is { Length: > 0 } e ? e : a.Kind == "chatgpt" ? "ChatGPT" : "Claude";
 
     /// The account AI chat, Bloom Lens and translation use for `kind` (picked in 설정 > AI 사용량; the default one when
     /// the pick is gone). Only ever the user's pick: nothing switches accounts on its own.
