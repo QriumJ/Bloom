@@ -43,7 +43,7 @@ internal sealed class FavStrip : ScrollViewer
         {
             var item = items[i];
             var g = new Grid();
-            var icon = item.Kind == ItemKind.Group && item.Data is List<ResultItem> kids ? FolderIcon(kids) : Icons.Build(item.Icon, 30);
+            var icon = FolderKids(item) is { } kids ? FolderIcon(kids) : Icons.Build(item.Icon, 30);
             icon.VerticalAlignment = VerticalAlignment.Top;
             icon.HorizontalAlignment = HorizontalAlignment.Center;
             icon.Margin = new Thickness(0, 9, 0, 0);
@@ -123,6 +123,12 @@ internal sealed class FavStrip : ScrollViewer
         };
     }
 
+    /// A favorites folder's own items when its tile shows them (FolderIcon), else null.
+    public static List<ResultItem>? FolderKids(ResultItem item) => item.Kind == ItemKind.Group && item.Data is List<ResultItem> kids ? kids : null;
+
+    /// The items a folder's tile shows (FolderIcon; none: the folder glyph).
+    public static IEnumerable<ResultItem> FolderShown(List<ResultItem> kids) => kids.Take(4);
+
     /// A favorites folder: up to four of its icons, small, on one tile (an empty one shows the folder glyph).
     private static FrameworkElement FolderIcon(List<ResultItem> kids)
     {
@@ -133,7 +139,7 @@ internal sealed class FavStrip : ScrollViewer
             return tile;
         }
         var grid = new UniformGrid { Rows = 2, Columns = 2 };
-        foreach (var k in kids.Take(4))
+        foreach (var k in FolderShown(kids))
         {
             var ic = Icons.Build(k.Icon, 12);
             ic.HorizontalAlignment = HorizontalAlignment.Center;
@@ -226,9 +232,15 @@ internal sealed class FavStrip : ScrollViewer
         Paint();
     }
 
-    /// Shown again as it was (the launcher's kept home): nothing hovered, selected or half dragged from before.
-    public void Reuse()
+    /// Shown again as it was (the launcher's kept home): nothing hovered, selected or half dragged from before. `fresh`
+    /// are this opening's items, shown alike, in their place (the list the strip's handlers hold is the same one).
+    public void Reuse(List<ResultItem> fresh)
     {
+        if (!ReferenceEquals(fresh, Items))
+        {
+            Items.Clear();
+            Items.AddRange(fresh);
+        }
         hovered = selected = -1;
         EndDrag();
     }

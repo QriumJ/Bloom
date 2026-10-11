@@ -40,15 +40,23 @@ internal sealed partial class Launcher
         if (widget is not null) Look(b, widget);
         foreach (var i in s.Items)
         {
-            var c = i.Icon;
             b.Append('\u001e').Append(i.Id).Append('\u001f').Append(i.Kind).Append('\u001f').Append(i.Title).Append('\u001f').Append(i.Subtitle)
                 .Append('\u001f').Append(i.Accessory).Append('\u001f').Append(i.Live is null ? "" : "live").Append('\u001f').Append(i.PrimaryLabel)
-                .Append('\u001f').Append(i.StayOpen).Append(i.Pinnable).Append('\u001f').Append(i.Side?.Title).Append(i.Side?.Glyph)
-                .Append('\u001f').Append(c.ShellPath).Append('|').Append(c.CacheKey).Append('|').Append(c.Glyph).Append(c.Accent).Append('|').Append(c.Mono)
-                .Append('|').Append(Paint(c.Fill)).Append('|').Append(c.Text).Append(c.Emoji).Append('|').Append(c.Area);
+                .Append('\u001f').Append(i.StayOpen).Append(i.Pinnable).Append('\u001f').Append(i.Side?.Title).Append(i.Side?.Glyph);
+            IconKey(b, i.Icon);
+            // a favorites folder's tile shows its first items' icons
+            if (FavStrip.FolderKids(i) is { } kids)
+            {
+                b.Append('\u001f').Append(kids.Count);
+                foreach (var k in FavStrip.FolderShown(kids)) IconKey(b, k.Icon);
+            }
         }
         return b.ToString();
     }
+
+    private static void IconKey(StringBuilder b, IconSpec c) =>
+        b.Append('\u001f').Append(c.ShellPath).Append('|').Append(c.CacheKey).Append('|').Append(c.Glyph).Append(c.Accent).Append('|').Append(c.Mono)
+            .Append('|').Append(Paint(c.Fill)).Append('|').Append(c.Text).Append(c.Emoji).Append('|').Append(c.Area);
 
     /// What a built element shows, as words: each element's kind, place, size and visibility, its words and colours,
     /// its tooltip, a grid's columns and rows (a usage bar's fill). Two widgets alike here look alike on screen.
@@ -113,8 +121,9 @@ internal sealed partial class Launcher
             var b = home[i];
             if (b.Key == keys[i])
             {
-                foreach (var r in b.Rows) r.Reuse();
-                b.Strip?.Reuse();
+                // the same look, this opening's items (rows: the section's items in order, as drawn)
+                for (int k = 0; k < b.Rows.Count; k++) b.Rows[k].Reuse(shown[i].Items[k]);
+                b.Strip?.Reuse(shown[i].Items);
                 continue;
             }
             int before = rows.Count;

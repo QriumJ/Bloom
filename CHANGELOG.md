@@ -2,6 +2,16 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.13.3
+
+- Fixed: a favorites folder's tile on the home could keep its old small icons after one of its items got a new icon.
+- Fixed: copying the same text again could leave "Pin to the top" (Ctrl+D) on the home's recent clip doing nothing.
+
+### 한국어
+
+- 수정: 즐겨찾기 폴더 안 항목의 아이콘을 바꿔도 홈의 폴더 타일에 예전 작은 아이콘이 남을 수 있던 문제를 고쳤습니다.
+- 수정: 같은 글을 다시 복사하면 홈의 '최근 복사' 줄에서 '위에 고정'(Ctrl+D)이 먹지 않을 수 있던 문제를 고쳤습니다.
+
 ## 0.13.2
 
 - The launcher opens in about a third of the time: from the key to the screen took about 100 ms and now 30–40 ms (measured). The home is kept between openings (blocks that would look the same stay as they were, a block that changed is drawn again), the launcher shows as soon as its first screen is drawn, and the rest of a long list comes right after.

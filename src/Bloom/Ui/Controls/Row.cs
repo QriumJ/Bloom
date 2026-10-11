@@ -12,7 +12,7 @@ namespace Bloom.Ui;
 /// One selectable line in a list (results, actions, settings).
 internal sealed class Row : SmoothBorder
 {
-    public readonly ResultItem? Item;
+    public ResultItem? Item { get; private set; } // this opening's (Reuse puts the new one in)
     public readonly Shape Bar;
     public bool Selectable = true;
     private bool selected, hover;
@@ -75,9 +75,11 @@ internal sealed class Row : SmoothBorder
     }
 
     /// Shown again as it was (the launcher's kept home): no hover or selection left from before (a hidden window's rows
-    /// may never hear the mouse leave), a live accessory up to date.
-    public void Reuse()
+    /// may never hear the mouse leave), a live accessory up to date. `fresh` is this opening's item, shown alike: what
+    /// the row runs is that one (the old one's actions may hang on what is gone, a clip copied again).
+    public void Reuse(ResultItem? fresh)
     {
+        Item = fresh;
         hover = false;
         selected = false;
         Paint();
@@ -121,7 +123,7 @@ internal sealed class Row : SmoothBorder
         };
         b.MouseLeftButtonUp += (_, e) =>
         {
-            SideClicked?.Invoke(act);
+            SideClicked?.Invoke(Item?.Side ?? act);
             e.Handled = true;
         };
         side = b;
@@ -145,7 +147,7 @@ internal sealed class Row : SmoothBorder
         {
             var a = Theme.T(acc, 12, Theme.P.TextFaint, Theme.Regular, false);
             r.Add(a, GridLength.Auto);
-            if (item.Live is { } live) r.Tick = () => a.Text = live();
+            if (item.Live is not null) r.Tick = () => a.Text = r.Item?.Live?.Invoke() ?? a.Text;
         }
         r.AddSide(item);
         return r;
@@ -164,7 +166,7 @@ internal sealed class Row : SmoothBorder
             var a = Theme.T(acc, 11.5, Theme.P.TextFaint, Theme.Regular, false);
             a.Margin = new Thickness(8, 0, 0, 0);
             r.Add(a, GridLength.Auto);
-            if (item.Live is { } live) r.Tick = () => a.Text = live();
+            if (item.Live is not null) r.Tick = () => a.Text = r.Item?.Live?.Invoke() ?? a.Text;
         }
         r.AddSide(item);
         return r;

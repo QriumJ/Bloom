@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Bloom.App;
 using Bloom.Search;
 using Bloom.Ui;
@@ -32,6 +33,17 @@ internal static class SummonTests
         var noted = Block("one");
         noted.Note = "1분 전";
         Check.True(Launcher.SectionKey(noted, out _) != key, "another note on the header");
+
+        // a favorites folder's tile shows its items' icons: one of them drawn anew is another key
+        static Section Folder(char glyph)
+        {
+            var s = new Section("즐겨찾기") { HomeKey = "favorites", Strip = true };
+            List<ResultItem> kids = [new ResultItem { Id = "app:a", Title = "A", Icon = IconSpec.Of(glyph) }];
+            s.Items.Add(new ResultItem { Id = "group:f", Kind = ItemKind.Group, Title = "F", Icon = IconSpec.Of('f'), Data = kids });
+            return s;
+        }
+        Check.Eq(Launcher.SectionKey(Folder('a'), out _), Launcher.SectionKey(Folder('a'), out _), "the same folder");
+        Check.True(Launcher.SectionKey(Folder('a'), out _) != Launcher.SectionKey(Folder('b'), out _), "a folder item's icon");
     }
 
     public static void FlashShare()

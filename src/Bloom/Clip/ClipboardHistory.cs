@@ -364,7 +364,12 @@ internal sealed class ClipboardHistory : IDisposable
 
     public void SetPinned(ClipEntry e, bool pinned)
     {
-        lock (gate) e.Pinned = pinned;
+        lock (gate)
+        {
+            e.Pinned = pinned;
+            // the one in the list (copied again, it is another object with the same id)
+            if (data.Items.Find(x => x.Id == e.Id) is { } kept) kept.Pinned = pinned;
+        }
         saver.Touch();
         Changed?.Invoke();
     }
