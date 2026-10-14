@@ -117,6 +117,7 @@ Read and copied {0} lines	已识别并复制 {0} 行
 Read {0} lines	已识别 {0} 行
 Capture copied	已复制截图
 Could not copy to the clipboard. Try again.	无法复制到剪贴板。请重试。
+{0} × {1} · paste it with Ctrl+V · saved in Screenshots	{0} × {1} · 用 Ctrl+V 粘贴 · 已保存到屏幕截图文件夹
 {0} × {1} · paste it with Ctrl+V	{0} × {1} · 用 Ctrl+V 粘贴
 Another app holds the clipboard — try again	另一个应用正在占用剪贴板 — 请再试一次
 Custom command · Done	自定义命令 · 完成

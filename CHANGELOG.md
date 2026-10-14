@@ -12,6 +12,7 @@ Each release on GitHub shows its section from this file (the workflow looks for 
 - The Ctrl+K menu is shorter. The icon choices are one "Change icon…" line (AI drawing and the original icon are inside it); Move left/right, Customize the home and Copy name are gone (Ctrl+Shift+←/→, dragging and Ctrl+E still do those).
 - Fixed: a long Ctrl+K menu could run past the bottom of the launcher and get cut off. It now fits inside and scrolls.
 - Fixed: typing in the search line could freeze Bloom for a moment, sometimes for seconds, while it counted what was in the Recycle Bin for the "Empty recycle bin" row. The row no longer shows the count, and emptying runs in the background.
+- Captures (the capture shortcut, Capture in the Lens menu) are also saved in your Screenshots folder, where Windows' Snipping Tool saves them, as "Bloom <date> <time>.png". Bloom never deletes anything there.
 - Bloom draws with the CPU by default, and GPU drawing is marked experimental: on some PCs it made the screen stutter or freeze for seconds.
 - Approve on the card (Settings › Notifications, off by default): when Claude Code asks for permission, its card offers Allow, Decline and Answer in terminal. Turning it on adds Bloom's hook to Claude Code's settings.json; turning it off takes it out. While the session's window is in front, the terminal asks as before.
 - When Bloom stops responding for half a second or more, its log says so. A freeze past 0.8 s also leaves a small diagnostic file (`%LOCALAPPDATA%\Bloom\stalls`, the newest five, never sent) that shows where Bloom was stuck.
@@ -26,6 +27,7 @@ Each release on GitHub shows its section from this file (the workflow looks for 
 - Ctrl+K 메뉴를 줄였습니다. 아이콘 항목은 '아이콘 바꾸기…' 하나로 합쳤고(AI로 그리기와 원래 아이콘은 그 안에 있습니다), 앞으로 · 뒤로 옮기기, 홈 화면 꾸미기, 이름 복사는 뺐습니다(Ctrl+Shift+←/→, 끌어서 옮기기, Ctrl+E는 그대로입니다).
 - 수정: Ctrl+K 메뉴가 길면 런처 아래로 넘쳐 끝이 잘리던 문제를 고쳤습니다. 이제 런처 안에 맞춰지고 메뉴 안에서 스크롤됩니다.
 - 수정: 검색창에 입력할 때 '휴지통 비우기' 줄에 표시할 항목 수를 세느라 Bloom이 잠깐, 때로는 몇 초 동안 멈추던 문제를 고쳤습니다. 이제 이 줄에는 개수를 표시하지 않고, 휴지통 비우기는 백그라운드에서 처리합니다.
+- 캡처(캡처 단축키, 렌즈 메뉴의 캡처)는 Windows 캡처 도구와 같은 스크린샷 폴더에도 'Bloom 날짜 시각.png'로 저장합니다. 이 폴더의 파일은 Bloom이 지우지 않습니다.
 - 기본으로 CPU로 그리고, GPU로 그리기는 실험적 기능으로 표시합니다. 일부 PC에서 GPU로 그리면 화면이 끊기거나 몇 초 동안 멈췄습니다.
 - 알림 카드에서 승인(설정 › 알림, 기본은 꺼짐): Claude Code가 승인을 요청하면 카드에 허용 · 거절 · 터미널에서 답하기가 표시됩니다. 켜면 Claude Code 설정(settings.json)에 Bloom 훅을 추가하고, 끄면 뺍니다. 세션 창을 보고 있을 때는 지금처럼 터미널에서 묻습니다.
 - Bloom이 0.5초 이상 응답하지 않으면 로그에 기록합니다. 0.8초 넘게 멈추면 멈춘 위치를 담은 작은 진단 파일도 남깁니다(`%LOCALAPPDATA%\Bloom\stalls`, 최근 5개, 외부로 보내지 않음).

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Bloom.Core;
 
@@ -67,6 +68,27 @@ internal static class Paths
     public static string Home => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
     public static string AppData => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
     public static string LocalAppData => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+    /// The user's Screenshots folder, where Windows' Snipping Tool saves: asked of Windows (FOLDERID_Screenshots), so a
+    /// moved Pictures folder is followed; Pictures\Screenshots when Windows doesn't say.
+    public static string Screenshots
+    {
+        get
+        {
+            if (SHGetKnownFolderPath(new Guid("b7bede81-df94-4682-a7d8-57a52620b86f"), 0, IntPtr.Zero, out IntPtr p) == 0)
+                try
+                {
+                    if (Marshal.PtrToStringUni(p) is { Length: > 0 } dir) return dir;
+                }
+                finally
+                {
+                    Marshal.FreeCoTaskMem(p);
+                }
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Screenshots");
+        }
+    }
+
+    [DllImport("shell32.dll")] private static extern int SHGetKnownFolderPath([MarshalAs(UnmanagedType.LPStruct)] Guid id, uint flags, IntPtr token, out IntPtr path);
 }
 
 internal static class Log

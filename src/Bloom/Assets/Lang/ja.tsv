@@ -117,6 +117,7 @@ Read and copied {0} lines	{0} 行の読み取り・コピー完了
 Read {0} lines	{0} 行の読み取り完了
 Capture copied	キャプチャのコピー完了
 Could not copy to the clipboard. Try again.	クリップボードにコピーできませんでした。再試行してください。
+{0} × {1} · paste it with Ctrl+V · saved in Screenshots	{0} × {1} · Ctrl+V で貼り付けられます · スクリーンショット フォルダーに保存済み
 {0} × {1} · paste it with Ctrl+V	{0} × {1} · Ctrl+V で貼り付けられます
 Another app holds the clipboard — try again	別のアプリがクリップボードを使用中です — もう一度試してください
 Custom command · Done	カスタムコマンド · 完了

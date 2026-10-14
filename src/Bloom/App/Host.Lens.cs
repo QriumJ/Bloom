@@ -117,12 +117,35 @@ internal sealed partial class Host
         }
     }
 
-    /// 캡처: the area as a picture on the clipboard (the bitmap + its PNG), told by a corner card.
+    /// 캡처: the area as a picture on the clipboard (the bitmap + its PNG) and in the Screenshots folder, like Windows'
+    /// Snipping Tool, told by a corner card.
     private static void Capture(LensShot l)
     {
         bool ok = Launch.CopyImage(Picture(l), l.Png);
+        bool saved = SaveScreenshot(l);
         Notices.Result(ok, "Bloom Lens", ok ? Tr("캡처 복사 완료", "Capture copied") : Tr("클립보드에 복사하지 못했습니다. 다시 시도하세요.", "Could not copy to the clipboard. Try again."),
-            ok ? Tr($"{l.Rect.Width} × {l.Rect.Height} · Ctrl+V로 붙여넣으세요", $"{l.Rect.Width} × {l.Rect.Height} · paste it with Ctrl+V") : Tr("다른 앱이 클립보드를 쓰고 있습니다 — 다시 시도하세요", "Another app holds the clipboard — try again"));
+            ok ? (saved ? Tr($"{l.Rect.Width} × {l.Rect.Height} · Ctrl+V로 붙여넣으세요 · 스크린샷 폴더에 저장됨", $"{l.Rect.Width} × {l.Rect.Height} · paste it with Ctrl+V · saved in Screenshots") : Tr($"{l.Rect.Width} × {l.Rect.Height} · Ctrl+V로 붙여넣으세요", $"{l.Rect.Width} × {l.Rect.Height} · paste it with Ctrl+V")) : Tr("다른 앱이 클립보드를 쓰고 있습니다 — 다시 시도하세요", "Another app holds the clipboard — try again"));
+    }
+
+    /// The capture's PNG copied into the user's Screenshots folder as "Bloom <date> <time>.png" (" (2)" … when that name
+    /// is taken). Never pruned: the folder is the user's.
+    private static bool SaveScreenshot(LensShot l)
+    {
+        try
+        {
+            string dir = Paths.Screenshots;
+            Directory.CreateDirectory(dir);
+            string name = "Bloom " + l.At.ToString("yyyy-MM-dd HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+            string file = Path.Combine(dir, name + ".png");
+            for (int i = 2; File.Exists(file); i++) file = Path.Combine(dir, $"{name} ({i}).png");
+            File.Copy(l.Png, file);
+            return true;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            Log.Error("screenshot save", e);
+            return false;
+        }
     }
 
     private static BitmapSource Picture(LensShot l)
