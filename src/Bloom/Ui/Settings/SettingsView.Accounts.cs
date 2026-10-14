@@ -9,7 +9,7 @@ using Bloom.Search;
 namespace Bloom.Ui;
 
 /// 설정 > AI 계정: the account list and add rows, each account's menu (AI chat pick, hide/show, sign in again, remove),
-/// the CLI sign-in, and the ChatGPT 조회 방식 and 조회 간격 rows.
+/// the CLI sign-in, the API keys (SettingsView.ApiKeys), and the ChatGPT 조회 방식 and 조회 간격 rows.
 internal sealed partial class SettingsView
 {
     private void PageAccounts(Settings s, string filter)
@@ -45,6 +45,7 @@ internal sealed partial class SettingsView
                 _ = SignIn(a);
             }, null, filter);
         }
+        ApiKeyRows(filter);
         Header(Tr("사용량 조회", "Usage checks"));
         Choice(Tr("ChatGPT 조회 방식", "ChatGPT checks"), s.ChatGptUsage == "light"
                 ? Tr("가벼운 방식: Codex 로그인으로 HTTPS 요청 1번 · CLI 실행 없음 · 공식 API가 아니라 바뀔 수 있음", "Lightweight: one HTTPS request with the Codex sign-in · no CLI · not an official API, may change")

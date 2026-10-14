@@ -12,7 +12,7 @@ namespace Bloom.Ai;
 
 /// One question, one answer, no conversation kept: a fresh CLI call with its own system prompt and no tools
 /// (translation, AI 빠른 동작, icon drawing). Claude Code (`claude -p`) or Codex (`codex exec`), each with the
-/// user's own login. Every call counts against the user's plan.
+/// user's own login, or an API model with the user's key (ApiClient). Every call counts against the user's plan.
 internal static class OneShot
 {
     /// → (answer, null) or (null, error); (null, null) when cancelled. `name` names the Codex instructions file.
@@ -22,6 +22,7 @@ internal static class OneShot
         if (text.Length == 0) return ("", null);
         if (Demo.On) return await DemoAnswers.Ask(name, text, ct); // recording mode: nothing is asked
         if (text.Length > 12000) text = text[..12000];
+        if (provider == "api") return await ApiClient.AskAsync(model, effort, system, text, ct);
         string? accountHome = AiAccounts.ChatHome(provider);
         return provider == "chatgpt" ? await Codex(system, text, model, effort, name, accountHome, ct) : await Claude(system, text, model, effort, accountHome, ct);
     }

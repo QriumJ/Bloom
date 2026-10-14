@@ -184,10 +184,19 @@ internal sealed partial class SettingsView
 
     private void PageAi(Settings s, string filter)
     {
-        Page("ai", Tr("AI 채팅", "AI chat"), G.Chat, Tr("Tab으로 AI 채팅 열기 · 이 PC에서 로그인한 Claude 또는 ChatGPT로 답변", "Tab opens AI chat · uses Claude or ChatGPT signed in on this PC"), filter);
+        Page("ai", Tr("AI 채팅", "AI chat"), G.Chat, Tr("Tab으로 AI 채팅 열기 · 이 PC에서 로그인한 Claude나 ChatGPT 또는 API 키로 답변", "Tab opens AI chat · uses Claude or ChatGPT signed in on this PC, or an API key"), filter);
         Header(Tr("기본", "Default"));
+        List<string> apiIds = collected is null ? ApiCatalog.Ids() : []; // collecting reads no keys
+        var sides = new List<(string, string)> { ("claude", "Claude"), ("chatgpt", "ChatGPT") };
+        // the API side stays listed while chosen, also with no model left: new chats then say so (AiModels.ApiDefault)
+        if (apiIds.Count > 0 || s.AiProvider == "api") sides.Add(("api", "API"));
+        string side = s.AiProvider is "chatgpt" or "api" ? s.AiProvider : "claude";
         Choice(Tr("새 대화는", "New chats use"), Tr("Ctrl+Shift+M으로 AI 변경 · Ctrl+M으로 모델 선택", "Ctrl+Shift+M switches during a chat · Ctrl+M picks the model"), G.Sparkle,
-            new[] { ("claude", "Claude"), ("chatgpt", "ChatGPT") }, s.AiProvider == "chatgpt" ? "chatgpt" : "claude", v => s.AiProvider = v, filter);
+            sides.ToArray(), side, v =>
+            {
+                s.AiProvider = v;
+                if (v == "api" && AiModels.ApiDefault() is { } api && api != AiModels.ApiUnset) s.ApiModel = api; // the model new chats will use, saved
+            }, filter);
         Shortcut("chat", Tr("AI 채팅 창 단축키", "AI chat window shortcut"), Tr("AI 채팅 창 열기 · 앞에 있으면 최소화", "Opens the chat window anywhere · down again when it's in front"), G.Chat, s.ChatHotkey, v => s.ChatHotkey = v, filter);
         var tabSw = Toggle(s.TabContinuesLastThread, v => s.TabContinuesLastThread = v, out var tabT);
         Add(Tr("Tab으로 지난 대화 이어가기", "Tab continues the last chat"), Tr("30분 안에 사용한 대화 이어가기 · Shift+Tab은 새 대화", "Picks up a chat used in the last 30 min · Shift+Tab always starts a new one"), tabSw, G.Chat, tabT, null, filter);
@@ -226,6 +235,23 @@ internal sealed partial class SettingsView
         string? codex = collected is null ? CodexSession.FindCli(s.CodexPath) : null;
         if (codex is not null && Demo.On) codex = Tr("설치됨", "Installed");
         Add("Codex", codex is null ? AiErrors.CodexMissing : Tr($"{codex} · ChatGPT 로그인으로 사용", $"{codex} · uses your ChatGPT login"), codex is null ? ToolUi.TextButton(Tr("설치 안내", "Installation guide"), () => Launch.Open("https://github.com/openai/codex")) : null, G.Info, null, null, filter);
+
+        Header("API");
+        if (apiIds.Count > 0)
+        {
+            string apiModel = AiModels.ApiDefault() is { } d && apiIds.Contains(d) ? d : apiIds[0]; // the one new chats use
+            Menu(Tr("API 모델", "API model"), Tr("새 대화의 기본값 · 대화 중에는 Ctrl+M", "For new chats · Ctrl+M during a chat"), G.Model,
+                apiIds.Select(id => (id, AiModels.Who(id), (string?)null)).ToArray(), apiModel, v =>
+                {
+                    s.ApiModel = v;
+                    Dispatcher.BeginInvoke(() => Build(lastFilter)); // the levels follow the model's provider
+                }, filter);
+            if (AiModels.HasEffort(apiModel))
+                Choice(Tr("API 생각 수준", "API thinking level"), Tr("기본은 모델 자체 설정 · 추론 모델에서만 사용 · 대화 중 Ctrl+E", "Default = the model's own · reasoning models only · Ctrl+E during a chat"), G.Bulb,
+                    AiModels.Efforts(apiModel).Select(e => (e, AiModels.EffortName(e))).ToArray(), AiModels.Fit(apiModel, s.ApiEffort), v => s.ApiEffort = v, filter);
+        }
+        else
+            Add(Tr("API 모델", "API model"), Tr("설정 > AI 계정에서 API 키를 추가하면 모델 선택 가능", "Add an API key in Settings > AI accounts to pick a model"), null, G.Model, () => Go("accounts"), null, filter);
     }
 
     private void PageMcp(Settings s, string filter)
@@ -354,12 +380,17 @@ internal sealed partial class SettingsView
         if (langs.Count == 0 && collected is null)
             Add(Tr("Windows 언어 설정 열기", "Open Windows language settings"), null, null, G.Keyboard, () => Launch.Open("ms-settings:regionlanguage"), null, filter);
         Header(Tr("번역 · AI 빠른 동작", "Translation · AI actions"));
-        string tp = s.TranslateProvider == "chatgpt" ? "chatgpt" : "claude";
+        // collecting reads no keys or model lists: the CLI sides only
+        string tp = collected is null ? Translator.Provider() : s.TranslateProvider == "chatgpt" ? "chatgpt" : "claude";
+        string[] engines = collected is null ? Translator.Providers() : new[] { "claude", "chatgpt" };
         Choice(Tr("번역 엔진", "Translation engine"), Tr("AI 빠른 동작도 이 엔진을 사용합니다 · 번역 창에서도 바꿀 수 있습니다", "AI actions use this engine too · also switchable in the translation window"), G.Sparkle,
-            new[] { ("claude", "Claude"), ("chatgpt", "ChatGPT") }, tp, v => { s.TranslateProvider = v; Dispatcher.BeginInvoke(() => Build(lastFilter)); }, filter);
+            engines.Select(e => (e, e == "api" ? "API" : Translator.Label(e))).ToArray(), tp, v => { s.TranslateProvider = v; Dispatcher.BeginInvoke(() => Build(lastFilter)); }, filter);
         if (tp == "claude")
             Choice(Tr("번역용 Claude 모델", "Claude model for translation"), Tr("Haiku는 생각 수준을 지원하지 않습니다.", "Haiku has no thinking level setting."), G.Model,
                 AiModels.Claude.Select(m => (m, AiModels.Name(m))).ToArray(), Translator.Model("claude"), v => { s.TranslateClaudeModel = v; Dispatcher.BeginInvoke(() => Build(lastFilter)); }, filter);
+        else if (tp == "api")
+            Menu(Tr("번역용 API 모델", "API model for translation"), Tr("가벼운 모델일수록 빠르고 비용이 적습니다", "Lighter models are faster and cost less"), G.Model,
+                ApiCatalog.Ids().Select(id => (id, AiModels.Who(id), (string?)null)).ToArray(), Translator.Model("api"), v => { s.TranslateApiModel = v; Dispatcher.BeginInvoke(() => Build(lastFilter)); }, filter);
         else if (GptCatalog.All.Count > 0)
             Menu(Tr("번역용 ChatGPT 모델", "ChatGPT model for translation"), Tr("가벼운 모델일수록 빠르고 사용량이 적습니다", "Lighter models are faster and use less"), G.Model,
                 GptCatalog.All.Select(m => (m.Slug, m.Name, (string?)GptCatalog.About(m))).ToArray(), AiModels.GptSlug(Translator.Model("chatgpt")) ?? GptCatalog.All[0].Slug, v => { s.TranslateGptModel = v; Dispatcher.BeginInvoke(() => Build(lastFilter)); }, filter);

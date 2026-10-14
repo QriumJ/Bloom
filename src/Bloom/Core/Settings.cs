@@ -27,7 +27,9 @@ internal sealed class Settings
     public List<ItemKey> ItemKeys { get; set; } = new(); // shortcuts given to single items (Core\ItemKeys.cs)
     public string WebBrowser { get; set; } = "default"; // default | a Browser.Web.Installed key — where searches and links open
     public string SearchEngine { get; set; } = "google"; // Browser.Web.Engines key
-    public string AiProvider { get; set; } = "claude"; // claude | chatgpt: the side new conversations use
+    public string AiProvider { get; set; } = "claude"; // claude | chatgpt | api: the side new conversations use
+    public string? ApiModel { get; set; } // API: an AiModels.Api id ("api:<provider>:<model>"); null = none picked yet
+    public string ApiEffort { get; set; } = "auto"; // API: auto (none sent) or a level the provider takes (ApiProviders)
     public string AiModel { get; set; } = "sonnet"; // Claude: sonnet | opus | haiku
     public string AiEffort { get; set; } = "fast"; // Claude: fast (thinking off) | low | medium | high | xhigh | max
     public string? GptModel { get; set; } // ChatGPT: a Codex model slug; null = Codex's own default
@@ -73,7 +75,9 @@ internal sealed class Settings
     public int DrawMarkColor { get; set; } = 1;
     public int DrawPenSize { get; set; } = 1; // 0 thin · 1 medium · 2 thick
     public int DrawMarkSize { get; set; } = 1;
-    public string TranslateProvider { get; set; } = "claude"; // claude (Haiku) | chatgpt
+    public string TranslateProvider { get; set; } = "claude"; // claude (Haiku) | chatgpt | api
+    public string? TranslateApiModel { get; set; } // an AiModels.Api id; null = the first API model listed
+    public string TranslateApiEffort { get; set; } = "auto"; // auto (none sent) or a level the provider takes
     public string? TranslateGptModel { get; set; } // a Codex slug; null = the lightest in the catalog
     public string TranslateClaudeModel { get; set; } = "haiku"; // haiku | sonnet | opus
     public string TranslateClaudeEffort { get; set; } = "fast"; // fast (thinking off) … max; Haiku has none

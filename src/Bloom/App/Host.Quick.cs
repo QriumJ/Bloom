@@ -97,7 +97,7 @@ internal sealed partial class Host
         Quick.Result = Quick.Error = null;
         Quick.Busy = true;
         Later();
-        string provider = Settings.Current.TranslateProvider == "chatgpt" ? "chatgpt" : "claude";
+        string provider = Translator.Provider();
         var (text, error) = await OneShot.Ask(QuickActions.System(action, custom, Quick.Source), Quick.Source, provider, Translator.Model(provider), Translator.Effort(provider), "quick", cts.Token);
         if (cts.IsCancellationRequested) return;
         Quick.Busy = false;

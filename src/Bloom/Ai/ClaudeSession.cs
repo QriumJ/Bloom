@@ -106,13 +106,14 @@ internal sealed class ClaudeSession : IChatSession
     /// The chats' instructions. They stay the same from start to start (no clock in them: the time comes with each
     /// message, LocalTime), so a CLI started again for the same conversation reads its prompt cache instead of writing it
     /// all again (~140k tokens a restart while the clock was in here).
-    public static string SystemPrompt(string? outDir = null, string intro = "You are the quick assistant inside Bloom, a Windows launcher the user opens with the Win key. ", bool pc = false, bool titles = false)
+    /// `web`: the model can search the web (the CLIs can; an API chat can't).
+    public static string SystemPrompt(string? outDir = null, string intro = "You are the quick assistant inside Bloom, a Windows launcher the user opens with the Win key. ", bool pc = false, bool titles = false, bool web = true)
     {
         return intro
             + (titles ? ChatTitles.Instruction : "")
             + "Reply in the user's language (Korean when they write Korean). Be concise: lead with the answer, then only the detail that helps. "
             + "Use Markdown when it helps (short lists, tables, fenced code with a language). "
-            + "You may use web search for current facts, prices, news or anything time-sensitive; mention sources briefly when you do. "
+            + (web ? "You may use web search for current facts, prices, news or anything time-sensitive; mention sources briefly when you do. " : "")
             + "Each message has a <local_time> line: the user's local date and time when they sent it. "
             + "A <page> block in the message is the page the user has open in their browser; answer about it. "
             + "An <earlier_conversation> block is this conversation so far, held with another model. "

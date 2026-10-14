@@ -7,6 +7,18 @@ No answer from Claude. Send again.	Claude の回答がありません。再送�
 No answer from Codex. Send again.	Codex の回答がありません。再送してください。
 Answer failed. Send the message again.	回答に失敗しました。メッセージを再送してください。
 No response for 90 s. Try again.	90 秒間応答なし。再試行してください。
+This API model is not available. Choose another model and send again.	この API モデルが見つかりません。別のモデルを選んで送り直してください。
+No {0} API key. Add one in Settings > AI accounts.	{0} の API キーがありません。設定 > AI アカウントでキーを追加してください。
+Could not connect to {0}. Check your connection and send again.	{0} に接続できませんでした。接続を確認して送り直してください。
+No answer from {0}. Send again.	{0} から回答がありません。送り直してください。
+The answer from {0} was cut off. Send again.	{0} の回答が途中で途切れました。送り直してください。
+{0} redirected the request elsewhere. Bloom did not follow it, to keep the key safe.	{0} がリクエストを別のアドレスに転送しました。キーを守るため、Bloom は転送先に送りませんでした。
+{0} rejected the API key. Check it in Settings > AI accounts.	{0} が API キーを拒否しました。設定 > AI アカウントでキーを確認してください。
+{0} rate limit or credit reached. Send again later or check your plan.	{0} のリクエスト上限またはクレジットに達しました。しばらくしてから送り直すか、プランを確認してください。
+{0} could not find this model. Choose another model and send again.	{0} でこのモデルが見つかりません。別のモデルを選んで送り直してください。
+{0} server error. Send again shortly.	{0} のサーバーエラーです。しばらくしてから送り直してください。
+{0} request failed. Send again.	{0} へのリクエストが失敗しました。送り直してください。
+Details: {0}	エラー内容: {0}
 Sign in to ChatGPT. Run codex login in a terminal.	ChatGPT にサインインしてください。ターミナルで codex login を実行してください。
 Sign in to Claude. Run claude in a terminal and sign in.	Claude にサインインしてください。ターミナルで claude を実行してサインインしてください。
 AI usage limit reached. Send again after the limit resets.	AI の利用上限に達しました。リセット後に再送してください。
@@ -15,7 +27,8 @@ Could not connect to AI. Check your connection and send again.	AI に接続で�
 AI could not access a required file. Check file permissions and send again.	AI が必要なファイルにアクセスできませんでした。権限を確認して再送してください。
 AI model unavailable. Choose another model and send again.	AI モデルを利用できません。別のモデルを選んで再送してください。
 Could not get an AI answer. Send again. If it persists, check sign-in and connection.	AI の回答を取得できませんでした。再送してください。繰り返す場合はサインインと接続を確認してください。
-Details: {0}	エラー内容: {0}
+No model	モデルなし
+Default	既定
 Off	オフ
 Minimal	最小
 Low	低
@@ -89,6 +102,10 @@ Another sign-in is running	別のアカウントのサインイン中
 Sign the default account in from Claude Code or Codex itself	既定のアカウントは Claude Code または Codex で直接サインインしてください
 This account's sign-in terminal is still open. Close it first.	このアカウントのサインイン用ターミナルがまだ開いています。先に閉じてください。
 Not signed in · Try again	サインインされていません · もう一度お試しください
+Claude Code · Approval request	Claude Code · 承認リクエスト
+Allow	許可
+Decline	拒否
+Answer in terminal	ターミナルで答える
 Shortcut · Error	ショートカット · エラー
 Item not found. Check its location or reassign the shortcut.	項目が見つかりません。場所を確認するかショートカットを再設定してください。
 Reading the app list again…	アプリの一覧を読み直しています…
@@ -208,12 +225,6 @@ Applies at next start	次回起動時に適用
 Update settings	更新設定
 Bloom AI · Approval pending	Bloom AI · 承認待ち
 Choose Allow or Decline	許可または拒否を選んでください
-Claude Code · Approval request	Claude Code · 承認リクエスト
-Answer in terminal	ターミナルで答える
-Approve on the card	通知カードで承認
-Allow or decline Claude Code's requests on the card · On adds Bloom's hook to Claude Code's settings.json, off takes it out	Claude Code の承認リクエストをカードで許可 · 拒否 · オンにすると Claude Code の設定（settings.json）に Bloom のフックを追加し、オフにすると削除します
-Bloom · Notifications	Bloom · 通知
-Couldn't change Claude Code's settings	Claude Code の設定を変更できませんでした
 Open AI chat	AI チャットを開く
 {0} s	{0}秒
 {0} h {1} min	{0}時間{1}分
@@ -1026,7 +1037,7 @@ Bloom translation	Bloom 翻訳
 Live translation	リアルタイム翻訳
 Translation	翻訳
 Reading the screen…	画面を読み取っています…
-Claude ↔ ChatGPT (saved in Settings too)	Claude ↔ ChatGPT (設定にも保存されます)
+Switch the translation engine (saved in Settings too)	翻訳エンジンを切り替え（設定にも保存されます）
 → Auto	→ 自動
 Translate into (Auto: English text into Korean, everything else into English)	翻訳先 (自動: 日本語の文は英語に、それ以外は日本語に)
 Thinking {0}	思考 {0}
@@ -1253,10 +1264,8 @@ Bloom Lens picture	Bloom Lens の画像
 Page · {0}	ページ · {0}
 Writing…	書いています…
 Approve PC action	PC 操作の承認
-Allow	許可
 Always allow ‘{0}’ in this chat	このチャットでは「{0}」を常に許可
 Always in this chat	このチャットでは常に許可
-Decline	拒否
 Copy the whole answer · Ctrl+Shift+C copies the last one	回答全体をコピー · Ctrl+Shift+C で最後の回答
 Send	送信
 Attach files or pictures	ファイルや画像を添付
@@ -1480,7 +1489,7 @@ Bloom · Quick AI	Bloom · クイック AI
 Answer ready	回答完了
 No response. Send again.	応答なし。再送してください。
 Thinking · {0}	思考 · {0}
-Haiku has no thinking level setting.	Haiku には思考レベルの設定がありません。
+This model has no thinking level setting.	このモデルは思考レベルに対応していません。
 Screen · Bloom Lens	画面 · Bloom Lens
 {0} attached	{0} 件を添付
 Ask about this screen (empty + Enter = explain it)	この画面について聞く (空のまま Enter = 説明)
@@ -1559,6 +1568,9 @@ Keep on top (Ctrl+P) — stays above other windows when you click elsewhere · d
 Tools	ツール
 Close {0}	{0} を閉じる
 Attach {0}	{0} を並べる
+{0} API key	{0} API キー
+The key is stored encrypted on this PC only and used only for requests to {0}. Usage is billed to your {1} account.	キーはこの PC にのみ暗号化して保存し、{0} へのリクエストにだけ使います。利用料金は {1} アカウントに請求されます。
+Open the key page	キー発行ページを開く
 AI accounts	AI アカウント
 Each account signs in on its own. The home shows each one's usage, and AI chat uses the account you pick. Nothing switches accounts when a limit is reached.	アカウントごとに個別にサインインします。ホームでアカウント別の使用量を確認し、AI チャットに使うアカウントを選びます。上限に達してもアカウントは自動で切り替わりません。
 Signing in · finish in the terminal that opened	サインイン中 · 開いたターミナルで完了してください
@@ -1586,6 +1598,16 @@ Default account	既定のアカウント
 This account's renewed sign-in isn't saved yet. Try again in a moment.	このアカウントの更新されたサインイン情報をまだ保存できていません。しばらくしてからもう一度お試しください。
 Remove account	アカウントを外す
 Moves this account's sign-in folder to the Recycle Bin.	このアカウントのサインインフォルダーをごみ箱に移動します。
+API keys	API キー
+No key · click to add one	キーなし · クリックしてキーを追加
+Loading the model list…	モデル一覧を読み込み中…
+Key saved · {0} models · encrypted on this PC only	キー保存済み · モデル {0} 個 · この PC にのみ暗号化して保存
+Stored encrypted on this PC only · used only for requests to {0}	この PC にのみ暗号化して保存したキー · {0} へのリクエストにだけ使用
+Test · refresh models	接続テスト · モデルを再読み込み
+Change key	キーを変更
+Remove key	キーを削除
+Deletes the {0} API key and model list from this PC.	この PC から {0} の API キーとモデル一覧を削除します。
+Connected. {0} models loaded.	接続しました。モデルを {0} 個読み込みました。
 General	一般
 How Bloom opens and looks	Bloom の開き方と見た目
 Language	言語
@@ -1651,8 +1673,7 @@ Names	名前
 App names changed in Bloom	Bloom で変更したアプリ名
 On an app: Ctrl+K → Rename (in Bloom only; the original name still finds it)	アプリで Ctrl+K → 名前を変更 (Bloom 内のみ。元の名前でも見つかります)
 {0} · Enter puts all the original names back	{0} 件 · Enter ですべて元の名前に戻す
-Tab opens AI chat · uses Claude or ChatGPT signed in on this PC	Tab で AI チャットを開く · この PC でサインインした Claude または ChatGPT を使用
-Default	既定
+Tab opens AI chat · uses Claude or ChatGPT signed in on this PC, or an API key	Tab で AI チャットを開く · この PC でサインインした Claude や ChatGPT、または API キーで回答
 New chats use	新しいチャットで使う AI
 Ctrl+Shift+M switches during a chat · Ctrl+M picks the model	チャット中は Ctrl+Shift+M で切り替え · Ctrl+M でモデルを選ぶ
 AI chat window shortcut	AI チャット ウィンドウのショートカット
@@ -1673,6 +1694,10 @@ No Codex model list yet — run Codex once to get it	Codex のモデル一覧が
 ChatGPT thinking level	ChatGPT の思考レベル
 The levels depend on the model · Ctrl+E during a chat	レベルはモデルによって異なります · チャット中は Ctrl+E
 {0} · uses your ChatGPT login	{0} · ChatGPT のサインインを使用
+API model	API モデル
+API thinking level	API の思考レベル
+Default = the model's own · reasoning models only · Ctrl+E during a chat	既定はモデル自身の設定 · 推論モデルのみ · チャット中は Ctrl+E
+Add an API key in Settings > AI accounts to pick a model	設定 > AI アカウントで API キーを追加するとモデルを選択可能
 PC actions · MCP	PC の操作 · MCP
 Use AI chat to open apps, find and move files, and set timers on this PC.	AI チャットから、この PC のアプリ起動、ファイル検索・移動、タイマー設定を使えます。
 In Claude chats	Claude のチャットで
@@ -1740,6 +1765,9 @@ Translation · AI actions	翻訳 · AI クイック操作
 Translation engine	翻訳エンジン
 AI actions use this engine too · also switchable in the translation window	AI クイック操作もこのエンジンを使います · 翻訳ウィンドウでも切り替えられます
 Claude model for translation	翻訳に使う Claude のモデル
+Haiku has no thinking level setting.	Haiku には思考レベルの設定がありません。
+API model for translation	翻訳用 API モデル
+Lighter models are faster and cost less	軽いモデルほど速く、費用も少なくなります
 ChatGPT model for translation	翻訳に使う ChatGPT のモデル
 Lighter models are faster and use less	軽いモデルほど速く、使用量も少なくなります
 Thinking level for translation	翻訳の思考レベル
@@ -1811,6 +1839,10 @@ Notification types	通知の種類
 What a turn works on once it runs past 4 s	ターンが 4 秒を超えたときに取り組んでいる内容
 When it ends, with how long it took (past 10 s)	終わったとき、かかった時間と一緒に (10 秒以上)
 Shown when approval or an answer is needed · stays until work resumes	承認や回答が必要なときに表示 · 作業再開まで維持
+Approve on the card	通知カードで承認
+Allow or decline Claude Code's requests on the card · On adds Bloom's hook to Claude Code's settings.json, off takes it out	Claude Code の承認リクエストをカードで許可 · 拒否 · オンにすると Claude Code の設定（settings.json）に Bloom のフックを追加し、オフにすると削除します
+Bloom · Notifications	Bloom · 通知
+Couldn't change Claude Code's settings	Claude Code の設定を変更できませんでした
 5-hour · weekly limit at 20% left, when used up, or when a run-out is expected	5 時間 · 週間の上限の残りが 20% のとき、使い切ったとき、リセット前に使い切りそうなとき
 When a low limit is full again after its reset	少なくなった上限がリセット後にまた満タンになったとき
 Performance	パフォーマンス

@@ -401,10 +401,14 @@ internal sealed class CodexSession : IChatSession
                 "You are ChatGPT, answering in a chat inside Bloom, a Windows launcher the user opens with the Win key. "
                 + "This is a conversation, not a coding task: do not run commands and do not read or change files"
                 + (pc is not null ? " (the bloom tool is the way to act on the PC). " + pc : ". ")
-                + "Files the user attached come in the message: text files inside <attachment name=\"…\"> blocks, pictures as images. "
-                + "When the user asks for a file, put its whole content in a fenced code block whose info string is file:<name> "
-                + "(for example ```file:summary.md), one block per file; Bloom saves each as a file the user can open or save. ", pc is not null, titles);
+                + InlineFiles, pc is not null, titles);
     }
+
+    /// How a model without file tools gets attachments and gives files (ChatGPT here, the API chats too): both in the
+    /// messages, a written file as a ```file:<name> block that Chats saves.
+    internal const string InlineFiles = "Files the user attached come in the message: text files inside <attachment name=\"…\"> blocks, pictures as images. "
+        + "When the user asks for a file, put its whole content in a fenced code block whose info string is file:<name> "
+        + "(for example ```file:summary.md), one block per file; Bloom saves each as a file the user can open or save. ";
 
     private static void TryDeleteInstructions(string file)
     {

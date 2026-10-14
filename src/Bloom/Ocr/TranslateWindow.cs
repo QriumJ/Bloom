@@ -209,10 +209,10 @@ internal sealed class TranslateWindow : Window
     private void Chrome()
     {
         chips.Children.Clear();
-        string provider = Settings.Current.TranslateProvider == "chatgpt" ? "chatgpt" : "claude";
-        chips.Children.Add(Chip(provider == "chatgpt" ? "ChatGPT" : "Claude", Tr("Claude ↔ ChatGPT (설정에도 저장됩니다)", "Claude ↔ ChatGPT (saved in Settings too)"), () =>
+        string provider = Translator.Provider();
+        chips.Children.Add(Chip(Translator.Label(provider), Tr("번역 엔진 바꾸기 (설정에도 저장됩니다)", "Switch the translation engine (saved in Settings too)"), () =>
         {
-            Settings.Current.TranslateProvider = provider == "chatgpt" ? "claude" : "chatgpt";
+            Settings.Current.TranslateProvider = AiModels.Next(Translator.Providers(), provider);
             Settings.Save();
             Chrome();
             Again();
@@ -281,7 +281,7 @@ internal sealed class TranslateWindow : Window
 
     private void Status(string? note = null)
     {
-        string who = Translator.Who(Settings.Current.TranslateProvider == "chatgpt" ? "chatgpt" : "claude");
+        string who = Translator.Who(Translator.Provider());
         status.Text = note ?? Tr($"{who} · 호출 {calls}회", $"{who} · {calls} calls") + (live ? paused ? Tr(" · 멈춤", " · paused") : Tr($" · {tick.Interval.TotalSeconds:0.#}초마다 읽기", $" · reading every {tick.Interval.TotalSeconds:0.#} s") : "");
     }
 
@@ -294,7 +294,7 @@ internal sealed class TranslateWindow : Window
         source.Text = Hangul.KeepAll(what);
         work.Working = true;
         Status(Tr("번역 중…", "Translating…"));
-        string provider = Settings.Current.TranslateProvider == "chatgpt" ? "chatgpt" : "claude";
+        string provider = Translator.Provider();
         string target = Translator.TargetFor(what, Settings.Current.TranslateTo);
         calls++;
         var (result, error) = await Translator.Run(what, provider, target, cts.Token);

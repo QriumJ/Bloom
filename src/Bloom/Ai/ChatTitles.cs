@@ -21,9 +21,16 @@ internal static partial class ChatTitles
         + "organization, sorting, cleanup), Etc (anything else). ";
 
     /// The model's mark: ◆ Opus, ◇ Sonnet, ∴ Haiku, ❖ Fable; ✦ Astra, ✹ Sol, ◉ Terra, ☾ Luna for ChatGPT (by the family in
-    /// the Codex slug, "gpt-6.1-sol"); another model keeps its own name.
+    /// the Codex slug, "gpt-6.1-sol"); another model keeps its own name. An API model is marked by its family the same
+    /// way when it is one of these, else named.
     public static string Mark(string model)
     {
+        if (AiModels.ApiParts(model) is { } api)
+        {
+            string family = Mark(api.id);
+            bool known = family != "◇ Sonnet" || api.id.Contains("sonnet", StringComparison.OrdinalIgnoreCase);
+            return known ? family : AiModels.Name(model);
+        }
         if (AiModels.IsChatGpt(model))
         {
             string slug = AiModels.GptSlug(model) ?? GptCatalog.DefaultSlug() ?? "";

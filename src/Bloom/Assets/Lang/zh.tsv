@@ -7,6 +7,18 @@ No answer from Claude. Send again.	Claude 未返回回答。请重新发送。
 No answer from Codex. Send again.	Codex 未返回回答。请重新发送。
 Answer failed. Send the message again.	回答失败。请重新发送消息。
 No response for 90 s. Try again.	90 秒内无响应。请重试。
+This API model is not available. Choose another model and send again.	找不到此 API 模型。请选择其他模型后重新发送。
+No {0} API key. Add one in Settings > AI accounts.	没有 {0} API 密钥。请在 设置 > AI 账户 中添加密钥。
+Could not connect to {0}. Check your connection and send again.	无法连接到 {0}。请检查网络连接后重新发送。
+No answer from {0}. Send again.	{0} 没有回答。请重新发送。
+The answer from {0} was cut off. Send again.	{0} 的回答中途中断。请重新发送。
+{0} redirected the request elsewhere. Bloom did not follow it, to keep the key safe.	{0} 将请求转到了其他地址。为保护密钥，Bloom 没有跟随。
+{0} rejected the API key. Check it in Settings > AI accounts.	{0} 拒绝了 API 密钥。请在 设置 > AI 账户 中检查密钥。
+{0} rate limit or credit reached. Send again later or check your plan.	{0} 的请求限额或额度已用完。请稍后重新发送，或检查你的套餐。
+{0} could not find this model. Choose another model and send again.	{0} 找不到此模型。请选择其他模型后重新发送。
+{0} server error. Send again shortly.	{0} 服务器出错。请稍后重新发送。
+{0} request failed. Send again.	{0} 请求失败。请重新发送。
+Details: {0}	错误详情：{0}
 Sign in to ChatGPT. Run codex login in a terminal.	请登录 ChatGPT。在终端中运行 codex login。
 Sign in to Claude. Run claude in a terminal and sign in.	请登录 Claude。在终端中运行 claude 并登录。
 AI usage limit reached. Send again after the limit resets.	AI 用量已达上限。请在额度重置后重新发送。
@@ -15,7 +27,8 @@ Could not connect to AI. Check your connection and send again.	无法连接 AI�
 AI could not access a required file. Check file permissions and send again.	AI 无法访问所需文件。请检查文件权限并重新发送。
 AI model unavailable. Choose another model and send again.	AI 模型不可用。请选择其他模型并重新发送。
 Could not get an AI answer. Send again. If it persists, check sign-in and connection.	无法获取 AI 回答。请重新发送。如仍失败，请检查登录状态和网络连接。
-Details: {0}	错误详情：{0}
+No model	无模型
+Default	默认
 Off	关闭
 Minimal	最低
 Low	低
@@ -89,6 +102,10 @@ Another sign-in is running	另一个账户正在登录
 Sign the default account in from Claude Code or Codex itself	默认账户请直接在 Claude Code 或 Codex 中登录
 This account's sign-in terminal is still open. Close it first.	此账户的登录终端仍处于打开状态。请先将其关闭。
 Not signed in · Try again	未登录 · 请重试
+Claude Code · Approval request	Claude Code · 批准请求
+Allow	允许
+Decline	拒绝
+Answer in terminal	在终端中回答
 Shortcut · Error	快捷键 · 错误
 Item not found. Check its location or reassign the shortcut.	未找到项目。请检查位置或重新分配快捷键。
 Reading the app list again…	正在重新读取应用列表…
@@ -208,12 +225,6 @@ Applies at next start	下次启动时应用
 Update settings	更新设置
 Bloom AI · Approval pending	Bloom AI · 等待批准
 Choose Allow or Decline	选择允许或拒绝
-Claude Code · Approval request	Claude Code · 批准请求
-Answer in terminal	在终端中回答
-Approve on the card	在通知卡片上批准
-Allow or decline Claude Code's requests on the card · On adds Bloom's hook to Claude Code's settings.json, off takes it out	在卡片上允许或拒绝 Claude Code 的批准请求 · 开启后会在 Claude Code 的设置（settings.json）中添加 Bloom 钩子，关闭后移除
-Bloom · Notifications	Bloom · 通知
-Couldn't change Claude Code's settings	无法更改 Claude Code 的设置
 Open AI chat	打开 AI 聊天
 {0} s	{0}秒
 {0} h {1} min	{0}小时{1}分钟
@@ -1026,7 +1037,7 @@ Bloom translation	Bloom 翻译
 Live translation	实时翻译
 Translation	翻译
 Reading the screen…	正在读取屏幕…
-Claude ↔ ChatGPT (saved in Settings too)	Claude ↔ ChatGPT (也会保存到设置)
+Switch the translation engine (saved in Settings too)	切换翻译引擎（也会保存到设置）
 → Auto	→ 自动
 Translate into (Auto: English text into Korean, everything else into English)	翻译成 (自动：中文译成英文，其他译成中文)
 Thinking {0}	思考 {0}
@@ -1253,10 +1264,8 @@ Bloom Lens picture	Bloom Lens 图片
 Page · {0}	页面 · {0}
 Writing…	正在撰写…
 Approve PC action	批准电脑操作
-Allow	允许
 Always allow ‘{0}’ in this chat	在此对话中始终允许“{0}”
 Always in this chat	在此对话中始终允许
-Decline	拒绝
 Copy the whole answer · Ctrl+Shift+C copies the last one	复制完整回答 · Ctrl+Shift+C 复制最后一条
 Send	发送
 Attach files or pictures	附加文件或图片
@@ -1480,7 +1489,7 @@ Bloom · Quick AI	Bloom · 快速 AI
 Answer ready	回答完成
 No response. Send again.	无响应。请重新发送。
 Thinking · {0}	思考 · {0}
-Haiku has no thinking level setting.	Haiku 不支持思考级别设置。
+This model has no thinking level setting.	此模型不支持思考级别。
 Screen · Bloom Lens	屏幕 · Bloom Lens
 {0} attached	已附加 {0} 个
 Ask about this screen (empty + Enter = explain it)	就这个屏幕提问 (留空按 Enter = 解释)
@@ -1559,6 +1568,9 @@ Keep on top (Ctrl+P) — stays above other windows when you click elsewhere · d
 Tools	工具
 Close {0}	关闭 {0}
 Attach {0}	附加 {0}
+{0} API key	{0} API 密钥
+The key is stored encrypted on this PC only and used only for requests to {0}. Usage is billed to your {1} account.	密钥仅加密保存在这台电脑上，只用于发往 {0} 的请求。使用费用计入你的 {1} 账户。
+Open the key page	打开密钥页面
 AI accounts	AI 账户
 Each account signs in on its own. The home shows each one's usage, and AI chat uses the account you pick. Nothing switches accounts when a limit is reached.	每个账户单独登录。主页显示各账户的用量，AI 聊天使用你选择的账户。达到限额时不会自动切换账户。
 Signing in · finish in the terminal that opened	正在登录 · 请在打开的终端中完成
@@ -1586,6 +1598,16 @@ Default account	默认账户
 This account's renewed sign-in isn't saved yet. Try again in a moment.	尚未能保存此账户更新后的登录信息。请稍后再试。
 Remove account	移除账户
 Moves this account's sign-in folder to the Recycle Bin.	将此账户的登录文件夹移到回收站。
+API keys	API 密钥
+No key · click to add one	无密钥 · 点击添加密钥
+Loading the model list…	正在加载模型列表…
+Key saved · {0} models · encrypted on this PC only	密钥已保存 · {0} 个模型 · 仅加密保存在这台电脑上
+Stored encrypted on this PC only · used only for requests to {0}	仅加密保存在这台电脑上的密钥 · 只用于发往 {0} 的请求
+Test · refresh models	测试连接 · 刷新模型
+Change key	更换密钥
+Remove key	删除密钥
+Deletes the {0} API key and model list from this PC.	从这台电脑删除 {0} 的 API 密钥和模型列表。
+Connected. {0} models loaded.	已连接。已加载 {0} 个模型。
 General	常规
 How Bloom opens and looks	Bloom 的打开方式和外观
 Language	语言
@@ -1651,8 +1673,7 @@ Names	名称
 App names changed in Bloom	在 Bloom 中更改的应用名称
 On an app: Ctrl+K → Rename (in Bloom only; the original name still finds it)	在应用上按 Ctrl+K → 重命名 (仅在 Bloom 中，原名仍可搜到)
 {0} · Enter puts all the original names back	{0} 个 · 按 Enter 全部恢复原名
-Tab opens AI chat · uses Claude or ChatGPT signed in on this PC	Tab 打开 AI 聊天 · 使用本机已登录的 Claude 或 ChatGPT
-Default	默认
+Tab opens AI chat · uses Claude or ChatGPT signed in on this PC, or an API key	Tab 打开 AI 聊天 · 使用这台电脑上登录的 Claude 或 ChatGPT，或 API 密钥回答
 New chats use	新对话使用
 Ctrl+Shift+M switches during a chat · Ctrl+M picks the model	对话中按 Ctrl+Shift+M 切换 · Ctrl+M 选择模型
 AI chat window shortcut	AI 对话窗口快捷键
@@ -1673,6 +1694,10 @@ No Codex model list yet — run Codex once to get it	还没有 Codex 的模型�
 ChatGPT thinking level	ChatGPT 思考级别
 The levels depend on the model · Ctrl+E during a chat	级别因模型而异 · 对话中按 Ctrl+E
 {0} · uses your ChatGPT login	{0} · 使用已登录的 ChatGPT 账号
+API model	API 模型
+API thinking level	API 思考级别
+Default = the model's own · reasoning models only · Ctrl+E during a chat	默认为模型自身设置 · 仅限推理模型 · 聊天中按 Ctrl+E
+Add an API key in Settings > AI accounts to pick a model	在 设置 > AI 账户 中添加 API 密钥后即可选择模型
 PC actions · MCP	电脑操作 · MCP
 Use AI chat to open apps, find and move files, and set timers on this PC.	可在 AI 聊天中打开本机应用、查找和移动文件、设置计时器。
 In Claude chats	在 Claude 对话中
@@ -1740,6 +1765,9 @@ Translation · AI actions	翻译 · AI 快捷操作
 Translation engine	翻译引擎
 AI actions use this engine too · also switchable in the translation window	AI 快捷操作也使用此引擎 · 也可在翻译窗口中切换
 Claude model for translation	翻译用 Claude 模型
+Haiku has no thinking level setting.	Haiku 不支持思考级别设置。
+API model for translation	翻译用 API 模型
+Lighter models are faster and cost less	越轻的模型越快，费用也越低
 ChatGPT model for translation	翻译用 ChatGPT 模型
 Lighter models are faster and use less	模型越轻越快，用量也越少
 Thinking level for translation	翻译思考级别
@@ -1811,6 +1839,10 @@ Notification types	通知类型
 What a turn works on once it runs past 4 s	任务运行超过 4 秒时显示它在做什么
 When it ends, with how long it took (past 10 s)	结束时连同所用时间一起显示 (超过 10 秒)
 Shown when approval or an answer is needed · stays until work resumes	需要批准或回复时显示 · 保留到操作继续
+Approve on the card	在通知卡片上批准
+Allow or decline Claude Code's requests on the card · On adds Bloom's hook to Claude Code's settings.json, off takes it out	在卡片上允许或拒绝 Claude Code 的批准请求 · 开启后会在 Claude Code 的设置（settings.json）中添加 Bloom 钩子，关闭后移除
+Bloom · Notifications	Bloom · 通知
+Couldn't change Claude Code's settings	无法更改 Claude Code 的设置
 5-hour · weekly limit at 20% left, when used up, or when a run-out is expected	5 小时 · 每周额度剩余 20% 时、用完时，或预计在重置前用完时
 When a low limit is full again after its reset	不足的额度在重置后恢复满时
 Performance	性能

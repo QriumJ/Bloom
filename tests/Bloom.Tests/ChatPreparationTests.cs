@@ -97,6 +97,17 @@ internal static class ChatPreparationTests
         Check.True(answer.Streaming && f.Chats.IsLive(f.Thread), "late startup cannot finish the replacement");
     }
 
+    public static void SentMessageKeepsThePageForALaterSession()
+    {
+        using var f = new Fixture();
+        f.Chats.Send(f.Thread, "sum it up", "the page's own words", "Page");
+        PumpUntil(() => f.Chats.WhenPrepared(f.Thread).IsCompleted);
+        var user = f.Thread.Messages[0];
+        Check.True(user.Sent is { } sent && sent.Contains("the page's own words", StringComparison.Ordinal) && sent.EndsWith("sum it up", StringComparison.Ordinal), "the message as sent, page and all");
+        string json = System.Text.Json.JsonSerializer.Serialize(user, Bloom.Core.Json.Options);
+        Check.True(System.Text.Json.JsonSerializer.Deserialize<ChatMessage>(json, Bloom.Core.Json.Options)?.Sent == user.Sent, "kept in the chat's file");
+    }
+
     public static void DeletedAttachmentPreparationRollsBackOnlyItsBatch()
     {
         var entered = Gate<bool>(); var release = Gate<bool>();

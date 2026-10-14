@@ -20,6 +20,39 @@ internal static class AiErrors
     public static string Failed => Tr("답변 실패 · 다시 보내세요", "Answer failed. Send the message again.");
     public static string TimedOut => Tr("90초 동안 응답 없음 · 다시 시도하세요", "No response for 90 s. Try again.");
 
+    // ── API providers: each failure worded where it happens (ApiClient), naming the provider ──
+    public static string ApiModelGone => Tr("이 API 모델을 찾지 못했습니다. 다른 모델을 선택하고 다시 보내세요.", "This API model is not available. Choose another model and send again.");
+    public static string ApiNoKey(string provider) => Tr($"{provider} API 키가 없습니다. 설정 > AI 계정에서 키를 추가하세요.", $"No {provider} API key. Add one in Settings > AI accounts.");
+    public static string ApiNetwork(string provider) => Tr($"{provider}에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 보내세요.", $"Could not connect to {provider}. Check your connection and send again.");
+    public static string ApiNoAnswer(string provider) => Tr($"{provider} 답변이 없습니다. 다시 보내세요.", $"No answer from {provider}. Send again.");
+    public static string ApiCutOff(string provider) => Tr($"{provider} 답변이 중간에 끊겼습니다. 다시 보내세요.", $"The answer from {provider} was cut off. Send again.");
+
+    /// A request the provider refused: 3xx a redirect (not followed, so the key goes nowhere else), 401/403 the key,
+    /// 402/429 the rate or the credit, 404 the model, 5xx the provider itself; anything else with what it said
+    /// (`message`, the key already taken out). A 404 or 5xx keeps what it said under the line too: a provider lists
+    /// models a key may not use ("no longer available to new users") and says why only there.
+    public static string ApiStatus(string provider, int status, string message) => status switch
+    {
+        404 or >= 500 => ApiStatusLine(provider, status) + Details(message),
+        _ => ApiStatusLine(provider, status) is { Length: > 0 } line ? line : ApiFailed(provider, message),
+    };
+
+    private static string ApiStatusLine(string provider, int status) => status switch
+    {
+        >= 300 and < 400 => Tr($"{provider}에서 요청을 다른 주소로 넘겼습니다. 키를 보호하기 위해 따라가지 않았습니다.", $"{provider} redirected the request elsewhere. Bloom did not follow it, to keep the key safe."),
+        401 or 403 => Tr($"{provider}에서 API 키를 거부했습니다. 설정 > AI 계정에서 키를 확인하세요.", $"{provider} rejected the API key. Check it in Settings > AI accounts."),
+        402 or 429 => Tr($"{provider} 요청 한도나 크레딧이 소진되었습니다. 잠시 후 다시 보내거나 요금제를 확인하세요.", $"{provider} rate limit or credit reached. Send again later or check your plan."),
+        404 => Tr($"{provider}에서 이 모델을 찾지 못했습니다. 다른 모델을 선택하고 다시 보내세요.", $"{provider} could not find this model. Choose another model and send again."),
+        >= 500 => Tr($"{provider} 서버 오류가 발생했습니다. 잠시 후 다시 보내세요.", $"{provider} server error. Send again shortly."),
+        _ => "",
+    };
+
+    /// A failed request with the provider's own message under it (none: just the line).
+    public static string ApiFailed(string provider, string message) =>
+        Tr($"{provider} 요청이 실패했습니다. 다시 보내세요.", $"{provider} request failed. Send again.") + Details(message);
+
+    private static string Details(string message) => message.Length > 0 ? "\n\n" + Tr($"오류 내용: {message}", $"Details: {message}") : "";
+
     /// Bloom's own texts pass through Friendly unchanged.
     private static bool Own(string e) => new[] { Stopped, ClaudeMissing, CodexMissing, ClaudeStartFailed, StartFailed, ClaudeNoAnswer, CodexNoAnswer, Failed, TimedOut }.Contains(e);
 

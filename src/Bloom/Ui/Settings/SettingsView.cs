@@ -59,12 +59,14 @@ internal sealed partial class SettingsView : ScrollViewer
             Updates.Changed += OnUpdates;
             UsageLogin.Changed += OnUpdates;
             GptCatalog.Updated += OnCatalog;
+            ApiCatalog.Updated += OnCatalog;
         };
         Unloaded += (_, _) =>
         {
             Updates.Changed -= OnUpdates;
             UsageLogin.Changed -= OnUpdates;
             GptCatalog.Updated -= OnCatalog;
+            ApiCatalog.Updated -= OnCatalog;
         };
     }
 
@@ -75,7 +77,7 @@ internal sealed partial class SettingsView : ScrollViewer
         if (Dispatcher.HasShutdownStarted) return;
         Dispatcher.BeginInvoke(() =>
         {
-            if (IsLoaded && IsVisible && (current is "ai" or "screen" || lastFilter.Length > 0)) Build(lastFilter);
+            if (IsLoaded && IsVisible && (current is "ai" or "screen" or "accounts" || lastFilter.Length > 0)) Build(lastFilter);
         }, System.Windows.Threading.DispatcherPriority.Background);
     }
 

@@ -19,6 +19,7 @@ internal sealed class ChatMessage
     public string? Page { get; set; } // title of attached text (clipboard, screen text)
     public string? Image { get; set; } // a screen picture sent with it (Bloom Lens), a PNG under Local\lens
     public List<string>? Files { get; set; } // user: the attached files (copies in the thread's in\); assistant: files it made (out\)
+    public string? Sent { get; set; } // user: the message as any model got it (time, a page's contents; Files are added by each side); null = Text (older files)
 
     public List<string>? Done { get; set; } // what the AI did on the PC with the user's yes ("✓ 옮기기: …", "✕ …")
     [System.Text.Json.Serialization.JsonIgnore] public bool Streaming;
@@ -30,7 +31,7 @@ internal sealed class ChatThread
 {
     public string Id { get; set; } = "";
     public string Title { get; set; } = Tr("새 대화", "New chat");
-    public string Model { get; set; } = "sonnet"; // sonnet | opus | haiku | chatgpt:<Codex slug> (AiModels)
+    public string Model { get; set; } = "sonnet"; // sonnet | opus | haiku | chatgpt:<Codex slug> | api:<provider>:<model> (AiModels)
     public string? Effort { get; set; } // a level of AiModels.Efforts(Model); null = the settings' level
     public string? SessionId { get; set; }
     public string? SessionProvider { get; set; } // whose session SessionId is (null: claude, older files)
@@ -167,13 +168,14 @@ internal sealed partial class Chats
     public static string EffortOf(ChatThread t) => t.Effort is { } e ? AiModels.Fit(t.Model, e) : AiModels.DefaultEffort(t.Model);
 
     /// The conversation goes on with this model from its next message; it also becomes the default for new ones. The
-    /// other side (Claude ↔ ChatGPT) keeps its own level; the same side keeps the thread's, fitted to the model.
+    /// other side (Claude ↔ ChatGPT ↔ API) keeps its own level; the same side keeps the thread's, fitted to the model.
     public static void SetModel(ChatThread? t, string model)
     {
-        bool sideChanged = AiModels.IsChatGpt(AiModels.Normalize(t?.Model ?? AiModels.DefaultModel())) != AiModels.IsChatGpt(model);
+        bool sideChanged = AiModels.Provider(AiModels.Normalize(t?.Model ?? AiModels.DefaultModel())) != AiModels.Provider(model);
         var s = Settings.Current;
         s.AiProvider = AiModels.Provider(model);
         if (AiModels.GptSlug(model) is { } slug) s.GptModel = slug;
+        else if (AiModels.IsApi(model)) s.ApiModel = model;
         else if (!AiModels.IsChatGpt(model)) s.AiModel = model;
         if (t is not null)
         {
@@ -187,7 +189,9 @@ internal sealed partial class Chats
     public static void SetEffort(ChatThread? t, string level)
     {
         if (t is not null) t.Effort = level;
-        if (AiModels.IsChatGpt(AiModels.Normalize(t?.Model ?? AiModels.DefaultModel()))) Settings.Current.GptEffort = level;
+        string model = AiModels.Normalize(t?.Model ?? AiModels.DefaultModel());
+        if (AiModels.IsChatGpt(model)) Settings.Current.GptEffort = level;
+        else if (AiModels.IsApi(model)) Settings.Current.ApiEffort = level;
         else Settings.Current.AiEffort = level;
         Settings.Save();
     }
@@ -198,7 +202,9 @@ internal sealed partial class Chats
         Task deletion = Task.WhenAll(WhenDeleted(t), WhenFinished(t));
         if (!Threads.Contains(t)) Threads.Insert(0, t);
         if (t.Messages.Count == 0) t.Title = TitleOf(text, pageTitle ?? (files is { Count: > 0 } ? Path.GetFileName(files[0]) : null));
-        var user = new ChatMessage { Role = "user", Text = text, At = Now, Page = pageTitle, Image = image };
+        string prompt = ClaudeSession.LocalTime() + "\n" + (page is null ? text : $"<page title=\"{Esc(pageTitle ?? "")}\">\n{page}\n</page>\n\n{text}");
+        // kept with the message so an API session started later sends it again as it went now (ApiSession.Past)
+        var user = new ChatMessage { Role = "user", Text = text, At = Now, Page = pageTitle, Image = image, Sent = prompt };
         t.Messages.Add(user);
         var answer = new ChatMessage { Role = "assistant", At = Now, Streaming = true, Status = Tr("생각하는 중…", "Thinking…") };
         t.Messages.Add(answer);
@@ -207,13 +213,17 @@ internal sealed partial class Chats
         Touch(t);
         Updated?.Invoke(t);
 
-        string prompt = ClaudeSession.LocalTime() + "\n" + (page is null ? text : $"<page title=\"{Esc(pageTitle ?? "")}\">\n{page}\n</page>\n\n{text}");
         string[] sources = files?.Take(MaxFiles).ToArray() ?? Array.Empty<string>();
         string folder = ThreadFiles(t);
-        bool inline = AiModels.IsChatGpt(t.Model);
+        bool inline = AiModels.Inline(t.Model);
+        _ = PrepareAndSend(t, user, pending, prompt, image, sources, folder, inline, UnavailableNote(), deletion);
+    }
+
+    /// What an inlined file that can't be read becomes ("{0}" = its name), for the model to tell the user.
+    internal static string UnavailableNote()
+    {
         string nameSlot = "{0}";
-        string unavailable = Tr($"\n\n<attachment name=\"{nameSlot}\">(이 형식은 여기서 열 수 없어요 — 내용을 읽지 못했다고 알려 주세요)</attachment>", $"\n\n<attachment name=\"{nameSlot}\">(This format can't be opened here — tell the user its contents didn't come through)</attachment>");
-        _ = PrepareAndSend(t, user, pending, prompt, image, sources, folder, inline, unavailable, deletion);
+        return Tr($"\n\n<attachment name=\"{nameSlot}\">(이 형식은 여기서 열 수 없어요 — 내용을 읽지 못했다고 알려 주세요)</attachment>", $"\n\n<attachment name=\"{nameSlot}\">(This format can't be opened here — tell the user its contents didn't come through)</attachment>");
     }
 
     internal Task WhenPrepared(ChatThread t) => preparing.TryGetValue(t.Id, out var pending) ? pending.Completion.Task : Task.CompletedTask;
@@ -365,7 +375,7 @@ internal sealed partial class Chats
 
     /// ChatGPT reads no files itself: text files go into the message (each up to 200 KB), pictures as images, and the
     /// rest is named so it can say it could not open them.
-    private static string Inline(List<string> attached, string unavailable)
+    internal static string Inline(List<string> attached, string unavailable)
     {
         var sb = new StringBuilder();
         foreach (string f in attached)
@@ -426,11 +436,14 @@ internal sealed partial class Chats
         }
         s = sessionFactory is not null ? sessionFactory(t, effort)
             : Demo.On ? new DemoSession(t.Model, effort)
+            : provider == "api" ? new ApiSession(t.Model, effort, t.Id, ApiSession.Past(t.Messages), UnavailableNote())
             : provider == "chatgpt" ? new CodexSession(t.Model, effort, FilesRel(t), t.Id) { AccountHome = account.Home }
             : new ClaudeSession(t.Model, effort, FilesRel(t), "Bloom · " + (t.Messages.Count > 0 ? (t.Title.Length > 40 ? t.Title[..40] + "…" : t.Title) : Tr("새 대화", "New chat"))) { AccountHome = account.Home };
-        // a session lives in its account's folder: under another account it starts fresh, with the chat so far given to it
-        resume = (t.SessionProvider ?? "claude") == provider && (t.SessionAccount ?? provider) == account.Id ? t.SessionId : null;
-        fresh = resume is null && t.Messages.Count > 2;
+        // a session lives in its account's folder: under another account it starts fresh, with the chat so far given to it;
+        // an API session always starts from the saved chat itself (ApiSession.Past), so it is neither resumed nor told it
+        bool api = provider == "api";
+        resume = !api && (t.SessionProvider ?? "claude") == provider && (t.SessionAccount ?? provider) == account.Id ? t.SessionId : null;
+        fresh = !api && resume is null && t.Messages.Count > 2;
         bool IsCurrent() => sessions.TryGetValue(t.Id, out var current) && ReferenceEquals(current, s);
         ChatMessage? Current() => IsCurrent() && !finishing.ContainsKey(t.Id) && t.Messages.Count > 0 && t.Messages[^1].Role == "assistant" && t.Messages[^1].Streaming ? t.Messages[^1] : null;
         bool needBreak = false;
@@ -497,7 +510,7 @@ internal sealed partial class Chats
         m.Asks.Clear();
         if (leads.Remove(t.Id, out var lead)) m.Text += lead.Flush();
         DateTime? since = turnStarted.Remove(t.Id, out var started) ? started : null;
-        bool fenced = AiModels.IsChatGpt(t.Model) && m.Text.Contains("```file:", StringComparison.Ordinal);
+        bool fenced = AiModels.Inline(t.Model) && m.Text.Contains("```file:", StringComparison.Ordinal);
         if (!collectFiles || (since is null && !fenced))
         {
             Complete(t, m, ok, error);
@@ -573,7 +586,8 @@ internal sealed partial class Chats
         if (!ok)
         {
             m.Error = true;
-            string e = error is null ? AiErrors.Failed : AiErrors.Friendly(error, AiModels.IsChatGpt(t.Model), details: true);
+            // an API session's errors are already worded (ApiClient) and name their provider
+            string e = error is null ? AiErrors.Failed : AiModels.IsApi(t.Model) ? error : AiErrors.Friendly(error, AiModels.IsChatGpt(t.Model), details: true);
             m.Text = m.Text.Length > 0 ? m.Text + "\n\n" + e : e;
         }
         Touch(t);

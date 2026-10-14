@@ -9,16 +9,38 @@ namespace Bloom.Ai;
 /// Translation for screen OCR: one short CLI call per text, no conversation kept (each call is a
 /// fresh, small prompt — what realtime translation repeats). Claude = the model picked for translation
 /// (Haiku by default, no thinking); ChatGPT = the Codex model picked for translation. Each side has its
-/// own thinking level (lowest by default). Both use the CLIs' own logins, like the chat. Every call
-/// counts against the user's plan.
+/// own thinking level (lowest by default). Both use the CLIs' own logins, like the chat; API = the API model picked
+/// for translation, with the user's key. Every call counts against the user's plan.
 internal static class Translator
 {
     public static readonly (string value, string label)[] Targets = { ("auto", Tr("자동", "Auto")), ("ko", Tr("한국어", "Korean")), ("en", Tr("영어", "English")), ("ja", Tr("일본어", "Japanese")), ("zh", Tr("중국어", "Chinese")) };
 
-    /// The model a side translates with: Claude Haiku, or the ChatGPT model set for translation
-    /// (default: the catalog's lightest, its name containing "Luna" or "mini").
+    /// The side translation and AI 빠른 동작 use: the setting's, with API only while an API model can be used (else Claude).
+    public static string Provider() => Settings.Current.TranslateProvider switch
+    {
+        "chatgpt" => "chatgpt",
+        "api" when Model("api").Length > 0 => "api",
+        _ => "claude",
+    };
+
+    /// The sides to choose from, in their order: Claude, ChatGPT, and API when an API model can be used.
+    public static string[] Providers() => Model("api").Length > 0 ? new[] { "claude", "chatgpt", "api" } : new[] { "claude", "chatgpt" };
+
+    /// A side's short name for chips and choices: Claude, ChatGPT, or the API model's provider.
+    public static string Label(string provider) => provider switch
+    {
+        "chatgpt" => "ChatGPT",
+        "api" => AiModels.ApiProviderOf(Model("api"))?.Name ?? "API",
+        _ => "Claude",
+    };
+
+    /// The model a side translates with: Claude Haiku, the ChatGPT model set for translation
+    /// (default: the catalog's lightest, its name containing "Luna" or "mini"), or the API model set for it (default: the
+    /// first listed; "" when there is none).
     public static string Model(string provider)
     {
+        if (provider == "api")
+            return Settings.Current.TranslateApiModel is { } api && AiModels.ApiReady(api) ? api : ApiCatalog.Ids().FirstOrDefault() ?? "";
         if (provider != "chatgpt") return Array.IndexOf(AiModels.Claude, Settings.Current.TranslateClaudeModel) >= 0 ? Settings.Current.TranslateClaudeModel : "haiku";
         var s = Settings.Current;
         if (s.TranslateGptModel is { Length: > 0 } g && (GptCatalog.All.Count == 0 || GptCatalog.Find(g) is not null)) return AiModels.Gpt(g);
@@ -39,21 +61,22 @@ internal static class Translator
     {
         string m = Model(provider);
         if (!AiModels.HasEffort(m)) return null;
-        return AiModels.Fit(m, provider == "chatgpt" ? Settings.Current.TranslateGptEffort : Settings.Current.TranslateClaudeEffort);
+        var s = Settings.Current;
+        return AiModels.Fit(m, provider switch { "chatgpt" => s.TranslateGptEffort, "api" => s.TranslateApiEffort, _ => s.TranslateClaudeEffort });
     }
 
     public static void SetEffort(string provider, string e)
     {
         if (provider == "chatgpt") Settings.Current.TranslateGptEffort = e;
+        else if (provider == "api") Settings.Current.TranslateApiEffort = e;
         else Settings.Current.TranslateClaudeEffort = e;
         Settings.Save();
     }
 
-    /// "Claude · Haiku" / "ChatGPT · GPT-6-Luna · 최소"
+    /// "Claude · Haiku" / "ChatGPT · GPT-6-Luna · 최소" / "DeepSeek · deepseek-chat"
     public static string Who(string provider)
     {
-        string m = Model(provider);
-        string who = (provider == "chatgpt" ? "ChatGPT · " : "Claude · ") + AiModels.Name(m);
+        string who = AiModels.Who(Model(provider));
         return Effort(provider) is { } e ? who + " · " + AiModels.EffortName(e) : who;
     }
 

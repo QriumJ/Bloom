@@ -180,6 +180,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
         host.Chats.SessionsChanged += OnSessions;
         host.Chats.GroupsChanged += OnSessions;
         GptCatalog.Updated += OnCatalog;
+        ApiCatalog.Updated += OnCatalog;
         Theme.Changed += OnTheme;
         Closed += (_, _) =>
         {
@@ -187,6 +188,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
             host.Chats.SessionsChanged -= OnSessions;
             host.Chats.GroupsChanged -= OnSessions;
             GptCatalog.Updated -= OnCatalog;
+            ApiCatalog.Updated -= OnCatalog;
             Theme.Changed -= OnTheme;
         };
         SourceInitialized += (_, _) => Shots.SolidCaption(this);
@@ -319,7 +321,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
         title.Inlines.Add(new Run(NameOf(thread)));
         tools.Children.Clear();
         string model = AiModels.Normalize(thread.Model);
-        var ids = AiModels.Claude.Concat(GptCatalog.All.Select(m => AiModels.Gpt(m.Slug))).ToList();
+        var ids = AiModels.All(); // grouped by side and provider; each label starts with it ("OpenAI · …")
         if (!ids.Contains(model)) ids.Add(model);
         var models = new Dropdown(ids.Select(m => (m, AiModels.Who(m), (string?)null)).ToArray(), model) { ToolTip = Tr("모델 (Ctrl+M)", "Model (Ctrl+M)") };
         models.Picked += m =>

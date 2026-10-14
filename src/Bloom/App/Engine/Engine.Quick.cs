@@ -42,7 +42,7 @@ internal sealed partial class Engine
                         Id = "quick:busy",
                         Kind = ItemKind.Quick,
                         Title = Tr($"‘{st.ActionTitle}’ 하는 중…", $"‘{st.ActionTitle}’ in progress…"),
-                        Subtitle = Translator.Who(Settings.Current.TranslateProvider == "chatgpt" ? "chatgpt" : "claude"),
+                        Subtitle = Translator.Who(Translator.Provider()),
                         Icon = IconSpec.Of(G.Sparkle, true),
                         PrimaryLabel = Tr("취소", "Cancel"),
                         StayOpen = true,
@@ -108,7 +108,7 @@ internal sealed partial class Engine
         var d = new Detail { Text = st.Source };
         d.Add(Tr("가져온 곳", "From"), st.FromSelection ? Tr("선택한 글", "The selection") : Tr("클립보드", "The clipboard"));
         d.Add(Tr("길이", "Length"), Tr($"{st.Source.Length}자", $"{st.Source.Length} chars"));
-        d.Add(Tr("엔진", "Engine"), Translator.Who(Settings.Current.TranslateProvider == "chatgpt" ? "chatgpt" : "claude"));
+        d.Add(Tr("엔진", "Engine"), Translator.Who(Translator.Provider()));
         return d;
     }
 

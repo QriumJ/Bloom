@@ -102,12 +102,12 @@ internal sealed partial class Launcher
 
     private string CurrentModel => Ai.AiModels.Normalize(thread?.Model ?? Ai.AiModels.DefaultModel());
 
-    /// Ctrl+M and the search line's model chip: every model (Claude and ChatGPT), then this model's thinking levels, the
-    /// current ones ticked, in one menu.
+    /// Ctrl+M and the search line's model chip: every model (Claude, ChatGPT, then each API provider's), then this model's
+    /// thinking levels, the current ones ticked, in one menu.
     public void PickModel()
     {
         string cur = CurrentModel;
-        var ids = Ai.AiModels.Claude.Concat(Ai.GptCatalog.All.Select(m => Ai.AiModels.Gpt(m.Slug))).ToList();
+        var ids = Ai.AiModels.All();
         if (!ids.Contains(cur)) ids.Add(cur);
         var list = ids.Select(m => new ActionItem { Title = Ai.AiModels.Who(m), Glyph = m == cur ? G.Check : G.Model, StayOpen = true, Run = () => SetModel(m) }).ToList();
         if (Ai.AiModels.HasEffort(cur))
@@ -148,7 +148,7 @@ internal sealed partial class Launcher
         string model = CurrentModel;
         if (!Ai.AiModels.HasEffort(model))
         {
-            ShowToast(Tr("Haiku는 생각 수준을 지원하지 않습니다.", "Haiku has no thinking level setting."));
+            ShowToast(Tr("이 모델은 생각 수준을 지원하지 않습니다.", "This model has no thinking level setting."));
             return;
         }
         string now = thread is null ? Ai.AiModels.DefaultEffort(model) : Chats.EffortOf(thread);
