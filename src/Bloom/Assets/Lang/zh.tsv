@@ -256,8 +256,6 @@ Limit used up	额度已用完
 {0} limit used up	{0} 额度已用完
 Limit near	即将达到上限
 {0} limit · {1}% left	{0}额度 · 剩余 {1}%
-Run-out expected	预计用完
-{0} limit · out in {1} at this pace	{0}额度 · 按此速度 {1}后用完
 Resets in {0}	{0}后重置
 Bloom · Update	Bloom · 更新
 Version {0} downloaded	已下载版本 {0}
@@ -1338,10 +1336,7 @@ Rename	重命名
 {0} ago	{0}前
 Last fetched	上次获取
  left	 剩余
- · out ~{0:M/d HH:mm}	 · 预计用完 {0:M/d HH:mm}
  · resets {0:M/d HH:mm}	 · {0:M/d HH:mm} 重置
-out now	即将用完
-out in {0}	{0}后用完
 now	即将
 Su	日
 Mo	一
@@ -1906,7 +1901,7 @@ Approve on the card	在通知卡片上批准
 Allow or decline Claude Code's requests on the card · On adds Bloom's hook to Claude Code's settings.json, off takes it out	在卡片上允许或拒绝 Claude Code 的批准请求 · 开启后会在 Claude Code 的设置（settings.json）中添加 Bloom 钩子，关闭后移除
 Bloom · Notifications	Bloom · 通知
 Couldn't change Claude Code's settings	无法更改 Claude Code 的设置
-5-hour · weekly limit at 20% left, when used up, or when a run-out is expected	5 小时 · 每周额度剩余 20% 时、用完时，或预计在重置前用完时
+5-hour · weekly limit at 20% left or when used up	5 小时 · 每周额度剩余 20% 时和用完时
 When a low limit is full again after its reset	不足的额度在重置后恢复满时
 Performance	性能
 Motion and transparency	动画和透明效果

@@ -24,7 +24,7 @@ internal sealed record UsageAccount(string Name, string? Plan, List<UsageLimit> 
 }
 
 /// A limit's title, percent used, reset time (null means the reset time is unknown) and the window's length in minutes
-/// (null when the provider doesn't say; UsagePace needs it).
+/// (null when the provider doesn't say).
 internal sealed record UsageLimit(string Title, double Percent, DateTime? Resets, int? WindowMins = null)
 {
     /// The two windows every plan has: the 5-hour session and the week.

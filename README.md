@@ -113,8 +113,7 @@ Answers come from the Claude Code or Codex CLI you have installed and signed in 
 - **AI actions** (Ctrl+Alt+A): in any app, turn the selected text (or the clipboard when nothing is selected) into something else and paste it back.
   - Summarize · translate · fix spelling · polish · shorter · longer · formal · casual · key points as a list · explain simply · draft a reply
   - Or write your own instruction.
-- **Usage**: the home shows Claude's and ChatGPT's 5-hour and weekly limits, as used or as left, refreshed every 5 or 10 minutes. Several accounts of each are supported (Settings › AI accounts): each one signs in with the CLI's own login, and AI chat uses the account you pick. Nothing switches accounts on its own. When the current pace would use a limit up before its reset, the card shows when it runs out and a notification says so.
-- **Work notifications**: a card in a screen corner and a sound when a Claude Code or Codex task starts, finishes, waits for approval, or nears or regains its usage limit. Click a task's card to go to the terminal or editor window it runs in.
+- **Usage**: the home shows Claude's and ChatGPT's 5-hour and weekly limits, as used or as left, refreshed every 5 or 10 minutes. Several accounts of each are supported (Settings › AI accounts): each one signs in with the CLI's own login, and AI chat uses the account you pick. Nothing switches accounts on its own.- **Work notifications**: a card in a screen corner and a sound when a Claude Code or Codex task starts, finishes, waits for approval, or nears or regains its usage limit. Click a task's card to go to the terminal or editor window it runs in.
   - Pick one of six positions, the size, the sound and which events.
   - Notifications are hidden during full-screen games and presentations.
 

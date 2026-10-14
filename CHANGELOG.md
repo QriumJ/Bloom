@@ -5,7 +5,6 @@ Each release on GitHub shows its section from this file (the workflow looks for 
 ## 0.14.0
 
 - Claude Code and Codex task cards (working, done, needs approval) now take you to the session: a click brings the terminal or editor window the task runs in to the front.
-- AI usage shows when a limit will run out at the current pace. If a 5-hour or weekly limit would be used up before it resets, its card says "out in 3 h", and a notification says so once per window (Settings › Notifications › Limit near).
 - Type `?` alone in the search line to see what Bloom understands, with examples by kind; Enter puts one in the search line. The empty search line shows one example at a time.
 - Bloom's own settings show up in search: type a setting's name (glass, shortcut) and Enter opens it in the settings window.
 - Settings › About › Problem report copies the version, Windows and the recent log (user name and e-mail addresses hidden) and opens a GitHub issue page. Bloom sends nothing itself.
@@ -25,7 +24,6 @@ Each release on GitHub shows its section from this file (the workflow looks for 
 ### 한국어
 
 - Claude Code · Codex 작업 알림 카드(진행 중 · 작업 완료 · 승인 대기)를 누르면 그 작업이 실행 중인 터미널이나 편집기 창으로 이동합니다.
-- AI 사용량에 소진 예상을 표시합니다. 지금 속도로 5시간 · 주간 한도를 초기화 전에 다 쓸 것으로 예상되면 카드에 '3시간 뒤 소진'처럼 표시하고, 한도 기간마다 한 번 알림을 보냅니다(설정 › 알림 › 한도 임박).
 - 검색창에 `?`만 입력하면 쓸 수 있는 표현을 종류별 예시로 표시합니다. Enter를 누르면 예시가 검색창에 들어갑니다. 빈 검색창에도 예시가 하나씩 표시됩니다.
 - Bloom 설정을 검색할 수 있습니다. `유리 효과`, `단축키`처럼 설정 이름을 입력하고 Enter를 누르면 설정 창에서 열립니다.
 - 설정 › 정보 › 문제 보고: 버전, Windows, 최근 로그(사용자 이름과 이메일 주소는 가림)를 복사하고 GitHub 이슈 작성 페이지를 엽니다. Bloom이 직접 보내는 것은 없습니다.

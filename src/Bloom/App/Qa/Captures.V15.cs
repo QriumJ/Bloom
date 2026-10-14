@@ -159,8 +159,7 @@ internal static partial class Captures
         {
             var limits = new System.Collections.Generic.List<UsageLimit>();
             if (fiveHour is { } h) limits.Add(new UsageLimit(Tr("5시간", "5h"), h, DateTime.Now.AddHours(3).AddMinutes(12), UsageLimit.SessionMins));
-            limits.Add(new UsageLimit(Tr("주간", "Weekly"), week, DateTime.Now.AddDays(4), UsageLimit.WeekMins)); // with the windows: 소진 예상 shows where the pace runs out first
-            return new UsageAccount(name, plan, limits, DateTime.Now) { Who = who };
+            limits.Add(new UsageLimit(Tr("주간", "Weekly"), week, DateTime.Now.AddDays(4), UsageLimit.WeekMins)); return new UsageAccount(name, plan, limits, DateTime.Now) { Who = who };
         }
         var four = new[] { Plan("Claude", "Max 20x", "work@example.com", 32, 47), Plan("Claude", "Pro", "side@example.com", 81, 64), Plan("ChatGPT", "Pro 200", "work@example.com", null, 21), Plan("ChatGPT", "Plus", "home@example.com", 12, 5) };
         foreach (int n in new[] { 3, 4 })
@@ -189,12 +188,6 @@ internal static partial class Captures
     {
         string when = Notices.Span(resets);
         return new Notice("limit", $"{who} · {Tr("한도 임박", "Limit near")}", Tr($"{limit} 한도 {left}% 남음", $"{limit} limit · {left}% left"), Tr($"{when} 뒤 초기화", $"Resets in {when}"));
-    }
-
-    private static Notice SamplePace(string who, string limit, TimeSpan runOut, TimeSpan resets)
-    {
-        string span = Notices.Span(runOut), when = Notices.Span(resets);
-        return new Notice("limit", $"{who} · {Tr("소진 예상", "Run-out expected")}", Tr($"{limit} 한도 · 이 속도면 {span} 뒤 소진", $"{limit} limit · out in {span} at this pace"), Tr($"{when} 뒤 초기화", $"Resets in {when}"));
     }
 
     private static Notice SampleRecover(string who, string limit) =>
@@ -227,11 +220,6 @@ internal static partial class Captures
             nw.Add(samples[0]);
             await Task.Delay(400);
             await nw.Dispatcher.InvokeAsync(() => nw.Capture(Path.Combine(dir, $"{l}-{theme}-n2-recover.png")), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-            nw.Clear();
-            nw.Add(SamplePace("Claude Max 20x", Tr("주간", "Weekly"), new TimeSpan(2, 3, 0, 0), new TimeSpan(4, 0, 0, 0)));
-            nw.Add(SampleWaiting("Claude Code", Tr("빌드 스크립트 정리", "Tidy the build script"), "qa"));
-            await Task.Delay(400);
-            await nw.Dispatcher.InvokeAsync(() => nw.Capture(Path.Combine(dir, $"{l}-{theme}-n6-pace.png")), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         }
         Theme.Apply("dark");
         nw.Clear();

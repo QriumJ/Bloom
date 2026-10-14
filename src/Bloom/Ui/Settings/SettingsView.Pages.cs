@@ -525,7 +525,7 @@ internal sealed partial class SettingsView
             }
             ClaudeApprovals.Apply();
         });
-        Kind(Tr("한도 임박", "Limit near"), Tr("5시간 · 주간 한도가 20% 남았을 때와 다 썼을 때 · 초기화 전 소진이 예상될 때", "5-hour · weekly limit at 20% left, when used up, or when a run-out is expected"), G.Warning, s.NoticeLimit, v => s.NoticeLimit = v);
+        Kind(Tr("한도 임박", "Limit near"), Tr("5시간 · 주간 한도가 20% 남았을 때와 다 썼을 때", "5-hour · weekly limit at 20% left or when used up"), G.Warning, s.NoticeLimit, v => s.NoticeLimit = v);
         Kind(Tr("한도 복구", "Limit reset"), Tr("모자랐던 한도가 초기화되어 다시 찼을 때", "When a low limit is full again after its reset"), G.Sync, s.NoticeRecover, v => s.NoticeRecover = v);
     }
 

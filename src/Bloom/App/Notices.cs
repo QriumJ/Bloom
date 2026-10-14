@@ -18,7 +18,7 @@ internal sealed record Notice(string Kind, string Head, string Title, string? De
     Action? Gone = null, IReadOnlyList<(string Text, Action Run)>? Buttons = null, string? Body = null);
 
 /// 알림: Claude Code and Codex turns (ClaudeWatch, CodexWatch — 진행 중, 작업 완료, 승인 대기) and the plan limits
-/// (AiUsage — 한도 임박 · 소진, 소진 예상, 한도 복구) as cards (NoticeWindow) with a sound each (Chimes). Every kind has its switch
+/// (AiUsage — 한도 임박 · 소진, 한도 복구) as cards (NoticeWindow) with a sound each (Chimes). Every kind has its switch
 /// in 설정 > 알림, and all of it stops with the main one. What is already true when watching starts (a turn already
 /// running, a limit already low) is taken in silently, so a restart never repeats old news.
 internal static class Notices
@@ -28,13 +28,11 @@ internal static class Notices
     // 작업 완료 needs a turn that took a while
     private static readonly TimeSpan StartDelay = TimeSpan.FromSeconds(4), HeadlessStartDelay = TimeSpan.FromSeconds(15), ShortestDone = TimeSpan.FromSeconds(10);
     private const double LowLeft = 20; // 한도 임박 at this much (%) left
-    private static readonly TimeSpan PaceLead = TimeSpan.FromMinutes(30); // 소진 예상 only when the run-out is this far before the reset
 
     private static readonly ClaudeWatch claude = new();
     private static readonly CodexWatch codex = new();
     private static readonly Dictionary<string, DispatcherTimer> starting = new(); // 진행 중 waits a moment: quick turns stay quiet
     private static readonly Dictionary<string, (int level, DateTime? resets)> levels = new(); // account|limit → 0 fine, 1 low, 2 used up
-    private static readonly Dictionary<string, DateTime> paced = new(); // account|limit → the reset time of the window 소진 예상 spoke for
     private static readonly Dictionary<string, int> approving = new(); // a session's key → its approval cards open now (ClaudeApprovals)
     private static Dictionary<string, AgentTask> last = new();
     private static DispatcherTimer? tick;
@@ -63,7 +61,6 @@ internal static class Notices
         foreach (var t in starting.Values) t.Stop();
         starting.Clear();
         levels.Clear();
-        paced.Clear();
         last = new();
         first = true;
         window?.Clear();
@@ -197,7 +194,6 @@ internal static class Notices
                 int level = l.Percent >= 99.5 ? 2 : left <= LowLeft ? 1 : 0;
                 bool had = levels.TryGetValue(key, out var before);
                 levels[key] = (level, l.Resets ?? before.resets);
-                Pace(a, l, all, key, had);
                 if (!had || level == before.level) continue;
                 string who = Who(a, all);
                 if (level == 0)
@@ -211,21 +207,6 @@ internal static class Notices
                     ? new Notice("limit", Head(who, Tr("한도 소진", "Limit used up")), Tr($"{l.Title} 한도 소진", $"{l.Title} limit used up"), ResetsIn(l))
                     : new Notice("limit", Head(who, Tr("한도 임박", "Limit near")), Tr($"{l.Title} 한도 {Math.Round(left)}% 남음", $"{l.Title} limit · {Math.Round(left)}% left"), ResetsIn(l)));
             }
-    }
-
-    /// 소진 예상: once per limit window, when UsagePace first expects the limit to run out PaceLead or more before its
-    /// reset while more than 20 % is left (below that 한도 임박 already speaks). A limit already on that course when
-    /// watching starts is taken in silently, like the levels.
-    private static void Pace(UsageAccount a, UsageLimit l, List<UsageAccount> all, string key, bool seen)
-    {
-        // a new window began when the reset jumps ahead by over half a window (a reset time only drifts by minutes); an
-        // unknown reset (a failed look, a passed reset) keeps the entry until the next known one tells
-        if (paced.TryGetValue(key, out var window) && l.Resets is { } next && next - window > TimeSpan.FromMinutes((l.WindowMins ?? 0) / 2.0)) paced.Remove(key);
-        if (paced.ContainsKey(key) || l.Resets is not { } reset || 100 - l.Percent <= LowLeft || UsagePace.RunOut(l, DateTime.Now) is not { } runOut || reset - runOut < PaceLead) return;
-        paced[key] = reset;
-        if (!seen || !Settings.Current.NoticeLimit) return;
-        string span = Span(runOut - DateTime.Now);
-        Show(new Notice("limit", Head(Who(a, all), Tr("소진 예상", "Run-out expected")), Tr($"{l.Title} 한도 · 이 속도면 {span} 뒤 소진", $"{l.Title} limit · out in {span} at this pace"), ResetsIn(l)));
     }
 
     /// "40분 뒤 초기화" for a limit whose reset is ahead.
