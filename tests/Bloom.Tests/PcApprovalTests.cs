@@ -39,7 +39,7 @@ internal static class PcApprovalTests
         Check.True(move.Contains("do: move", StringComparison.Ordinal) && move.Contains("q: %TEMP%\\a b.pdf", StringComparison.Ordinal) && move.Contains("to: %TEMP%\\docs", StringComparison.Ordinal), "every argument as given: " + move);
         Check.True(move.Contains(source, StringComparison.Ordinal) && move.Contains(Path.Combine(docs, "a b.pdf"), StringComparison.Ordinal), "the source, and where it will land, resolved");
         string rename = tools.Detail("pc", """{"do":"rename","q":"%TEMP%\\a b.pdf","to":"c.pdf"}""");
-        Check.True(rename.Contains(Path.Combine(temp, "c.pdf"), StringComparison.Ordinal), "a rename's new path");
+        Check.True(rename.Contains(Path.Combine(Path.GetDirectoryName(source)!, "c.pdf"), StringComparison.Ordinal), "a rename's new path: " + rename);
         string note = tools.Detail("pc", "{\"do\":\"note\",\"q\":\"line one\\nline two\\u0007\",\"to\":\"title\"}");
         Check.True(note.Contains("q: line one\nline two␇", StringComparison.Ordinal) && note.Contains("to: title", StringComparison.Ordinal), "a note whole, hidden characters shown");
         Check.True(tools.Detail("pc", """{"do":"open","q":"https://example.com/x"}""").Contains("https://example.com/x", StringComparison.Ordinal), "an address to open");
