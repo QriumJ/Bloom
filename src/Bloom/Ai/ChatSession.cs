@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Bloom.Core;
 
 namespace Bloom.Ai;
+
+internal readonly record struct SessionStart(bool Success, string? Error = null);
 
 /// One conversation's link to a CLI: Claude Code (a long-lived `claude -p` stream) or Codex for
 /// ChatGPT (one `codex exec` per turn). All events are raised on a worker thread.
@@ -25,11 +29,22 @@ internal interface IChatSession : IDisposable
     event Action<string>? ToolAskWithdrawn; // the CLI took the question back (request id)
 
     bool Start(string? resume, out string? error);
+    Task<SessionStart> StartAsync(string? resume, CancellationToken cancellation)
+    {
+        cancellation.ThrowIfCancellationRequested();
+        bool success = Start(resume, out string? error);
+        return Task.FromResult(new SessionStart(success, error));
+    }
     /// The user's answer to a ToolAsk (Bloom remembers 항상 허용 itself, per action; the CLI is never told to stop asking).
     void Answer(ToolAsk ask, bool allow);
     /// `images`: pictures sent along (Bloom Lens, attached photos) — Claude gets them in the message, Codex through
     /// --image. Other attached files are named in the text; the session may read them and write new ones (Chats.FilesOf).
     bool Send(string text, IReadOnlyList<string> images);
+    Task<bool> SendAsync(string text, IReadOnlyList<string> images, CancellationToken cancellation)
+    {
+        cancellation.ThrowIfCancellationRequested();
+        return Task.FromResult(Send(text, images));
+    }
     void Interrupt();
 }
 
@@ -69,6 +84,8 @@ internal static class AiModels
     /// The same level when the model takes it, else the nearest one below it, else its lowest.
     public static string Fit(string model, string effort)
     {
+        // A cold catalog cannot decide that a saved level is unsupported. Resolve again before sending.
+        if (IsChatGpt(model) && GptCatalog.Find(GptSlug(model) ?? GptCatalog.DefaultSlug()) is null && Array.IndexOf(Rank, effort) >= 0) return effort;
         var levels = Efforts(model);
         if (Array.IndexOf(levels, effort) >= 0) return effort;
         int want = Array.IndexOf(Rank, effort);

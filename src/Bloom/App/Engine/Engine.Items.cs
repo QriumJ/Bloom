@@ -157,6 +157,8 @@ internal sealed partial class Engine
 
     public ResultItem FromPath(string path, bool folder, EvItem? info = null)
     {
+        long size = info?.Size ?? -1;
+        DateTime? modified = info?.Modified;
         string name = Path.GetFileName(path.TrimEnd('\\'));
         if (name.Length == 0) name = path;
         string dir = Path.GetDirectoryName(path.TrimEnd('\\')) ?? "";
@@ -173,7 +175,7 @@ internal sealed partial class Engine
             Icon = IconSpec.Shell(folder ? path : path, iconKey),
             Data = path,
             AsFavorite = new Favorites.Entry { Id = id, Kind = folder ? "folder" : "file", Title = name, Subtitle = Short(dir), Target = path },
-            Detail = () => Search.Detail.ForPath(path, folder, info?.Size ?? -1, info?.Modified),
+            ReadDetail = () => Search.Detail.ForPath(path, folder, size, modified),
         };
         item.Run = () =>
         {
@@ -188,7 +190,6 @@ internal sealed partial class Engine
             {
                 new() { Title = Tr("폴더에서 보기", "Show in folder"), Keys = "Ctrl+Enter", Glyph = G.Folder, Run = () => Launch.Reveal(path) },
                 new() { Title = Tr("경로 복사", "Copy path"), Keys = "Ctrl+Shift+C", Glyph = G.Copy, Run = () => Launch.Copy(path) },
-                new() { Title = Tr("이름 복사", "Copy name"), Glyph = G.Copy, Run = () => Launch.Copy(name) },
             };
             if (folder) list.Add(new ActionItem { Title = Tr("이 폴더 크기 보기 (Space Cleaner)", "See this folder's size (Space Cleaner)"), Glyph = G.Folder, Run = () => host.OpenSpace(path) });
             if (item.Side is { } admin) list.Insert(1, admin);
@@ -279,7 +280,7 @@ internal sealed partial class Engine
     }
 
     /// "AI에게 묻기" (Tab): in the conversation Tab picks up, named, or a new one.
-    private ResultItem AiItem(string q, ChatThread? continued) => new()
+    internal ResultItem AiItem(string q, ChatThread? continued) => new()
     {
         Id = "ai:ask",
         Kind = ItemKind.Ai,

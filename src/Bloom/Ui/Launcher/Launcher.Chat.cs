@@ -9,6 +9,17 @@ namespace Bloom.Ui;
 /// The chat view's side: sending, the model and the thinking level.
 internal sealed partial class Launcher
 {
+    private void CatalogUpdated()
+    {
+        if (Dispatcher.HasShutdownStarted) return;
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!IsVisible) return;
+            UpdateChrome();
+            if (actions.IsOpen && actions.Heading == Tr("모델 · 생각 수준", "Model · thinking level")) PickModel();
+        }, System.Windows.Threading.DispatcherPriority.Background);
+    }
+
     public void SendChat()
     {
         if (thread is null) return;

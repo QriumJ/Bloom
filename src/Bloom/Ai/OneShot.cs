@@ -22,15 +22,16 @@ internal static class OneShot
         if (text.Length == 0) return ("", null);
         if (Demo.On) return await DemoAnswers.Ask(name, text, ct); // recording mode: nothing is asked
         if (text.Length > 12000) text = text[..12000];
-        return provider == "chatgpt" ? await Codex(system, text, model, effort, name, ct) : await Claude(system, text, model, effort, ct);
+        string? accountHome = AiAccounts.ChatHome(provider);
+        return provider == "chatgpt" ? await Codex(system, text, model, effort, name, accountHome, ct) : await Claude(system, text, model, effort, accountHome, ct);
     }
 
-    private static async Task<(string? text, string? error)> Claude(string system, string text, string model, string? effort, CancellationToken ct)
+    private static async Task<(string? text, string? error)> Claude(string system, string text, string model, string? effort, string? accountHome, CancellationToken ct)
     {
         string? cli = ClaudeSession.FindCli(Settings.Current.ClaudePath);
         if (cli is null) return (null, AiErrors.ClaudeMissing);
         var psi = Psi(cli);
-        AiAccounts.UseHome(psi, "claude", AiAccounts.ChatHome("claude"));
+        AiAccounts.UseHome(psi, "claude", accountHome);
         bool fast = effort is null or "fast";
         foreach (string a in new[]
         {
@@ -49,7 +50,7 @@ internal static class OneShot
         return (output.Trim(), null);
     }
 
-    private static async Task<(string? text, string? error)> Codex(string system, string text, string model, string? effort, string name, CancellationToken ct)
+    private static async Task<(string? text, string? error)> Codex(string system, string text, string model, string? effort, string name, string? accountHome, CancellationToken ct)
     {
         string? exe = CodexSession.FindCli(Settings.Current.CodexPath);
         if (exe is null) return (null, AiErrors.CodexMissing);
@@ -57,8 +58,8 @@ internal static class OneShot
         string instructions = Path.Combine(cwd, name + ".md");
         await File.WriteAllTextAsync(instructions, system, ct);
         var psi = Psi(exe);
-        AiAccounts.UseHome(psi, "chatgpt", AiAccounts.ChatHome("chatgpt"));
-        _ = CodexAuth.Unsaved(AiAccounts.ChatHome("chatgpt")); // tokens the light way refreshed go in first
+        AiAccounts.UseHome(psi, "chatgpt", accountHome);
+        _ = CodexAuth.Unsaved(accountHome); // tokens the light way refreshed go in first
         var args = new List<string> { "exec", "--json", "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "read-only", "--cd", cwd, "--color", "never" };
         if (AiModels.GptSlug(model) is { } slug)
         {

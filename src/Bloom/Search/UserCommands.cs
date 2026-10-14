@@ -38,9 +38,10 @@ internal sealed partial class UserCommands
 
     public static void Load()
     {
+        saver?.Dispose();
         Current = Json.Load<UserCommands>(Paths.In("usercommands.json"));
         Index();
-        saver = new Saver(() => Json.Save(Paths.In("usercommands.json"), Current));
+        saver = Saver.ForJson(Paths.In("usercommands.json"), () => Current);
     }
 
     public static UserCommand New(string kind, string name, string body, string? keyword) => new() { Id = Guid.NewGuid().ToString("N")[..12], Kind = kind, Name = name, Body = body, Keyword = keyword };

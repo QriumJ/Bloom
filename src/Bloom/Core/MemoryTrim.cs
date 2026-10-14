@@ -5,9 +5,8 @@ using Bloom.Native;
 
 namespace Bloom.Core;
 
-/// Giving memory back to Windows while Bloom waits. The managed heap stays small (about 9 MB in a real 0.9.1 session),
-/// so the GC seldom runs on its own, while WPF's pictures and render resources keep native memory behind small managed
-/// objects until their finalizers run: a forced collection with the finalizers gave 25 MB back in that session.
+/// Explicit memory diagnostics and cleanup after unusually large operations. Normal hidden/idle
+/// periods leave collection to the runtime: forced compacting GC also pauses drawing and keyboard hooks.
 internal static class MemoryTrim
 {
     private static int running;
@@ -28,12 +27,11 @@ internal static class MemoryTrim
         Interlocked.Increment(ref count);
     }
 
-    /// Now, on a thread of its own at the highest priority, and at most one at a time. A blocking GC runs at the
-    /// priority of the thread that started it and stops every thread meanwhile, the Win key's hook included (it is
-    /// managed code): started on the UI thread at Normal on a busy PC it waited its turn with the UI and the keyboard
-    /// stopped. The finalizers and the working-set trim no longer hold the UI thread at all.
+    /// Only explicit aggressive cleanup opts into collection. Routine idle requests do no work:
+    /// a hidden launcher can coexist with an active chat, screenshot pen, or another Bloom window.
     public static void Soon(bool aggressive = false)
     {
+        if (!aggressive) return;
         if (Interlocked.Exchange(ref running, 1) == 1) return;
         new Thread(() =>
         {

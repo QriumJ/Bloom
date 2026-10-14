@@ -32,11 +32,30 @@ internal sealed partial class ClaudeWatch
     /// A turn ended normally: the session went idle, its Claude Code still running (closing it is no news).
     public event Action<AgentTask, TimeSpan>? Finished;
 
+    /// Claude Code's own folder: CLAUDE_CONFIG_DIR, else ~/.claude.
+    public static string Home => Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR") is { Length: > 0 } h ? h : Path.Combine(Paths.Home, ".claude");
+
     public ClaudeWatch()
     {
-        string home = Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR") is { Length: > 0 } h ? h : Path.Combine(Paths.Home, ".claude");
-        sessions = Path.Combine(home, "sessions");
-        projects = Path.Combine(home, "projects");
+        sessions = Path.Combine(Home, "sessions");
+        projects = Path.Combine(Home, "projects");
+    }
+
+    /// The running Claude Code with this process id, from its session file: typed in (not a program's `claude -p`), its
+    /// name and folder; null when it has none.
+    public static (bool Interactive, string? Name, string? Cwd)? Session(int pid)
+    {
+        try
+        {
+            using var fs = new FileStream(Path.Combine(Home, "sessions", pid.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".json"), FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var doc = JsonDocument.Parse(fs);
+            var r = doc.RootElement;
+            return (Str(r, "kind") is not { } kind || kind == "interactive", Str(r, "name"), Str(r, "cwd"));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return null;
+        }
     }
 
     /// The sessions working or waiting now (Bloom's own CLI runs left out).
@@ -65,7 +84,7 @@ internal sealed partial class ClaudeWatch
             if (active.TryGetValue(info.SessionId, out var before)) since = before.Since;
             string? prompt = Prompt(info, since);
             string title = AgentText.Title(info.Name) ?? prompt ?? "Claude Code";
-            now[info.SessionId] = new AgentTask("claude:" + info.SessionId, "Claude Code", title, prompt == title ? null : prompt, waiting, since, info.Headless);
+            now[info.SessionId] = new AgentTask("claude:" + info.SessionId, "Claude Code", title, prompt == title ? null : prompt, waiting, since, info.Headless, info.Pid);
         }
         foreach (var (id, task) in active)
             if (!now.ContainsKey(id) && infos.TryGetValue(id, out var info) && info.Status == "idle" && Alive(info.Pid, info.ProcStart))

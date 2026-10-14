@@ -31,7 +31,9 @@ internal sealed partial class Launcher
     {
         [Mode.Root] = new()
         {
-            Placeholder = () => Tr("검색하거나 AI에게 묻기", "Search, or ask AI"),
+            // one example of what can be typed after it, the next at each opening (Core\Expressions)
+            Placeholder = () => Tr("검색하거나 AI에게 묻기", "Search, or ask AI") + (Expressions.Hint(openings) is { } example ? " · " + example : ""),
+            Context = () => box.Text.Trim() == Expressions.Key ? Tr("쓸 수 있는 표현", "What you can type") : "Bloom",
             Live = true,
         },
         [Mode.Files] = new()

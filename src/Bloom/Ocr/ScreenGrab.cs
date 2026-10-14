@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,6 +10,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using Bloom.Native;
 using Bloom.Ui;
 
@@ -27,58 +29,75 @@ internal static class ScreenGrab
 {
     /// The picked rectangle and its pixels (BGRA), or null when cancelled. With `draw`, the pixels have the ink in
     /// them and `then` is what the drawing bar chose (capture · pin · ask · save); otherwise `then` is null.
-    public static async Task<(ScreenRect rect, byte[] bgra, string? then)?> Pick(string hint, bool draw = false)
+    public static Task<(ScreenRect rect, byte[] bgra, string? then)?> Pick(string hint, bool draw = false)
+    {
+        var owner = Dispatcher.CurrentDispatcher;
+        var preferences = DrawPreferences.Capture();
+        var theme = DrawTheme.Capture();
+        var persist = DrawPreferences.PersistOn(owner, changed => changed.Save());
+        return CaptureDispatcher.Run(abort => PickOnDispatcher(hint, draw, preferences, theme, persist, abort));
+    }
+
+    private static async Task<(ScreenRect rect, byte[] bgra, string? then)?> PickOnDispatcher(string hint, bool draw,
+        DrawPreferences preferences, DrawTheme theme, Action<DrawPreferences> persist, CancellationToken abort)
     {
         int vx = Win32.GetSystemMetrics(76), vy = Win32.GetSystemMetrics(77), vw = Win32.GetSystemMetrics(78), vh = Win32.GetSystemMetrics(79);
-        var shot = Grab(new ScreenRect(vx, vy, vw, vh));
-        if (shot is null) return null;
-        var desktop = BitmapSource.Create(vw, vh, 96, 96, PixelFormats.Bgra32, null, shot, vw * 4);
-        desktop.Freeze();
+        var desktop = GrabDesktop(new ScreenRect(vx, vy, vw, vh));
+        if (desktop is null) return null;
         var done = new TaskCompletionSource<(ScreenRect rect, string? then)?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var windows = new List<Window>();
         DrawLayer? layer = null;
+        void CloseWindows()
+        {
+            foreach (var w in windows.ToArray())
+                try { w.Close(); }
+                catch (InvalidOperationException) { /* already closing */ }
+        }
         void Finish(ScreenRect? r, string? then = null)
         {
             // done first: closing an overlay deactivates it, and its Deactivated calls back in here
             if (!done.TrySetResult(r is { } x && then != "" ? (x, then) : null)) return;
-            foreach (var w in windows.ToArray())
-                try
-                {
-                    w.Close();
-                }
-                catch (InvalidOperationException)
-                {
-                    // already closing
-                }
+            CloseWindows();
         }
-        foreach (IntPtr mon in Launcher.Monitors())
+        // Only CaptureDispatcher cancels this token, on this same STA after a routed-input callback fails.
+        using var cancellation = abort.Register(() => Finish(null));
+        try
         {
-            var info = new Win32.MONITORINFO { cbSize = Marshal.SizeOf<Win32.MONITORINFO>() };
-            if (!Win32.GetMonitorInfo(mon, ref info)) continue;
-            var m = info.rcMonitor;
-            windows.Add(Overlay(desktop, new ScreenRect(m.Left, m.Top, m.Right - m.Left, m.Bottom - m.Top), vx, vy, hint, r => Finish(r),
-                !draw ? null : (canvas, sel, room, r) => layer = new DrawLayer(canvas, sel, room, then => Finish(r, then)), () => layer));
-        }
-        foreach (var w in windows) w.Show();
-        // the window under the mouse takes the keyboard (Esc)
-        Win32.GetCursorPos(out var cur);
-        foreach (var w in windows)
-            if (w.Tag is ScreenRect r && cur.X >= r.X && cur.X < r.X + r.Width && cur.Y >= r.Y && cur.Y < r.Y + r.Height)
+            foreach (IntPtr mon in Launcher.Monitors())
             {
-                w.Activate();
-                Win32.ForceForeground(new WindowInteropHelper(w).Handle);
+                var info = new Win32.MONITORINFO { cbSize = Marshal.SizeOf<Win32.MONITORINFO>() };
+                if (!Win32.GetMonitorInfo(mon, ref info)) continue;
+                var m = info.rcMonitor;
+                windows.Add(Overlay(desktop, new ScreenRect(m.Left, m.Top, m.Right - m.Left, m.Bottom - m.Top), vx, vy, hint, r => Finish(r),
+                    !draw ? null : (canvas, sel, room, r) => layer = new DrawLayer(canvas, sel, room, then => Finish(r, then), preferences, theme, persist), () => layer,
+                    DrawTheme.Brush(theme.Accent)));
             }
-        var picked = await done.Task;
-        if (picked is not { rect.IsEmpty: false } p) return null;
-        var rect = p.rect;
-        var px = Crop(shot, vw, rect.X - vx, rect.Y - vy, rect.Width, rect.Height);
-        return (rect, layer?.Merge(px, rect.Width, rect.Height) ?? px, p.then);
+            if (windows.Count == 0) return null;
+            foreach (var w in windows) w.Show();
+            // the window under the mouse takes the keyboard (Esc)
+            Win32.GetCursorPos(out var cur);
+            foreach (var w in windows)
+                if (w.Tag is ScreenRect r && cur.X >= r.X && cur.X < r.X + r.Width && cur.Y >= r.Y && cur.Y < r.Y + r.Height)
+                {
+                    w.Activate();
+                    Win32.ForceForeground(new WindowInteropHelper(w).Handle);
+                }
+            var picked = await done.Task;
+            if (picked is not { rect.IsEmpty: false } p) return null;
+            var rect = p.rect;
+            var px = Crop(desktop, rect.X - vx, rect.Y - vy, rect.Width, rect.Height);
+            return (rect, layer?.Merge(px, rect.Width, rect.Height) ?? px, p.then);
+        }
+        finally
+        {
+            CloseWindows();
+        }
     }
 
     /// One monitor's frozen picture. `startDraw` (화면 캡처) turns a finished drag into the drawing layer instead of
     /// the answer; `drawing` is that layer once any monitor has it (the other monitors then stay still).
-    private static Window Overlay(BitmapSource desktop, ScreenRect mon, int vx, int vy, string hint, Action<ScreenRect?> finish,
-        Func<Canvas, Rect, Size, ScreenRect, DrawLayer>? startDraw, Func<DrawLayer?> drawing)
+    internal static Window Overlay(BitmapSource desktop, ScreenRect mon, int vx, int vy, string hint, Action<ScreenRect?> finish,
+        Func<Canvas, Rect, Size, ScreenRect, DrawLayer>? startDraw, Func<DrawLayer?> drawing, Brush accent)
     {
         var w = new Window
         {
@@ -104,7 +123,7 @@ internal static class ScreenGrab
         root.Children.Add(image);
         var canvas = new Canvas();
         var dim = new Path { Fill = new SolidColorBrush(Color.FromArgb(0x70, 0, 0, 0)) };
-        var frame = new Rectangle { Stroke = Theme.P.Accent, StrokeThickness = 1.5, Visibility = Visibility.Collapsed };
+        var frame = new Rectangle { Stroke = accent, StrokeThickness = 1.5, Visibility = Visibility.Collapsed };
         var size = new SmoothBorder
         {
             Background = new SolidColorBrush(Color.FromArgb(0xE6, 0x1E, 0x19, 0x1C)),
@@ -156,6 +175,13 @@ internal static class ScreenGrab
         w.SourceInitialized += (_, _) =>
         {
             IntPtr h = new WindowInteropHelper(w).Handle;
+            // Capture has its own UI thread but still shares WPF's renderer. Keep the animated
+            // full-screen selection/ink surface off the hardware path without changing other windows.
+            if (HwndSource.FromHwnd(h)?.CompositionTarget is { } target)
+            {
+                target.RenderMode = RenderMode.SoftwareOnly;
+                Bloom.Core.Log.Write($"capture overlay {mon.Width}x{mon.Height} render={target.RenderMode}");
+            }
             Glass.ToolWindow(w);
             Win32.SetWindowPos(h, Win32.HWND_TOPMOST, mon.X, mon.Y, mon.Width, mon.Height, Win32.SWP_NOACTIVATE);
         };
@@ -243,6 +269,29 @@ internal static class ScreenGrab
             DeleteDC(mem);
             _ = Win32.ReleaseDC(IntPtr.Zero, screen);
         }
+    }
+
+    // The raw array stays inside this synchronous call. WIC owns a copy of its pixels,
+    // so the picker can await drawing without retaining another full desktop on the managed heap.
+    private static BitmapSource? GrabDesktop(ScreenRect r)
+    {
+        var pixels = Grab(r);
+        return pixels is null ? null : FrozenPixels(pixels, r.Width, r.Height);
+    }
+
+    internal static BitmapSource FrozenPixels(byte[] pixels, int width, int height)
+    {
+        var source = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, width * 4);
+        source.Freeze();
+        return source;
+    }
+
+    internal static byte[] Crop(BitmapSource src, int x, int y, int w, int h)
+    {
+        var dst = new byte[w * h * 4];
+        // Coordinates are physical desktop pixels, independent of each overlay's DIP scale.
+        src.CopyPixels(new Int32Rect(x, y, w, h), dst, w * 4, 0);
+        return dst;
     }
 
     public static byte[] Crop(byte[] src, int srcWidth, int x, int y, int w, int h)

@@ -20,9 +20,12 @@ namespace Bloom.Ai;
 internal sealed class ClaudeSession : IChatSession
 {
     private Process? proc;
-    private StreamWriter? stdin;
+    private QueuedSessionInput? stdin;
     private readonly object gate = new();
     private int reqCounter;
+    private long turn;
+    private bool ending, stopped;
+    private readonly InputDeliveryWatchdog interruptWatch = new();
 
     public string Model { get; }
     public string Effort { get; }
@@ -30,7 +33,7 @@ internal sealed class ClaudeSession : IChatSession
     public string? SessionId { get; private set; }
     public bool Busy { get; private set; }
     public DateTime LastUsed { get; private set; } = DateTime.UtcNow;
-    public bool Alive => proc is { HasExited: false };
+    public bool Alive => !ending && proc is { HasExited: false };
 
     // all raised on the reader thread
     public event Action<string>? SessionStarted;
@@ -47,7 +50,7 @@ internal sealed class ClaudeSession : IChatSession
     public static Func<(object server, Func<string, string?> doing)?>? PcTools;
 
     /// The other MCP servers the user switched on (설정 > PC 작업 · MCP), read where they are kept.
-    public static Func<List<McpServerDef>>? ExtraMcp;
+    public static Func<Func<List<McpServerDef>>?>? PrepareMcp;
 
     private Func<string, string?>? doing;
     private string? mcpFile; // this session's --mcp-config file (its servers' env stays off the command line)
@@ -128,17 +131,49 @@ internal sealed class ClaudeSession : IChatSession
         return $"<local_time>{now:yyyy-MM-dd HH:mm} ({now:dddd}), {TimeZoneInfo.Local.Id}</local_time>";
     }
 
+    private sealed record Startup(string? Cli, string Cwd, string Prompt, JsonElement? Server,
+        Func<List<McpServerDef>>? ReadMcp, string? Resume);
+
     public bool Start(string? resume, out string? error)
     {
+        var result = StartAsync(resume, CancellationToken.None).GetAwaiter().GetResult();
+        error = result.Error;
+        return result.Success;
+    }
+
+    public Task<SessionStart> StartAsync(string? resume, CancellationToken cancellation)
+    {
+        var pc = Settings.Current.AiTools ? PcTools?.Invoke() : null;
+        doing = pc?.doing;
+        var plan = new Startup(Settings.Current.ClaudePath, Path.Combine(Paths.Local, "ai"),
+            SystemPrompt(files + "/out", pc: pc is not null, titles: Settings.Current.AiTitles),
+            pc is { } tools ? JsonSerializer.SerializeToElement(tools.server) : null, PrepareMcp?.Invoke(), resume);
+        return Task.Run(() =>
+        {
+            bool started = false;
+            try
+            {
+                started = StartPrepared(plan, cancellation, out string? error);
+                return new SessionStart(started, error);
+            }
+            finally { if (!started && mcpFile is { } file) TryDelete(file); }
+        }, cancellation);
+    }
+
+    private bool StartPrepared(Startup plan, CancellationToken cancellation, out string? error)
+    {
         error = null;
-        string? cli = FindCli(Settings.Current.ClaudePath);
+        cancellation.ThrowIfCancellationRequested();
+        string? cli = FindCli(plan.Cli);
         if (cli is null)
         {
             error = AiErrors.ClaudeMissing;
             return false;
         }
-        string work = Paths.InLocal(@"ai\.keep");
-        string cwd = Path.GetDirectoryName(work)!;
+        cancellation.ThrowIfCancellationRequested();
+        string cwd = plan.Cwd;
+        Directory.CreateDirectory(cwd);
+        string work = Path.Combine(cwd, ".keep");
         File.WriteAllText(work, "");
         ClearOldMcpFiles(cwd);
         var psi = new ProcessStartInfo(cli)
@@ -154,23 +189,21 @@ internal sealed class ClaudeSession : IChatSession
             WorkingDirectory = cwd,
         };
         bool fast = Effort == "fast" || !AiModels.HasEffort(Model);
-        var pc = Settings.Current.AiTools ? PcTools?.Invoke() : null;
-        doing = pc?.doing;
         // Read / Write reach this conversation's folder without asking; with Bloom's tools anything else is asked in
         // the chat (--permission-prompt-tool stdio), without them it is refused
         string allowed = $"WebSearch,WebFetch,Read(./{files}/**),Edit(./{files}/out/**)"; // Edit rules cover Write
         foreach (string a in new[]
         {
             "-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose", "--include-partial-messages",
-            "--model", Model, "--system-prompt", SystemPrompt(files + "/out", pc: pc is not null, titles: Settings.Current.AiTitles),
+            "--model", Model, "--system-prompt", plan.Prompt,
             "--tools", "WebSearch,WebFetch,Read,Write", "--allowedTools", allowed,
             "--strict-mcp-config", "--disable-slash-commands", "--name", name,
             "--settings", fast ? "{\"disableAllHooks\":true,\"alwaysThinkingEnabled\":false}" : "{\"disableAllHooks\":true}",
         }) psi.ArgumentList.Add(a);
         // Bloom's tool and the other servers switched on, in a file of this session's; every call asks in the chat
         var servers = new Dictionary<string, object>();
-        if (pc is { } tools) servers["bloom"] = tools.server;
-        foreach (var d in ExtraMcp?.Invoke() ?? new())
+        if (plan.Server is { } server) servers["bloom"] = server;
+        foreach (var d in plan.ReadMcp?.Invoke() ?? new())
             servers.TryAdd(d.Name, d.Raw is { } raw ? raw : d.Stdio ? new { type = "stdio", command = d.Command, args = d.Args, env = d.Env } : new { type = "http", url = d.Url });
         if (servers.Count > 0)
         {
@@ -183,25 +216,47 @@ internal sealed class ClaudeSession : IChatSession
             psi.ArgumentList.Add("--effort");
             psi.ArgumentList.Add(Effort);
         }
-        if (!string.IsNullOrEmpty(resume))
+        if (!string.IsNullOrEmpty(plan.Resume))
         {
             psi.ArgumentList.Add("--resume");
-            psi.ArgumentList.Add(resume);
+            psi.ArgumentList.Add(plan.Resume);
         }
         Cli.CleanEnvironment(psi); // a Claude session that launched us must not leak its routing into the user's CLI
         AiAccounts.UseHome(psi, "claude", AccountHome);
+        Process? launched = null;
+        QueuedSessionInput? launchedInput = null;
+        bool handedOff = false;
         try
         {
-            var p = Process.Start(psi);
+            cancellation.ThrowIfCancellationRequested();
+            var p = launched = Process.Start(psi);
             if (p is null)
             {
                 error = AiErrors.ClaudeStartFailed;
                 return false;
             }
-            proc = p;
-            stdin = p.StandardInput;
-            stdin.AutoFlush = true;
-            SessionId = resume;
+            var input = launchedInput = new QueuedSessionInput(p.StandardInput, lines: true, e =>
+            {
+                Log.Error("claude stdin", e);
+                try { p.Kill(true); }
+                catch { /* the reader reports a process that already ended */ }
+            });
+            bool publish;
+            lock (gate)
+            {
+                publish = !ending && !cancellation.IsCancellationRequested;
+                if (publish)
+                {
+                    proc = p;
+                    stdin = input;
+                    SessionId = plan.Resume;
+                }
+            }
+            if (!publish)
+            {
+                error = AiErrors.Stopped;
+                return false;
+            }
             var stderr = new StringBuilder();
             p.ErrorDataReceived += (_, e) =>
             {
@@ -212,9 +267,11 @@ internal sealed class ClaudeSession : IChatSession
                 }
             };
             p.BeginErrorReadLine();
-            var reader = new Thread(() => ReadLoop(p, stderr)) { IsBackground = true, Name = "claude-out" };
+            var reader = new Thread(() => ReadLoop(p, stderr, input)) { IsBackground = true, Name = "claude-out" };
+            int pid = p.Id;
             reader.Start();
-            Log.Write($"claude: started pid {p.Id} model {Model} effort {Effort} resume {resume ?? "-"}");
+            handedOff = true;
+            Log.Write($"claude: started pid {pid} model {Model} effort {Effort} resume {plan.Resume ?? "-"}");
             return true;
         }
         catch (Exception e)
@@ -223,35 +280,48 @@ internal sealed class ClaudeSession : IChatSession
             error = AiErrors.ClaudeStartFailed;
             return false;
         }
+        finally
+        {
+            if (!handedOff)
+            {
+                lock (gate)
+                {
+                    if (ReferenceEquals(proc, launched)) proc = null;
+                    if (ReferenceEquals(stdin, launchedInput)) stdin = null;
+                }
+                launchedInput?.Dispose();
+                try { launched?.Kill(true); }
+                catch { /* startup failed or was cancelled */ }
+                launched?.Dispose();
+            }
+        }
     }
 
     public bool Send(string text, IReadOnlyList<string> images)
     {
         lock (gate)
         {
-            if (stdin is null || !Alive) return false;
-            var content = new List<object>();
-            foreach (string image in images)
-                if (File.Exists(image) && Chats.ImageType(image) is { } type)
-                    content.Add(new { type = "image", source = new { type = "base64", media_type = type, data = Convert.ToBase64String(File.ReadAllBytes(image)) } });
-            content.Add(new { type = "text", text });
-            var msg = new
+            if (stdin is null || !Alive || Busy) return false;
+            var pictures = images.ToArray();
+            interruptWatch.Cancel();
+            turn++;
+            stopped = false;
+            Busy = true;
+            LastUsed = DateTime.UtcNow;
+            if (stdin.Enqueue(token =>
             {
-                type = "user",
-                message = new { role = "user", content = content.ToArray() },
-            };
-            try
-            {
-                stdin.WriteLine(JsonSerializer.Serialize(msg));
-                Busy = true;
-                LastUsed = DateTime.UtcNow;
-                return true;
-            }
-            catch (Exception e)
-            {
-                Log.Error("claude send", e);
-                return false;
-            }
+                var content = new List<object>();
+                foreach (string image in pictures)
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (File.Exists(image) && Chats.ImageType(image) is { } type)
+                        content.Add(new { type = "image", source = new { type = "base64", media_type = type, data = Convert.ToBase64String(File.ReadAllBytes(image)) } });
+                }
+                content.Add(new { type = "text", text });
+                return JsonSerializer.Serialize(new { type = "user", message = new { role = "user", content = content.ToArray() } });
+            })) return true;
+            Busy = false;
+            return false;
         }
     }
 
@@ -273,14 +343,7 @@ internal sealed class ClaudeSession : IChatSession
         lock (gate)
         {
             if (stdin is null || !Alive) return;
-            try
-            {
-                stdin.WriteLine(JsonSerializer.Serialize(new { type = "control_response", response }));
-            }
-            catch (IOException e)
-            {
-                Log.Error("claude answer", e);
-            }
+            stdin.Enqueue(_ => JsonSerializer.Serialize(new { type = "control_response", response }));
         }
     }
 
@@ -289,18 +352,28 @@ internal sealed class ClaudeSession : IChatSession
         lock (gate)
         {
             if (stdin is null || !Alive || !Busy) return;
-            try
+            var input = stdin;
+            var process = proc!;
+            long version = turn;
+            string id = "int" + Interlocked.Increment(ref reqCounter);
+            var delivered = input.EnqueueTracked(_ => JsonSerializer.Serialize(new { type = "control_request", request_id = id, request = new { subtype = "interrupt" } }));
+            _ = interruptWatch.Watch(delivered, () =>
             {
-                stdin.WriteLine(JsonSerializer.Serialize(new { type = "control_request", request_id = "int" + Interlocked.Increment(ref reqCounter), request = new { subtype = "interrupt" } }));
-            }
-            catch
-            {
-                /* process ending */
-            }
+                lock (gate)
+                {
+                    if (!Busy || turn != version || !ReferenceEquals(stdin, input) || !ReferenceEquals(proc, process)) return;
+                    // Retire this process before releasing the gate: no new turn can start on it
+                    // between the identity check and the (potentially slow) process-tree kill.
+                    ending = stopped = true;
+                    input.Dispose();
+                }
+                try { process.Kill(true); }
+                catch { /* reader reports an already-ended process */ }
+            });
         }
     }
 
-    private void ReadLoop(Process p, StringBuilder stderr)
+    private void ReadLoop(Process p, StringBuilder stderr, QueuedSessionInput input)
     {
         bool sawDelta = false;
         try
@@ -323,12 +396,14 @@ internal sealed class ClaudeSession : IChatSession
         {
             Log.Error("claude read", e);
         }
+        input.Dispose();
+        interruptWatch.Cancel();
         if (Busy)
         {
             Busy = false;
             string tail;
             lock (stderr) tail = stderr.ToString().Trim();
-            TurnEnded?.Invoke(false, tail.Length > 0 ? Trim(tail) : AiErrors.ClaudeNoAnswer);
+            TurnEnded?.Invoke(false, stopped ? AiErrors.Stopped : tail.Length > 0 ? Trim(tail) : AiErrors.ClaudeNoAnswer);
         }
         string err;
         lock (stderr) err = stderr.ToString();
@@ -403,6 +478,7 @@ internal sealed class ClaudeSession : IChatSession
                 ToolAskWithdrawn?.Invoke(Str(r, "request_id"));
                 break;
             case "result":
+                interruptWatch.Cancel();
                 Busy = false;
                 LastUsed = DateTime.UtcNow;
                 if (r.TryGetProperty("usage", out var u))
@@ -430,9 +506,11 @@ internal sealed class ClaudeSession : IChatSession
     {
         lock (gate)
         {
+            ending = true;
+            interruptWatch.Cancel();
             try
             {
-                stdin?.Close();
+                stdin?.Dispose();
             }
             catch
             {

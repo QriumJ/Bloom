@@ -27,6 +27,7 @@ internal sealed class QueryMemory
 
     public static void Load()
     {
+        saver?.Dispose();
         file = Paths.In("learned.json");
         Current = Json.Load<QueryMemory>(file);
         saver = new Saver(() =>

@@ -330,15 +330,15 @@ internal sealed class OnboardingWindow : Window
             Theme.Apply(s.Theme);
         };
         sp.Children.Add(Labeled(Tr("색", "Colour"), sw));
-        // how it draws: the GPU (smooth) or the CPU (about 30 MB less memory; a slow CPU may stutter on moving screens)
-        var draw = new Segmented(new[] { ("gpu", Tr("부드러운 움직임", "Smooth motion")), ("cpu", Tr("메모리 절약", "Lower memory use")) }, s.GpuDrawing ? "gpu" : "cpu");
+        // how it draws: the CPU by default; the GPU is experimental (it froze the whole screen for seconds on one PC)
+        var draw = new Segmented(new[] { ("cpu", Tr("CPU (기본)", "CPU (default)")), ("gpu", Tr("GPU (실험적)", "GPU (experimental)")) }, s.GpuDrawing ? "gpu" : "cpu");
         draw.Picked += v =>
         {
             s.GpuDrawing = v == "gpu";
             Settings.Save();
         };
         sp.Children.Add(Labeled(Tr("그리기", "Drawing"), draw));
-        var about = Theme.T(Hangul.KeepAll(Tr("부드러운 움직임은 GPU를 사용합니다. 메모리 절약은 약 30 MB를 덜 쓰지만, 느린 CPU에서는 움직임이 끊길 수 있습니다. 다음 실행부터 적용됩니다.", "Smooth motion uses the GPU. Lower memory use saves about 30 MB, but may stutter on a slow CPU. Applies at next start.")), 12, Theme.P.TextFaint, Theme.Regular, false);
+        var about = Theme.T(Hangul.KeepAll(Tr("기본은 CPU로 그립니다. GPU로 그리기는 실험적 기능이며, 일부 PC에서는 화면이 끊기거나 몇 초 동안 멈출 수 있습니다. 다음 실행부터 적용됩니다.", "Bloom draws with the CPU by default. GPU drawing is experimental: some PCs may stutter or freeze for seconds. Applies at next start.")), 12, Theme.P.TextFaint, Theme.Regular, false);
         about.TextWrapping = TextWrapping.Wrap;
         about.Margin = new Thickness(2, 10, 2, 0);
         sp.Children.Add(about);

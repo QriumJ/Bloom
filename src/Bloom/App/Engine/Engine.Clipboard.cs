@@ -78,6 +78,10 @@ internal sealed partial class Engine
     {
         var clip = host.Clipboard;
         string? url = ClipboardHistory.Url(e);
+        var snapshot = new ClipPreview(e.Kind, e.Text, e.Files?.ToArray() ?? Array.Empty<string>(),
+            e.Kind == "image" ? ClipboardHistory.ImagePath(e) : "", e.Width, e.Height,
+            e.Source, e.CopiedAt, e.Pinned, url is not null);
+        bool readsFile = snapshot.Kind == "image" || (snapshot.Kind == "files" && snapshot.Files.Length == 1);
         var item = new ResultItem
         {
             Id = e.Id,
@@ -95,7 +99,8 @@ internal sealed partial class Engine
             Data = e,
             PrimaryLabel = Tr("붙여넣기", "Paste"),
             Run = () => _ = clip.Paste(e),
-            Detail = () => ClipDetail(e),
+            Detail = readsFile ? null : () => ClipDetail(snapshot),
+            ReadDetail = readsFile ? () => ClipDetail(snapshot) : null,
         };
         item.MoreActions = () =>
         {
@@ -165,13 +170,16 @@ internal sealed partial class Engine
         return item;
     }
 
-    private static Search.Detail ClipDetail(ClipEntry e)
+    private sealed record ClipPreview(string Kind, string? Text, string[] Files, string ImagePath,
+        int Width, int Height, string? Source, DateTime CopiedAt, bool Pinned, bool IsLink);
+
+    private static Search.Detail ClipDetail(ClipPreview e)
     {
         Search.Detail d;
         switch (e.Kind)
         {
             case "image":
-                string path = ClipboardHistory.ImagePath(e);
+                string path = e.ImagePath;
                 d = new Search.Detail { Image = path, Shell = path };
                 d.Add(Tr("종류", "Kind"), Tr("이미지", "Image")).Add(Tr("해상도", "Resolution"), $"{e.Width} × {e.Height}");
                 try
@@ -183,18 +191,18 @@ internal sealed partial class Engine
                     /* the PNG went away */
                 }
                 break;
-            case "files" when e.Files is { Count: 1 } one:
+            case "files" when e.Files is { Length: 1 } one:
                 d = Search.Detail.ForPath(one[0], Directory.Exists(one[0]));
                 break;
             case "files":
-                d = new Search.Detail { Text = string.Join("\n", e.Files ?? new()), Icon = IconSpec.Of(G.Folder) };
-                d.Add(Tr("종류", "Kind"), Tr($"파일 {e.Files?.Count ?? 0}개", $"{e.Files?.Count ?? 0} files"));
+                d = new Search.Detail { Text = string.Join("\n", e.Files), Icon = IconSpec.Of(G.Folder) };
+                d.Add(Tr("종류", "Kind"), Tr($"파일 {e.Files.Length}개", $"{e.Files.Length} files"));
                 break;
             default:
                 string text = e.Text ?? "";
                 d = new Search.Detail { Text = text };
                 int lines = text.TrimEnd('\r', '\n').Split('\n').Length;
-                d.Add(Tr("종류", "Kind"), ClipboardHistory.Url(e) is not null ? Tr("링크", "Link") : Tr("텍스트", "Text")).Add(Tr("글자 수", "Characters"), Tr($"{text.Length:#,0}자", $"{text.Length:#,0}") + (lines > 1 ? Tr($" · {lines}줄", $" · {lines} lines") : ""));
+                d.Add(Tr("종류", "Kind"), e.IsLink ? Tr("링크", "Link") : Tr("텍스트", "Text")).Add(Tr("글자 수", "Characters"), Tr($"{text.Length:#,0}자", $"{text.Length:#,0}") + (lines > 1 ? Tr($" · {lines}줄", $" · {lines} lines") : ""));
                 break;
         }
         d.Add(Tr("가져온 곳", "From"), e.Source).Add(Tr("복사한 시각", "Copied at"), e.CopiedAt.ToString("yyyy. M. d. HH:mm:ss"));

@@ -16,7 +16,7 @@ namespace Bloom.Ai;
 internal sealed partial class CodexWatch
 {
     private const int FirstRead = 256 * 1024; // a log seen for the first time: only its end, without news
-    private static readonly TimeSpan Stale = TimeSpan.FromMinutes(40), Recent = TimeSpan.FromHours(8);
+    private static readonly TimeSpan Stale = TimeSpan.FromMinutes(40), Recent = TimeSpan.FromHours(8), PidRecheck = TimeSpan.FromSeconds(15);
 
     /// One log's state.
     internal sealed class Thread
@@ -24,6 +24,8 @@ internal sealed partial class CodexWatch
         public string? Cwd, Prompt;
         public bool Subagent, Headless, TurnOpen, Waiting;
         public DateTime TurnStart, LastEvent;
+        public int? Pid; // the Codex process behind it, when CodexProcess could tell
+        public DateTime PidAsked; // when (UTC)
         public long Offset = -1; // -1: not read yet
         public bool Skip; // Bloom's own run or a subagent: never news, so its lines are never read
     }
@@ -224,7 +226,18 @@ internal sealed partial class CodexWatch
     {
         string id = ThreadId().Match(file) is { Success: true } m ? m.Groups[1].Value : file;
         string title = (names.TryGetValue(id, out var name) ? AgentText.Title(name) : null) ?? t.Prompt ?? "Codex";
-        return new AgentTask("codex:" + id, "Codex", title, t.Prompt == title ? null : t.Prompt, t.Waiting, t.TurnStart == default ? t.LastEvent : t.TurnStart, t.Headless);
+        return new AgentTask("codex:" + id, "Codex", title, t.Prompt == title ? null : t.Prompt, t.Waiting, t.TurnStart == default ? t.LastEvent : t.TurnStart, t.Headless, t.Headless ? null : Pid(file, t));
+    }
+
+    /// The process behind a thread, asked again now and then (a thread can be resumed in another process).
+    private static int? Pid(string file, Thread t)
+    {
+        if (DateTime.UtcNow - t.PidAsked > PidRecheck)
+        {
+            t.PidAsked = DateTime.UtcNow;
+            t.Pid = CodexProcess.Find(File.GetCreationTimeUtc(file));
+        }
+        return t.Pid;
     }
 
     /// Thread names (session_index.jsonl: id, thread_name), following the file like a log.

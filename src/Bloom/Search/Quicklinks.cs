@@ -37,10 +37,11 @@ internal sealed class Quicklinks
 
     public static void Load()
     {
+        saver?.Dispose();
         string file = Paths.In("quicklinks.json");
         Current = File.Exists(file) ? Json.Load<Quicklinks>(file) : new Quicklinks { Items = Defaults() };
         Index();
-        saver = new Saver(() => Json.Save(Paths.In("quicklinks.json"), Current));
+        saver = Saver.ForJson(Paths.In("quicklinks.json"), () => Current);
         if (!File.Exists(file)) saver.Touch();
     }
 

@@ -117,9 +117,10 @@ internal sealed class Favorites
 
     public static void Load()
     {
+        saver?.Dispose();
         Existed = File.Exists(Paths.In("favorites.json"));
         Current = Json.Load<Favorites>(Paths.In("favorites.json"));
-        saver = new Saver(() => Json.Save(Paths.In("favorites.json"), Current));
+        saver = Saver.ForJson(Paths.In("favorites.json"), () => Current);
         // entries of a kind Bloom no longer has (a feature that was taken out) leave the list
         static bool Gone(Entry e) => e.Kind is not ("app" or "uwp" or "file" or "folder" or "url" or "cmd" or "setting" or "tool" or "quicklink" or "sys" or "layout" or GroupKind);
         int dropped = Current.Items.RemoveAll(Gone);

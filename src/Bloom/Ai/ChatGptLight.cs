@@ -65,7 +65,8 @@ internal static class ChatGptLight
             double used = Num(w, "used_percent") ?? 0;
             DateTime? resets = Num(w, "reset_at") is double resetAt && resetAt > 0 ? DateTimeOffset.FromUnixTimeSeconds((long)resetAt).LocalDateTime
                 : Num(w, "reset_after_seconds") is double after ? at.AddSeconds(after) : null;
-            limits.Add(new UsageLimit(UsageLimit.Window((int)((Num(w, "limit_window_seconds") ?? 0) / 60)), used, resets));
+            int mins = (int)((Num(w, "limit_window_seconds") ?? 0) / 60);
+            limits.Add(new UsageLimit(UsageLimit.Window(mins), used, resets, UsageLimit.Mins(mins)));
         }
         if (limits.Count == 0) return null;
         string? plan = Str(body, "plan_type") ?? Str(claims?["https://api.openai.com/auth"], "chatgpt_plan_type");

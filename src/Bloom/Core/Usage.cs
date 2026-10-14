@@ -20,8 +20,9 @@ internal sealed class Usage
 
     public static void Load()
     {
+        saver?.Dispose();
         Current = Json.Load<Usage>(Paths.In("usage.json"));
-        saver = new Saver(() => Json.Save(Paths.In("usage.json"), Current), 1500);
+        saver = Saver.ForJson(Paths.In("usage.json"), () => Current, 1500);
     }
 
     public static void Touch(string id)

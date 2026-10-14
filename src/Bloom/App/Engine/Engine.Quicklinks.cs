@@ -71,7 +71,7 @@ internal sealed partial class Engine
     }
 
     /// "yt 고양이" in the root list: the quicklink with the words, above everything else.
-    private Section? TypedQuicklink(string text)
+    internal Section? TypedQuicklink(string text)
     {
         if (Quicklinks.Typed(text) is not { } t) return null;
         var s = new Section(Tr("브라우저", "Browser"));

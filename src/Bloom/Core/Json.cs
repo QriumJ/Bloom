@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
 
 namespace Bloom.Core;
 
@@ -42,44 +41,28 @@ internal static class Json
     {
         try
         {
-            string tmp = file + ".tmp";
-            File.WriteAllText(tmp, JsonSerializer.Serialize(value, Options));
-            File.Move(tmp, file, true);
+            SaveText(file, JsonSerializer.Serialize(value, Options));
         }
         catch (Exception e)
         {
             Log.Error("json save " + Path.GetFileName(file), e);
         }
     }
-}
 
-/// Debounced saver: many changes in a burst become one write.
-internal sealed class Saver
-{
-    private readonly Action save;
-    private readonly Timer timer;
-
-    public Saver(Action save, int delayMs = 400)
+    /// Commit an already captured snapshot; callers may write it away from the owning UI thread.
+    internal static void SaveText(string file, string text)
     {
-        this.save = save;
-        timer = new Timer(_ => Flush(), null, Timeout.Infinite, Timeout.Infinite);
-        Delay = delayMs;
-    }
-
-    private int Delay { get; }
-
-    public void Touch() => timer.Change(Delay, Timeout.Infinite);
-
-    public void Flush()
-    {
-        timer.Change(Timeout.Infinite, Timeout.Infinite);
         try
         {
-            save();
+            AtomicFile.Write(file, stream =>
+            {
+                using var writer = new StreamWriter(stream);
+                writer.Write(text);
+            });
         }
         catch (Exception e)
         {
-            Log.Error("saver", e);
+            Log.Error("json save " + Path.GetFileName(file), e);
         }
     }
 }

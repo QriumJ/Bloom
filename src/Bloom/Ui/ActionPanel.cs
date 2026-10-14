@@ -24,6 +24,10 @@ internal sealed class ActionPanel : SmoothBorder
     private readonly List<(Row row, ActionItem act)> rows = new();
     private int sel;
     private readonly ScaleTransform scale = new(1, 1);
+    private readonly ScrollViewer scroller;
+
+    // the list's usual cap, one row, and the gaps to the body's edges (the footer corner sits a little higher)
+    private const double ListMax = 300, RowHeight = 36, Edge = 8, FooterGap = 10;
 
     public bool IsOpen => Visibility == Visibility.Visible;
 
@@ -53,10 +57,10 @@ internal sealed class ActionPanel : SmoothBorder
         heading.TextTrimming = TextTrimming.CharacterEllipsis;
         Grid.SetRow(heading, 2);
         g.Children.Add(heading);
-        var sv = new ScrollViewer { Content = listPanel, MaxHeight = 300, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Focusable = false, Margin = new Thickness(0, 0, 0, 6) };
-        sv.Template = Launcher.ThinScroll();
-        Grid.SetRow(sv, 3);
-        g.Children.Add(sv);
+        scroller = new ScrollViewer { Content = listPanel, MaxHeight = ListMax, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Focusable = false, Margin = new Thickness(0, 0, 0, 6) };
+        scroller.Template = Launcher.ThinScroll();
+        Grid.SetRow(scroller, 3);
+        g.Children.Add(scroller);
         var line = new SmoothBorder { Background = Theme.P.Line };
         Grid.SetRow(line, 1);
         g.Children.Add(line);
@@ -115,32 +119,49 @@ internal sealed class ActionPanel : SmoothBorder
     private void Place(Rect? anchor)
     {
         HorizontalAlignment = HorizontalAlignment.Right;
-        if (anchor is not { } a || Parent is not FrameworkElement body || body.ActualHeight <= 0)
+        var body = Parent as FrameworkElement;
+        double room = body?.ActualHeight ?? 0;
+        double h = Fit(room);
+        if (anchor is not { } a || body is null || room <= 0)
         {
             VerticalAlignment = VerticalAlignment.Bottom;
-            Margin = new Thickness(0, 0, 12, 10);
+            Margin = new Thickness(0, 0, 12, FooterGap);
             RenderTransformOrigin = new Point(1, 1);
             return;
         }
-        Measure(new Size(Width, double.PositiveInfinity));
-        double h = DesiredSize.Height, room = body.ActualHeight, top;
-        if (a.Bottom + 4 + h <= room - 8)
+        double top;
+        if (a.Bottom + 4 + h <= room - Edge)
         {
             top = a.Bottom + 4; // under the row, growing down from it
             RenderTransformOrigin = new Point(1, 0);
         }
-        else if (a.Top - 4 - h >= 8)
+        else if (a.Top - 4 - h >= Edge)
         {
             top = a.Top - 4 - h; // over it, growing up
             RenderTransformOrigin = new Point(1, 1);
         }
         else
         {
-            top = Math.Max(8, room - h - 8);
+            top = Math.Max(Edge, room - h - Edge);
             RenderTransformOrigin = new Point(1, 0.5);
         }
         VerticalAlignment = VerticalAlignment.Top;
         Margin = new Thickness(0, top, Math.Max(12, body.ActualWidth - a.Right + 10), 0);
+    }
+
+    /// The panel's height once it fits the body. A long list scrolls inside the panel instead of running past the
+    /// launcher's bottom edge, where it was cut off: the list keeps what the body leaves after the filter line, the
+    /// title and the edges (one row at least). room ≤ 0: the body isn't laid out yet, the list keeps its usual cap.
+    private double Fit(double room)
+    {
+        Margin = new Thickness(0); // DesiredSize counts the margin, and the last opening's offset isn't the panel's height
+        scroller.MaxHeight = ListMax;
+        Measure(new Size(Width, double.PositiveInfinity));
+        double over = DesiredSize.Height - (room - Edge - FooterGap);
+        if (room <= 0 || over <= 0) return DesiredSize.Height;
+        scroller.MaxHeight = Math.Max(RowHeight, scroller.DesiredSize.Height - scroller.Margin.Bottom - over);
+        Measure(new Size(Width, double.PositiveInfinity));
+        return DesiredSize.Height;
     }
 
     private static DoubleAnimation Grow(double from) => Motion.Paced(new DoubleAnimation(from, 1, TimeSpan.FromMilliseconds(150)) { EasingFunction = new QuinticEase { EasingMode = EasingMode.EaseOut } });
@@ -160,7 +181,7 @@ internal sealed class ActionPanel : SmoothBorder
         foreach (var a in all)
         {
             if (!q.IsEmpty && Matcher.Score(q, new MatchTarget(a.Title)) <= 0) continue;
-            var r = new Row(null, 36) { Margin = new Thickness(6, 0, 6, 0) };
+            var r = new Row(null, RowHeight) { Margin = new Thickness(6, 0, 6, 0) };
             var tile = Icons.Tile(a.Glyph == '\0' ? G.App : a.Glyph, a.Glyph == G.Sparkle, 22);
             tile.Margin = new Thickness(0, 0, 10, 0);
             r.Add(tile, GridLength.Auto);

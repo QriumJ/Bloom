@@ -10,11 +10,15 @@ using Bloom.Ui;
 namespace Bloom.App;
 
 /// One card: its kind (start | done | waiting | limit | recover), the small line over it ("Claude Code · 작업 완료"),
-/// what it is about, a line under that, and a key for a card that stays until its state ends (승인 대기).
-internal sealed record Notice(string Kind, string Head, string Title, string? Detail, string? Key = null, string? ActionText = null, Action? Action = null);
+/// what it is about, a line under that, and a key for a card that stays until its state ends (승인 대기). Action is the
+/// button under the card; Click is what a click on the card itself does before it closes (a turn's card: go to its
+/// session window). Gone runs when the card leaves for any reason; Buttons are a row of choices (an approval's 허용 · 거절);
+/// Body is text shown whole, wrapped (what an approval would allow).
+internal sealed record Notice(string Kind, string Head, string Title, string? Detail, string? Key = null, string? ActionText = null, Action? Action = null, Action? Click = null,
+    Action? Gone = null, IReadOnlyList<(string Text, Action Run)>? Buttons = null, string? Body = null);
 
 /// 알림: Claude Code and Codex turns (ClaudeWatch, CodexWatch — 진행 중, 작업 완료, 승인 대기) and the plan limits
-/// (AiUsage — 한도 임박 · 소진, 한도 복구) as cards (NoticeWindow) with a sound each (Chimes). Every kind has its switch
+/// (AiUsage — 한도 임박 · 소진, 소진 예상, 한도 복구) as cards (NoticeWindow) with a sound each (Chimes). Every kind has its switch
 /// in 설정 > 알림, and all of it stops with the main one. What is already true when watching starts (a turn already
 /// running, a limit already low) is taken in silently, so a restart never repeats old news.
 internal static class Notices
@@ -23,11 +27,15 @@ internal static class Notices
     // 진행 중 waits a moment (quick turns stay quiet; a program's run — a tool checking something — longer), and
     // 작업 완료 needs a turn that took a while
     private static readonly TimeSpan StartDelay = TimeSpan.FromSeconds(4), HeadlessStartDelay = TimeSpan.FromSeconds(15), ShortestDone = TimeSpan.FromSeconds(10);
+    private const double LowLeft = 20; // 한도 임박 at this much (%) left
+    private static readonly TimeSpan PaceLead = TimeSpan.FromMinutes(30); // 소진 예상 only when the run-out is this far before the reset
 
     private static readonly ClaudeWatch claude = new();
     private static readonly CodexWatch codex = new();
     private static readonly Dictionary<string, DispatcherTimer> starting = new(); // 진행 중 waits a moment: quick turns stay quiet
     private static readonly Dictionary<string, (int level, DateTime? resets)> levels = new(); // account|limit → 0 fine, 1 low, 2 used up
+    private static readonly Dictionary<string, DateTime> paced = new(); // account|limit → the reset time of the window 소진 예상 spoke for
+    private static readonly Dictionary<string, int> approving = new(); // a session's key → its approval cards open now (ClaudeApprovals)
     private static Dictionary<string, AgentTask> last = new();
     private static DispatcherTimer? tick;
     private static NoticeWindow? window;
@@ -55,6 +63,7 @@ internal static class Notices
         foreach (var t in starting.Values) t.Stop();
         starting.Clear();
         levels.Clear();
+        paced.Clear();
         last = new();
         first = true;
         window?.Clear();
@@ -68,7 +77,7 @@ internal static class Notices
         {
             (s.NoticeStart, new Notice("start", Tr("Claude Code · 진행 중", "Claude Code · Working"), Tr("알림 미리 보기", "Notice preview"), Tr("현재 작업 표시", "Current task"))),
             (s.NoticeDone, new Notice("done", Tr("Codex · 작업 완료", "Codex · Done"), Tr("알림 미리 보기", "Notice preview"), Tr("소요 시간 3분", "Elapsed: 3 min"))),
-            (s.NoticeWaiting, new Notice("waiting", Tr("Claude Code · 승인 대기", "Claude Code · Needs approval"), Tr("알림 미리 보기", "Notice preview"), Tr("승인 대기 · 클릭하여 닫기", "Approval pending · click to close"))),
+            (s.NoticeWaiting, new Notice("waiting", Tr("Claude Code · 승인 대기", "Claude Code · Needs approval"), Tr("알림 미리 보기", "Notice preview"), Tr("승인 대기 · 클릭하여 세션으로 이동", "Approval pending · click to go to session"), Click: () => { })), // no session behind a preview: the click only closes it
             (s.NoticeLimit, new Notice("limit", Tr("Claude · 한도 임박", "Claude · Limit near"), Tr("주간 한도 18% 남음", "18% of the weekly limit left"), Tr("2일 뒤 초기화", "Resets in 2 d"))),
             (s.NoticeRecover, new Notice("recover", Tr("ChatGPT · 한도 복구", "ChatGPT · Limit reset"), Tr("5시간 한도 초기화 완료", "5-hour limit reset"), null)),
         };
@@ -118,7 +127,7 @@ internal static class Notices
             if (t.Waiting && before?.Waiting != true)
             {
                 Cancel(t.Key);
-                if (!first && Settings.Current.NoticeWaiting) Show(new Notice("waiting", Head(t.Tool, Tr("승인 대기", "Needs approval")), t.Title, Tr("승인 대기", "Approval pending"), t.Key));
+                if (!first && Settings.Current.NoticeWaiting && !approving.ContainsKey(t.Key)) Show(new Notice("waiting", Head(t.Tool, Tr("승인 대기", "Needs approval")), t.Title, Tr("승인 대기", "Approval pending"), t.Key, Click: Jump(t)));
             }
             else if (!t.Waiting && before?.Waiting == true) window?.Remove(t.Key);
         }
@@ -139,7 +148,7 @@ internal static class Notices
         {
             Cancel(t.Key);
             if (!last.TryGetValue(t.Key, out var now) || now.Waiting) return; // done already, or asking
-            Show(new Notice("start", Head(now.Tool, Tr("진행 중", "Working")), now.Title, now.Prompt is { } p ? $"“{p}”" : null));
+            Show(new Notice("start", Head(now.Tool, Tr("진행 중", "Working")), now.Title, now.Prompt is { } p ? $"“{p}”" : null, Click: Jump(now)));
         };
         starting[t.Key] = wait;
         wait.Start();
@@ -155,7 +164,23 @@ internal static class Notices
         Cancel(t.Key);
         window?.Remove(t.Key);
         if (!Settings.Current.Notices || !Settings.Current.NoticeDone || took < ShortestDone) return;
-        Show(new Notice("done", Head(t.Tool, Tr("작업 완료", "Done")), t.Title, Tr($"소요 시간 {Span(took)}", $"Elapsed: {Span(took)}")));
+        Show(new Notice("done", Head(t.Tool, Tr("작업 완료", "Done")), t.Title, Tr($"소요 시간 {Span(took)}", $"Elapsed: {Span(took)}"), Click: Jump(t)));
+    }
+
+    /// The click of a turn's card: to the window its CLI runs in. A headless run (a program's `claude -p`, `codex exec`)
+    /// has no session window, and a turn whose process isn't known only closes.
+    private static Action? Jump(AgentTask t) => t.Pid is { } pid && !t.Headless ? () => _ = Raise(pid) : null;
+
+    private static async Task Raise(int pid)
+    {
+        try
+        {
+            await Native.SessionWindow.Raise(pid); // none found: the card just closes
+        }
+        catch (Exception e)
+        {
+            Log.Error("notice jump", e);
+        }
     }
 
     /// 한도 임박 at 20 % left, 소진 when used up, 복구 when a low one is back after its reset time (the usage shows a
@@ -169,11 +194,12 @@ internal static class Notices
             {
                 string key = a.Id + "|" + l.Title;
                 double left = Math.Max(0, 100 - l.Percent);
-                int level = l.Percent >= 99.5 ? 2 : left <= 20 ? 1 : 0;
+                int level = l.Percent >= 99.5 ? 2 : left <= LowLeft ? 1 : 0;
                 bool had = levels.TryGetValue(key, out var before);
                 levels[key] = (level, l.Resets ?? before.resets);
+                Pace(a, l, all, key, had);
                 if (!had || level == before.level) continue;
-                string who = (a.Plan is { Length: > 0 } plan ? $"{a.Name} {plan}" : a.Name) + (AiUsage.Who(a, all) is { } whose ? $" · {whose}" : "");
+                string who = Who(a, all);
                 if (level == 0)
                 {
                     if (s.NoticeRecover && before.resets is { } r && DateTime.Now >= r.AddMinutes(-1))
@@ -181,12 +207,32 @@ internal static class Notices
                     continue;
                 }
                 if (level < before.level || !s.NoticeLimit) continue;
-                string? when = l.Resets is { } at && at > DateTime.Now ? Tr($"{Span(at - DateTime.Now)} 뒤 초기화", $"Resets in {Span(at - DateTime.Now)}") : null;
                 Show(level == 2
-                    ? new Notice("limit", Head(who, Tr("한도 소진", "Limit used up")), Tr($"{l.Title} 한도 소진", $"{l.Title} limit used up"), when)
-                    : new Notice("limit", Head(who, Tr("한도 임박", "Limit near")), Tr($"{l.Title} 한도 {Math.Round(left)}% 남음", $"{l.Title} limit · {Math.Round(left)}% left"), when));
+                    ? new Notice("limit", Head(who, Tr("한도 소진", "Limit used up")), Tr($"{l.Title} 한도 소진", $"{l.Title} limit used up"), ResetsIn(l))
+                    : new Notice("limit", Head(who, Tr("한도 임박", "Limit near")), Tr($"{l.Title} 한도 {Math.Round(left)}% 남음", $"{l.Title} limit · {Math.Round(left)}% left"), ResetsIn(l)));
             }
     }
+
+    /// 소진 예상: once per limit window, when UsagePace first expects the limit to run out PaceLead or more before its
+    /// reset while more than 20 % is left (below that 한도 임박 already speaks). A limit already on that course when
+    /// watching starts is taken in silently, like the levels.
+    private static void Pace(UsageAccount a, UsageLimit l, List<UsageAccount> all, string key, bool seen)
+    {
+        // a new window began when the reset jumps ahead by over half a window (a reset time only drifts by minutes); an
+        // unknown reset (a failed look, a passed reset) keeps the entry until the next known one tells
+        if (paced.TryGetValue(key, out var window) && l.Resets is { } next && next - window > TimeSpan.FromMinutes((l.WindowMins ?? 0) / 2.0)) paced.Remove(key);
+        if (paced.ContainsKey(key) || l.Resets is not { } reset || 100 - l.Percent <= LowLeft || UsagePace.RunOut(l, DateTime.Now) is not { } runOut || reset - runOut < PaceLead) return;
+        paced[key] = reset;
+        if (!seen || !Settings.Current.NoticeLimit) return;
+        string span = Span(runOut - DateTime.Now);
+        Show(new Notice("limit", Head(Who(a, all), Tr("소진 예상", "Run-out expected")), Tr($"{l.Title} 한도 · 이 속도면 {span} 뒤 소진", $"{l.Title} limit · out in {span} at this pace"), ResetsIn(l)));
+    }
+
+    /// "40분 뒤 초기화" for a limit whose reset is ahead.
+    private static string? ResetsIn(UsageLimit l) => l.Resets is { } at && at > DateTime.Now ? Tr($"{Span(at - DateTime.Now)} 뒤 초기화", $"Resets in {Span(at - DateTime.Now)}") : null;
+
+    /// The account as the cards name it: "Claude Max 20x", and whose when one kind has several.
+    private static string Who(UsageAccount a, List<UsageAccount> all) => (a.Plan is { Length: > 0 } plan ? $"{a.Name} {plan}" : a.Name) + (AiUsage.Who(a, all) is { } whose ? $" · {whose}" : "");
 
     /// The end of something the user started in Bloom (a hidden 내 명령 script, a chain with skipped lines, a file moved
     /// or copied): shown whether or not 작업 알림 is on, as it answers the user's own action.
@@ -198,6 +244,25 @@ internal static class Notices
 
     /// A Bloom chat's AI waits for a yes or no while no Bloom window is in front.
     public static void Ask(string what, Action? action = null) => Show(new Notice("waiting", Tr("Bloom AI · 승인 대기", "Bloom AI · Approval pending"), what, Tr("허용 또는 거절을 선택하세요", "Choose Allow or Decline"), ActionText: Tr("AI 채팅 열기", "Open AI chat"), Action: action));
+
+    /// Claude Code asks through Bloom's hook (ClaudeApprovals): its card, in place of the session's 승인 대기 card. False
+    /// when no card can show now (알림 off, a full-screen app in front): the terminal asks.
+    public static bool Approval(string session, Notice n)
+    {
+        if (!Settings.Current.Notices || (!Quiet && UserBusy())) return false;
+        approving[session] = approving.GetValueOrDefault(session) + 1;
+        window?.Remove(session);
+        Show(n, asked: true);
+        return true;
+    }
+
+    /// The approval was answered or given up: its card goes.
+    public static void Approved(string session, string key)
+    {
+        if (approving.TryGetValue(session, out int open) && open > 1) approving[session] = open - 1;
+        else approving.Remove(session);
+        window?.Remove(key);
+    }
 
     /// A card (and its sound) — not over a full-screen game or presentation, unless asked for (미리 보기).
     private static void Show(Notice n, bool sound = true, bool asked = false)

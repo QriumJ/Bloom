@@ -31,9 +31,9 @@ internal static class McpCatalog
     private static string CodexFile => Path.Combine(Home, ".codex", "config.toml");
 
     /// Every server found (a server several programs share shows once, from the first); the bloom name is Bloom's own.
-    public static List<McpServerDef> Found(IEnumerable<string> files)
+    public static List<McpServerDef> Found(IEnumerable<string> files, bool? demo = null)
     {
-        if (Demo.On) return new(); // recording mode: this PC's servers stay out
+        if (demo ?? Demo.On) return new(); // recording mode: this PC's servers stay out
         var all = new List<McpServerDef>();
         foreach (var k in Known) all.AddRange(FromJson(k.path(), k.id, k.key));
         foreach (string f in ProjectFiles().Concat(files).Distinct(StringComparer.OrdinalIgnoreCase)) all.AddRange(FromJson(f, f, "mcpServers"));
@@ -84,8 +84,16 @@ internal static class McpCatalog
     /// The servers switched on in the settings, as found now.
     public static List<McpServerDef> Picked()
     {
-        var on = Settings.Current.McpOn;
-        return on.Count == 0 ? new() : Found(Settings.Current.McpFiles).Where(s => on.Contains(s.Key)).ToList();
+        return PreparePicked()?.Invoke() ?? new();
+    }
+
+    /// Capture selection on its UI owner; the returned reader owns only value snapshots.
+    public static Func<List<McpServerDef>>? PreparePicked()
+    {
+        var on = new HashSet<string>(Settings.Current.McpOn, StringComparer.Ordinal);
+        string[] files = Settings.Current.McpFiles.ToArray();
+        bool demo = Demo.On;
+        return on.Count == 0 || demo ? null : () => Found(files, demo).Where(s => on.Contains(s.Key)).ToList();
     }
 
     private static string Read(string path)

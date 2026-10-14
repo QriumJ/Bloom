@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Threading;
 using Bloom.Core;
 
@@ -60,6 +62,31 @@ internal sealed partial class Chats
     private readonly Dictionary<string, IChatSession> sessions = new();
     private readonly DispatcherTimer idle;
     private readonly string dir;
+    private readonly ChatStore store;
+    private bool shutdown;
+    private readonly Func<ChatThread, string, IChatSession>? sessionFactory;
+    private readonly string filesRoot;
+    private readonly Func<string, IReadOnlyList<string>, Func<List<string>, string>, CancellationToken, Task<PreparedAttachments>> prepareAttachments;
+    private sealed class Preparing(ChatMessage answer)
+    {
+        public readonly ChatMessage Answer = answer;
+        public readonly CancellationTokenSource Cancellation = new();
+        public readonly TaskCompletionSource Completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public bool Sending;
+    }
+    private readonly Dictionary<string, Preparing> preparing = new();
+    private readonly Dictionary<string, Task> deletingFiles = new();
+    private readonly Dictionary<string, List<Task>> retiredPreparations = new();
+    private sealed class Finishing(ChatMessage answer, bool immediate)
+    {
+        public readonly ChatMessage Answer = answer;
+        public readonly bool Immediate = immediate;
+        public readonly CancellationTokenSource Cancellation = new();
+        public readonly TaskCompletionSource Completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+    private readonly Dictionary<string, Finishing> finishing = new();
+    private readonly Dictionary<string, Task> outputWork = new();
+    private readonly Func<ChatOutputRequest, CancellationToken, Task<ChatOutputResult>> collectOutput;
 
     public readonly List<ChatThread> Threads = new();
 
@@ -72,7 +99,7 @@ internal sealed partial class Chats
     /// Every open CLI session ends (a switch that changes how sessions start); the conversations stay.
     public void EndAll()
     {
-        foreach (var t in Threads.Where(IsLive).ToList()) EndSession(t);
+        foreach (var t in Threads.Where(t => IsLive(t) || preparing.ContainsKey(t.Id) || finishing.ContainsKey(t.Id)).ToList()) EndSession(t);
     }
 
     /// The conversation has a running CLI session (it answers at once; 세션 종료 gives its memory back).
@@ -91,16 +118,28 @@ internal sealed partial class Chats
     /// next message resumes the session by id.
     public void EndSession(ChatThread t)
     {
-        if (!sessions.Remove(t.Id, out var s)) return;
-        s.Dispose();
-        if (t.Busy) Finish(t, t.Messages[^1], false, Tr("세션 종료 · 답변 중지됨", "Session ended · answer stopped"));
+        bool collectFiles = !preparing.TryGetValue(t.Id, out var preparation) || preparation.Sending;
+        bool completing = CancelFinish(t);
+        if (completing) collectFiles = false;
+        bool pending = CancelPreparation(t);
+        bool removed = sessions.Remove(t.Id, out var s);
+        if (!pending && !removed && !completing) return;
+        s?.Dispose();
+        if (t.Busy) Finish(t, t.Messages[^1], false, Tr("세션 종료 · 답변 중지됨", "Session ended · answer stopped"), collectFiles, immediate: true);
         SessionsChanged?.Invoke();
     }
 
-    public Chats(Dispatcher ui)
+    public Chats(Dispatcher ui, Func<ChatThread, string, IChatSession>? sessionFactory = null, string? directory = null,
+        Func<string, IReadOnlyList<string>, Func<List<string>, string>, CancellationToken, Task<PreparedAttachments>>? prepareAttachments = null,
+        Func<ChatOutputRequest, CancellationToken, Task<ChatOutputResult>>? collectOutput = null)
     {
         this.ui = ui;
-        dir = Paths.In("chats");
+        store = new ChatStore(ui);
+        this.collectOutput = collectOutput ?? ((request, token) => Task.FromResult(ChatOutput.Process(request, token)));
+        this.sessionFactory = sessionFactory;
+        this.prepareAttachments = prepareAttachments ?? PreparedAttachments.Copy;
+        dir = directory ?? Paths.In("chats");
+        filesRoot = directory is null ? Path.Combine(Paths.Local, "ai", "files") : Path.Combine(Path.GetDirectoryName(directory)!, "files");
         Directory.CreateDirectory(dir);
         foreach (string f in Directory.GetFiles(dir, "*.json"))
         {
@@ -155,34 +194,139 @@ internal sealed partial class Chats
 
     public void Send(ChatThread t, string text, string? page = null, string? pageTitle = null, string? image = null, IReadOnlyList<string>? files = null)
     {
-        if (t.Busy) return;
+        if (shutdown || t.Busy) return;
+        Task deletion = Task.WhenAll(WhenDeleted(t), WhenFinished(t));
         if (!Threads.Contains(t)) Threads.Insert(0, t);
         if (t.Messages.Count == 0) t.Title = TitleOf(text, pageTitle ?? (files is { Count: > 0 } ? Path.GetFileName(files[0]) : null));
-        var attached = files is { Count: > 0 } ? CopyIn(t, files) : null;
-        t.Messages.Add(new ChatMessage { Role = "user", Text = text, At = Now, Page = pageTitle, Image = image, Files = attached });
+        var user = new ChatMessage { Role = "user", Text = text, At = Now, Page = pageTitle, Image = image };
+        t.Messages.Add(user);
         var answer = new ChatMessage { Role = "assistant", At = Now, Streaming = true, Status = Tr("생각하는 중…", "Thinking…") };
         t.Messages.Add(answer);
+        var pending = new Preparing(answer);
+        preparing[t.Id] = pending;
         Touch(t);
         Updated?.Invoke(t);
 
-        var s = SessionFor(t, out string? error, out bool fresh);
         string prompt = ClaudeSession.LocalTime() + "\n" + (page is null ? text : $"<page title=\"{Esc(pageTitle ?? "")}\">\n{page}\n</page>\n\n{text}");
-        if (attached is { Count: > 0 })
-            prompt += AiModels.Provider(t.Model) == "chatgpt" ? Inline(attached) : "\n\n<attachments>\n" + string.Join("\n", attached.Select(f => "- " + FilesRel(t) + "/in/" + Path.GetFileName(f))) + "\n</attachments>";
-        if (fresh) prompt = Earlier(t) + prompt;
-        var images = new List<string>();
-        if (image is not null) images.Add(image);
-        if (attached is not null) images.AddRange(attached.Where(f => ImageType(f) is not null));
-        turnStarted[t.Id] = DateTime.UtcNow.AddSeconds(-1);
-        if (Settings.Current.AiTitles) leads[t.Id] = new ChatTitles.Lead();
-        else leads.Remove(t.Id);
-        if (s is null || !s.Send(prompt, images))
-        {
-            Finish(t, answer, false, error ?? Tr("메시지를 보내지 못했습니다. 다시 보내세요.", "Could not send the message. Send it again."));
-            return;
-        }
-        idle.Start();
+        string[] sources = files?.Take(MaxFiles).ToArray() ?? Array.Empty<string>();
+        string folder = ThreadFiles(t);
+        bool inline = AiModels.IsChatGpt(t.Model);
+        string nameSlot = "{0}";
+        string unavailable = Tr($"\n\n<attachment name=\"{nameSlot}\">(이 형식은 여기서 열 수 없어요 — 내용을 읽지 못했다고 알려 주세요)</attachment>", $"\n\n<attachment name=\"{nameSlot}\">(This format can't be opened here — tell the user its contents didn't come through)</attachment>");
+        _ = PrepareAndSend(t, user, pending, prompt, image, sources, folder, inline, unavailable, deletion);
     }
+
+    internal Task WhenPrepared(ChatThread t) => preparing.TryGetValue(t.Id, out var pending) ? pending.Completion.Task : Task.CompletedTask;
+    internal Task WhenDeleted(ChatThread t) => deletingFiles.TryGetValue(t.Id, out var pending) ? pending : Task.CompletedTask;
+    internal Task WhenFinished(ChatThread t) => outputWork.TryGetValue(t.Id, out var pending) ? pending : Task.CompletedTask;
+
+    private async Task PrepareAndSend(ChatThread t, ChatMessage user, Preparing pending, string prompt,
+        string? image, string[] sources, string folder, bool inline, string unavailable, Task deletion)
+    {
+        PreparedAttachments? attached = null;
+        IChatSession? session = null;
+        bool Current() => preparing.TryGetValue(t.Id, out var current) && ReferenceEquals(current, pending);
+        try
+        {
+            var token = pending.Cancellation.Token;
+            await deletion.ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
+            if (sources.Length > 0)
+                attached = await Task.Run(() => prepareAttachments(folder, sources, inline ? list => Inline(list, unavailable) : _ => "", token), token).ConfigureAwait(false);
+            var images = new List<string>();
+            if (image is not null) images.Add(image);
+            if (attached is not null) images.AddRange(attached.Files.Where(f => ImageType(f) is not null));
+            await OnUi(() => Current() && AiModels.IsChatGpt(t.Model) ? GptCatalog.RefreshAsync(token) : Task.FromResult(true)).ConfigureAwait(false);
+            var started = await OnUi(() =>
+            {
+                if (!Current()) return Task.FromResult(new SessionStart(false));
+                if (attached is { Files.Count: > 0 })
+                {
+                    user.Files = attached.Files;
+                    attached.Accept();
+                    prompt += inline ? attached.Inline : "\n\n<attachments>\n" + string.Join("\n", attached.Files.Select(f => "- " + FilesRel(t) + "/" + Path.GetRelativePath(folder, f).Replace('\\', '/'))) + "\n</attachments>";
+                    Save(t);
+                    Updated?.Invoke(t);
+                }
+                if (!Current()) return Task.FromResult(new SessionStart(false));
+                session = SessionFor(t, out string? resume, out bool fresh, out bool start);
+                if (!Current()) return Task.FromResult(new SessionStart(false));
+                if (fresh) prompt = Earlier(t) + prompt;
+                turnStarted[t.Id] = DateTime.UtcNow.AddSeconds(-1);
+                if (Settings.Current.AiTitles) leads[t.Id] = new ChatTitles.Lead();
+                else leads.Remove(t.Id);
+                return start ? session.StartAsync(resume, token) : Task.FromResult(new SessionStart(true));
+            }).ConfigureAwait(false);
+            bool sent = false;
+            if (started.Success)
+                sent = await OnUi(() =>
+                {
+                    if (!Current() || session is null) return Task.FromResult(false);
+                    pending.Sending = true;
+                    return session.SendAsync(prompt, images, token);
+                }).ConfigureAwait(false);
+            await OnUi(() =>
+            {
+                if (!Current()) return Task.FromResult(false);
+                preparing.Remove(t.Id);
+                if (!started.Success && session is not null && sessions.TryGetValue(t.Id, out var current) && ReferenceEquals(current, session))
+                {
+                    sessions.Remove(t.Id);
+                    session.Dispose();
+                }
+                if (!sent) Finish(t, pending.Answer, false, started.Error ?? Tr("메시지를 보내지 못했습니다. 다시 보내세요.", "Could not send the message. Send it again."), pending.Sending);
+                else idle.Start();
+                SessionsChanged?.Invoke();
+                return Task.FromResult(true);
+            }).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            try
+            {
+                await OnUi(() =>
+            {
+                if (!Current()) return Task.FromResult(false);
+                preparing.Remove(t.Id);
+                if (sessions.TryGetValue(t.Id, out var current) && ReferenceEquals(current, session))
+                {
+                    sessions.Remove(t.Id);
+                    current.Dispose();
+                }
+                Finish(t, pending.Answer, false, e is OperationCanceledException ? AiErrors.Stopped : e.Message, pending.Sending);
+                SessionsChanged?.Invoke();
+                return Task.FromResult(true);
+            }).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (ui.HasShutdownStarted) { }
+        }
+        finally
+        {
+            attached?.Dispose();
+            pending.Cancellation.Dispose();
+            pending.Completion.TrySetResult();
+        }
+    }
+
+    private Task<T> OnUi<T>(Func<Task<T>> action) => ui.HasShutdownStarted
+        ? Task.FromCanceled<T>(new CancellationToken(true))
+        : ui.CheckAccess() ? action() : ui.InvokeAsync(action).Task.Unwrap();
+
+    private bool CancelPreparation(ChatThread t)
+    {
+        if (!preparing.Remove(t.Id, out var pending)) return false;
+        foreach (string id in retiredPreparations.Keys.ToArray())
+        {
+            retiredPreparations[id].RemoveAll(task => task.IsCompleted);
+            if (retiredPreparations[id].Count == 0) retiredPreparations.Remove(id);
+        }
+        if (!retiredPreparations.TryGetValue(t.Id, out var retired)) retiredPreparations[t.Id] = retired = new();
+        retired.Add(pending.Completion.Task);
+        _ = pending.Cancellation.CancelAsync();
+        return true;
+    }
+
+    private string ThreadFiles(ChatThread t) => Path.Combine(filesRoot, t.Id);
 
     private static string Esc(string s) => s.Replace("\"", "'");
 
@@ -219,33 +363,9 @@ internal sealed partial class Chats
         _ => null,
     };
 
-    /// Copies of the attached files in the thread's in\ folder (the originals are never touched); same names get (2), (3).
-    private static List<string> CopyIn(ChatThread t, IReadOnlyList<string> files)
-    {
-        string into = Path.Combine(FilesDir(t), "in");
-        Directory.CreateDirectory(into);
-        var list = new List<string>();
-        foreach (string f in files.Take(MaxFiles))
-        {
-            try
-            {
-                if (!File.Exists(f) || new FileInfo(f).Length > MaxFileBytes) continue;
-                string name = Path.GetFileNameWithoutExtension(f), ext = Path.GetExtension(f), dest = Path.Combine(into, name + ext);
-                for (int n = 2; File.Exists(dest); n++) dest = Path.Combine(into, $"{name} ({n}){ext}");
-                File.Copy(f, dest);
-                list.Add(dest);
-            }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-            {
-                Log.Error("attach " + Path.GetFileName(f), e);
-            }
-        }
-        return list;
-    }
-
     /// ChatGPT reads no files itself: text files go into the message (each up to 200 KB), pictures as images, and the
     /// rest is named so it can say it could not open them.
-    private static string Inline(List<string> attached)
+    private static string Inline(List<string> attached, string unavailable)
     {
         var sb = new StringBuilder();
         foreach (string f in attached)
@@ -253,7 +373,7 @@ internal sealed partial class Chats
             string name = Path.GetFileName(f);
             if (ImageType(f) is not null) continue;
             if (TextOf(f) is { } text) sb.Append($"\n\n<attachment name=\"{Esc(name)}\">\n{text}\n</attachment>");
-            else sb.Append(Tr($"\n\n<attachment name=\"{Esc(name)}\">(이 형식은 여기서 열 수 없어요 — 내용을 받지 못했다고 알려 주세요)</attachment>", $"\n\n<attachment name=\"{Esc(name)}\">(This format can't be opened here — tell the user its contents didn't come through)</attachment>"));
+            else sb.Append(unavailable.Replace("{0}", Esc(name), StringComparison.Ordinal));
         }
         return sb.ToString();
     }
@@ -275,47 +395,6 @@ internal sealed partial class Chats
         }
     }
 
-    [System.Text.RegularExpressions.GeneratedRegex(@"```file:([^\r\n`]+)\r?\n(.*?)\r?\n```", System.Text.RegularExpressions.RegexOptions.Singleline)]
-    private static partial System.Text.RegularExpressions.Regex FencedFile();
-
-    /// ```file:name blocks in a ChatGPT answer become files in out\ (the block stays visible as a short note).
-    private static void SaveFencedFiles(ChatThread t, ChatMessage m)
-    {
-        if (!m.Text.Contains("```file:", StringComparison.Ordinal)) return;
-        string into = Path.Combine(FilesDir(t), "out");
-        m.Text = FencedFile().Replace(m.Text, match =>
-        {
-            string name = string.Concat(match.Groups[1].Value.Trim().Split(Path.GetInvalidFileNameChars()));
-            if (name.Length == 0 || name.StartsWith('.')) return match.Value;
-            try
-            {
-                Directory.CreateDirectory(into);
-                File.WriteAllText(Path.Combine(into, name), match.Groups[2].Value, new UTF8Encoding(false));
-                return Tr($"**{name}** — 파일 저장 완료", $"**{name}** — file saved");
-            }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-            {
-                Log.Error("fenced file", e);
-                return match.Value;
-            }
-        });
-    }
-
-    /// The files the AI wrote into the thread's out\ folder during the turn that just ended (null: none).
-    private List<string>? MadeSince(ChatThread t)
-    {
-        if (!turnStarted.Remove(t.Id, out var since)) return null;
-        string from = Path.Combine(FilesDir(t), "out");
-        if (!Directory.Exists(from)) return null;
-        var made = new DirectoryInfo(from).EnumerateFiles("*", SearchOption.AllDirectories)
-            .Where(f => f.LastWriteTimeUtc >= since)
-            .OrderBy(f => f.FullName, StringComparer.OrdinalIgnoreCase)
-            .Select(f => f.FullName)
-            .Take(20)
-            .ToList();
-        return made.Count > 0 ? made : null;
-    }
-
     /// The conversation so far, for a session that has not seen it (Claude ↔ ChatGPT).
     private static string Earlier(ChatThread t)
     {
@@ -332,10 +411,11 @@ internal sealed partial class Chats
         return first.Length > 42 ? first[..42] + "…" : first.Length == 0 ? Tr("새 대화", "New chat") : first;
     }
 
-    private IChatSession? SessionFor(ChatThread t, out string? error, out bool fresh)
+    private IChatSession SessionFor(ChatThread t, out string? resume, out bool fresh, out bool start)
     {
-        error = null;
+        resume = null;
         fresh = false;
+        start = false;
         string effort = EffortOf(t), provider = AiModels.Provider(t.Model);
         var account = AiAccounts.Chat(provider);
         if (sessions.TryGetValue(t.Id, out var s) && s.Alive && s.Model == t.Model && s.Effort == effort) return s; // 설정's account change ends them (EndAll)
@@ -344,22 +424,26 @@ internal sealed partial class Chats
             s.Dispose();
             sessions.Remove(t.Id);
         }
-        s = Demo.On ? new DemoSession(t.Model, effort)
+        s = sessionFactory is not null ? sessionFactory(t, effort)
+            : Demo.On ? new DemoSession(t.Model, effort)
             : provider == "chatgpt" ? new CodexSession(t.Model, effort, FilesRel(t), t.Id) { AccountHome = account.Home }
             : new ClaudeSession(t.Model, effort, FilesRel(t), "Bloom · " + (t.Messages.Count > 0 ? (t.Title.Length > 40 ? t.Title[..40] + "…" : t.Title) : Tr("새 대화", "New chat"))) { AccountHome = account.Home };
         // a session lives in its account's folder: under another account it starts fresh, with the chat so far given to it
-        string? resume = (t.SessionProvider ?? "claude") == provider && (t.SessionAccount ?? provider) == account.Id ? t.SessionId : null;
+        resume = (t.SessionProvider ?? "claude") == provider && (t.SessionAccount ?? provider) == account.Id ? t.SessionId : null;
         fresh = resume is null && t.Messages.Count > 2;
-        ChatMessage? Current() => t.Messages.Count > 0 && t.Messages[^1].Role == "assistant" && t.Messages[^1].Streaming ? t.Messages[^1] : null;
+        bool IsCurrent() => sessions.TryGetValue(t.Id, out var current) && ReferenceEquals(current, s);
+        ChatMessage? Current() => IsCurrent() && !finishing.ContainsKey(t.Id) && t.Messages.Count > 0 && t.Messages[^1].Role == "assistant" && t.Messages[^1].Streaming ? t.Messages[^1] : null;
         bool needBreak = false;
-        s.SessionStarted += id => ui.BeginInvoke(() =>
+        var events = new ChatEventPump(ui);
+        s.SessionStarted += id => events.Post(() =>
         {
+            if (!IsCurrent()) return;
             t.SessionId = id;
             t.SessionProvider = provider;
             t.SessionAccount = account.Id;
             Save(t);
         });
-        s.TextDelta += d => ui.BeginInvoke(() =>
+        void Append(string d)
         {
             if (Current() is not { } m) return;
             d = Shown(t, d);
@@ -369,8 +453,9 @@ internal sealed partial class Chats
             m.Text += d;
             m.Status = null;
             Updated?.Invoke(t);
-        });
-        s.AssistantText += whole => ui.BeginInvoke(() =>
+        }
+        s.TextDelta += d => events.PostText(d, Append);
+        s.AssistantText += whole => events.Post(() =>
         {
             if (Current() is not { } m) return;
             whole = Shown(t, whole);
@@ -379,40 +464,112 @@ internal sealed partial class Chats
             m.Text += whole;
             Updated?.Invoke(t);
         });
-        s.Status += st => ui.BeginInvoke(() =>
+        s.Status += st => events.Post(() =>
         {
             if (Current() is not { } m) return;
             if (st is not null) needBreak = true;
             m.Status = st;
             Updated?.Invoke(t);
         });
-        s.TurnEnded += (ok, err) => ui.BeginInvoke(() =>
+        s.TurnEnded += (ok, err) => events.Post(() =>
         {
             if (Current() is { } m) Finish(t, m, ok, err);
         });
-        s.ToolAsked += raw => ui.BeginInvoke(() => Asked(t, Current(), s, raw));
-        s.ToolAskWithdrawn += id => ui.BeginInvoke(() =>
+        s.ToolAsked += raw => events.Post(() => Asked(t, Current(), s, raw));
+        s.ToolAskWithdrawn += id => events.Post(() =>
         {
             if (Current() is { } m && m.Asks.RemoveAll(a => a.RequestId == id) > 0) Updated?.Invoke(t);
         });
-        s.Exited += _ => ui.BeginInvoke(() =>
+        s.Exited += _ => events.Post(() =>
         {
             if (sessions.TryGetValue(t.Id, out var cur) && ReferenceEquals(cur, s) && sessions.Remove(t.Id)) SessionsChanged?.Invoke();
         });
-        if (!s.Start(resume, out error)) return null;
+        start = true;
         sessions[t.Id] = s;
         SessionsChanged?.Invoke();
         return s;
     }
 
-    private void Finish(ChatThread t, ChatMessage m, bool ok, string? error)
+    private void Finish(ChatThread t, ChatMessage m, bool ok, string? error, bool collectFiles = true, bool immediate = false)
+    {
+        if (finishing.ContainsKey(t.Id)) return;
+        m.Status = null;
+        m.Asks.Clear();
+        if (leads.Remove(t.Id, out var lead)) m.Text += lead.Flush();
+        DateTime? since = turnStarted.Remove(t.Id, out var started) ? started : null;
+        bool fenced = AiModels.IsChatGpt(t.Model) && m.Text.Contains("```file:", StringComparison.Ordinal);
+        if (!collectFiles || (since is null && !fenced))
+        {
+            Complete(t, m, ok, error);
+            return;
+        }
+        var pending = new Finishing(m, immediate);
+        finishing[t.Id] = pending;
+        foreach (string id in outputWork.Where(pair => pair.Value.IsCompleted).Select(pair => pair.Key).ToArray()) outputWork.Remove(id);
+        outputWork[t.Id] = pending.Completion.Task;
+        if (immediate) Complete(t, m, ok, error);
+        string nameSlot = "{0}";
+        string saved = Tr($"**{nameSlot}** — 파일 저장 완료", $"**{nameSlot}** — file saved");
+        var snapshot = new ChatOutputRequest(m.Text, Path.Combine(ThreadFiles(t), "out"), since, fenced, saved);
+        _ = FinishOutput(t, pending, snapshot, ok, error);
+        Updated?.Invoke(t);
+    }
+
+    private async Task FinishOutput(ChatThread t, Finishing pending, ChatOutputRequest snapshot, bool ok, string? error)
+    {
+        ChatOutputResult? result = null;
+        try
+        {
+            try
+            {
+                result = await Task.Run(() => collectOutput(snapshot, pending.Cancellation.Token), pending.Cancellation.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (pending.Cancellation.IsCancellationRequested) { return; }
+            catch (Exception e)
+            {
+                Log.Error("chat output", e);
+                ok = false;
+                error = e.Message;
+            }
+            if (pending.Cancellation.IsCancellationRequested) return;
+            await OnUi(() =>
+            {
+                if (shutdown || !finishing.TryGetValue(t.Id, out var current) || !ReferenceEquals(current, pending)) return Task.FromResult(false);
+                finishing.Remove(t.Id);
+                if (result is not null)
+                {
+                    pending.Answer.Text = result.Text;
+                    pending.Answer.Files = result.Files?.ToList();
+                }
+                if (pending.Immediate)
+                {
+                    Save(t);
+                    Updated?.Invoke(t);
+                }
+                else Complete(t, pending.Answer, ok, error);
+                return Task.FromResult(true);
+            }).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (ui.HasShutdownStarted) { }
+        finally
+        {
+            pending.Cancellation.Dispose();
+            pending.Completion.TrySetResult();
+        }
+    }
+
+    private bool CancelFinish(ChatThread t)
+    {
+        if (!finishing.Remove(t.Id, out var pending)) return false;
+        _ = pending.Cancellation.CancelAsync();
+        return true;
+    }
+
+    private void Complete(ChatThread t, ChatMessage m, bool ok, string? error)
     {
         m.Streaming = false;
         m.Status = null;
         m.Asks.Clear();
-        if (leads.Remove(t.Id, out var lead)) m.Text += lead.Flush();
-        if (AiModels.Provider(t.Model) == "chatgpt") SaveFencedFiles(t, m);
-        m.Files = MadeSince(t);
         if (!ok)
         {
             m.Error = true;
@@ -425,28 +582,42 @@ internal sealed partial class Chats
 
     public void Stop(ChatThread t)
     {
+        if (preparing.ContainsKey(t.Id) || finishing.ContainsKey(t.Id))
+        {
+            EndSession(t);
+            return;
+        }
         if (sessions.TryGetValue(t.Id, out var s)) s.Interrupt();
     }
 
     public void Delete(ChatThread t)
     {
-        if (sessions.Remove(t.Id, out var s))
+        Task previousDelete = WhenDeleted(t);
+        CancelPreparation(t);
+        CancelFinish(t);
+        Task output = WhenFinished(t);
+        Task<bool> jsonDeleted = store.Delete(Path.Combine(dir, t.Id + ".json"));
+        Task preparation = retiredPreparations.Remove(t.Id, out var retired) ? Task.WhenAll(retired) : Task.CompletedTask;
+        var released = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        string folder = ThreadFiles(t);
+        foreach (string id in deletingFiles.Where(pair => pair.Value.IsCompleted).Select(pair => pair.Key).ToList()) deletingFiles.Remove(id);
+        deletingFiles[t.Id] = Task.Run(async () =>
         {
-            s.Dispose();
-            SessionsChanged?.Invoke();
-        }
+            await previousDelete.ConfigureAwait(false);
+            await preparation.ConfigureAwait(false);
+            await output.ConfigureAwait(false);
+            await jsonDeleted.ConfigureAwait(false);
+            await released.Task.ConfigureAwait(false);
+            try { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Log.Error("delete chat files", e); }
+        });
+        bool removed = sessions.Remove(t.Id, out var s);
         Threads.Remove(t);
         leads.Remove(t.Id);
         turnStarted.Remove(t.Id);
-        try
-        {
-            File.Delete(Path.Combine(dir, t.Id + ".json"));
-            if (Directory.Exists(FilesDir(t))) Directory.Delete(FilesDir(t), true); // its attachments and the files it made
-        }
-        catch
-        {
-            /* already gone */
-        }
+        try { s?.Dispose(); }
+        finally { released.TrySetResult(); }
+        if (removed) SessionsChanged?.Invoke();
     }
 
     private void Touch(ChatThread t)
@@ -467,14 +638,17 @@ internal sealed partial class Chats
     private void Save(ChatThread t)
     {
         if (t.Messages.Count == 0) return;
-        Json.Save(Path.Combine(dir, t.Id + ".json"), t);
+        store.Save(Path.Combine(dir, t.Id + ".json"), t);
     }
+
+    public Task<bool> FlushAsync() => store.FlushAsync();
+    public void Flush() => store.FlushAsync().GetAwaiter().GetResult();
 
     private void ReapIdle()
     {
         int before = sessions.Count, idleMinutes = Settings.Current.AiIdleMinutes;
         foreach (var (id, s) in sessions.ToList())
-            if (idleMinutes > 0 && !s.Busy && DateTime.UtcNow - s.LastUsed > TimeSpan.FromMinutes(idleMinutes))
+            if (idleMinutes > 0 && !preparing.ContainsKey(id) && !s.Busy && DateTime.UtcNow - s.LastUsed > TimeSpan.FromMinutes(idleMinutes))
             {
                 s.Dispose();
                 sessions.Remove(id);
@@ -483,9 +657,26 @@ internal sealed partial class Chats
         if (sessions.Count == 0) idle.Stop();
     }
 
-    public void Shutdown()
+    public void Shutdown(bool save = true)
     {
+        if (shutdown) return;
+        shutdown = true;
+        idle.Stop();
+        foreach (var pending in preparing.Values) _ = pending.Cancellation.CancelAsync();
+        preparing.Clear();
+        foreach (var pending in finishing.Values) _ = pending.Cancellation.CancelAsync();
+        finishing.Clear();
         foreach (var s in sessions.Values) s.Dispose();
         sessions.Clear();
+        if (save)
+        {
+            foreach (var t in Threads.ToArray())
+                if (t.Busy)
+                {
+                    if (leads.Remove(t.Id, out var lead)) t.Messages[^1].Text += lead.Flush();
+                    Complete(t, t.Messages[^1], false, AiErrors.Stopped);
+                }
+        }
+        store.CloseAsync().GetAwaiter().GetResult(); // explicit shutdown durability; the store worker never calls the UI
     }
 }

@@ -16,6 +16,10 @@ internal static class Paths
     /// A dev copy (own --data folder) never writes the user's Run key or real data.
     public static bool IsDev { get; private set; }
 
+    /// This copy's name among the running Blooms (its single-instance mutex, its signals, the approval pipe): "Bloom",
+    /// or one name per dev --data folder.
+    public static string InstanceId => IsDev ? "Bloom.Dev." + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(Data.ToLowerInvariant())))[..10] : "Bloom";
+
     public static void Init(string? dataOverride)
     {
         if (!string.IsNullOrEmpty(dataOverride))

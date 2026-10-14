@@ -32,8 +32,8 @@ Working…	正在处理…
 New chat	新对话
 Session ended · answer stopped	会话已结束 · 回答已停止
 Thinking…	思考中…
-Could not send the message. Send it again.	无法发送消息。请重新发送。
 \n\n<attachment name="{0}">(This format can't be opened here — tell the user its contents didn't come through)</attachment>	\n\n<attachment name="{0}">(此格式无法在这里打开 — 请告诉用户内容没有传过来)</attachment>
+Could not send the message. Send it again.	无法发送消息。请重新发送。
 **{0}** — file saved	**{0}** — 已保存文件
 Searching the web…	正在搜索网页…
 Reading a page…	正在读取网页…
@@ -183,7 +183,7 @@ Current task	当前任务
 Codex · Done	Codex · 已完成
 Elapsed: 3 min	用时：3 分钟
 Claude Code · Needs approval	Claude Code · 等待批准
-Approval pending · click to close	等待批准 · 点击关闭
+Approval pending · click to go to session	等待批准 · 点击转到会话
 Claude · Limit near	Claude · 即将达到上限
 18% of the weekly limit left	每周额度剩余 18%
 Resets in 2 d	2 天后重置
@@ -194,23 +194,33 @@ Working	进行中
 Done	已完成
 Limit reset	额度重置
 {0} limit reset	{0} 额度已重置
-Resets in {0}	{0}后重置
 Limit used up	额度已用完
 {0} limit used up	{0} 额度已用完
 Limit near	即将达到上限
 {0} limit · {1}% left	{0}额度 · 剩余 {1}%
+Run-out expected	预计用完
+{0} limit · out in {1} at this pace	{0}额度 · 按此速度 {1}后用完
+Resets in {0}	{0}后重置
 Bloom · Update	Bloom · 更新
 Version {0} downloaded	已下载版本 {0}
 Applies at next start	下次启动时应用
 Update settings	更新设置
 Bloom AI · Approval pending	Bloom AI · 等待批准
 Choose Allow or Decline	选择允许或拒绝
+Claude Code · Approval request	Claude Code · 批准请求
+Answer in terminal	在终端中回答
+Approve on the card	在通知卡片上批准
+Allow or decline Claude Code's requests on the card · On adds Bloom's hook to Claude Code's settings.json, off takes it out	在卡片上允许或拒绝 Claude Code 的批准请求 · 开启后会在 Claude Code 的设置（settings.json）中添加 Bloom 钩子，关闭后移除
+Bloom · Notifications	Bloom · 通知
+Couldn't change Claude Code's settings	无法更改 Claude Code 的设置
 Open AI chat	打开 AI 聊天
 {0} s	{0}秒
 {0} h {1} min	{0}小时{1}分钟
 {0} h	{0}小时
 {0} d {1} h	{0}天{1}小时
 {0} d	{0}天
+Problem report · Bloom {0}	问题报告 · Bloom {0}
+Describe what happened, then paste the copied report below (Ctrl+V).	写下发生了什么，然后将复制的诊断信息粘贴到下方（Ctrl+V）。
 Bloom — press Win to open	Bloom — 按 Win 键打开
 Open\tWin	打开\tWin
 Settings	设置
@@ -360,9 +370,6 @@ Empty	空
 Folder · {0}	文件夹 · {0}
 Open folder	打开文件夹
 Change icon…	更换图标…
-Pick an icon picture…	选择图标图片…
-Move left	左移
-Move right	右移
 Ungroup (the items go back to the favorites row)	取消分组 (其中的项目回到收藏栏)
 Delete folder (its items leave the favorites too)	删除文件夹 (其中的项目也会移出收藏)
 Removes ‘{0}’ and its {1} items from favorites. Apps stay installed.	从收藏中移除“{0}”及其 {1} 个项目。保留已安装的应用。
@@ -392,6 +399,7 @@ Folder name — e.g. Video editing, Design	文件夹名称 — 例如 视频剪�
 Made the folder ‘{0}’	已创建文件夹“{0}”
 A folder to group apps by task	按任务归类应用的文件夹
 Command	命令
+Put in the search line	填入搜索栏
 AI account name	AI 账户显示名称
 Shown on the card instead of the e-mail — empty: the e-mail ({0})	在卡片上代替邮箱显示的文字 — 留空则显示邮箱 ({0})
 Shown on the card	在卡片上显示的文字
@@ -434,7 +442,6 @@ Setting	设置
 Tool	工具
 Folder	文件夹
 File	文件
-Copy name	复制名称
 See this folder's size (Space Cleaner)	查看此文件夹大小 (Space Cleaner)
 Add to custom commands…	添加到自定义命令…
 Just now	刚刚
@@ -577,6 +584,8 @@ No results · search elsewhere	无结果 · 在其他位置搜索
 Copy result	复制结果
 Copy as shown	按显示格式复制
 Copy with the expression	连同算式复制
+Bloom settings	Bloom 设置
+Settings › {0}	设置 › {0}
 System	系统
 Nothing matches	无匹配项
 Set volume to {0}%	把音量设为 {0}%
@@ -752,6 +761,8 @@ To the Recycle Bin: {0}{1}	移到回收站：{0}{1}
 Read the clipboard	读取剪贴板
 Copy to the clipboard: {0}	复制到剪贴板：{0}
 saved captures	已保存的截图
+glass	玻璃效果
+shortcut	快捷键
 Downloads	下载
 color picker	color picker
 left half	left half
@@ -910,6 +921,34 @@ Grape	葡萄
 Sand dune	沙丘
 Charcoal and ash	木炭与灰烬
 Aurora	极光
+Maths · units · currency	计算 · 单位 · 汇率
+Calculates a sum as you type	输入算式即可计算
+Converts between units	换算单位
+Converts at the latest exchange rate	按最新汇率换算
+Starts a timer	启动计时器
+Shows a reminder after that time	到时后显示提醒
+Shows a reminder at that time	在指定时刻显示提醒
+Dates · world clock	日期 · 世界时钟
+Shows the date that far ahead	显示若干天后的日期
+Counts the days left	计算剩余天数
+Shows another city's clock	显示其他城市的时间
+Converts that city's time to local time	将该城市的时间换算为本机时间
+Fits the window in front to the left half	将前台窗口放到屏幕左半边
+Maximizes the window in front	最大化前台窗口
+Moves the window in front to the next screen	将前台窗口移到下一个屏幕
+Paths	路径
+Shows the folder and what is in it	显示文件夹及其内容
+Reads paths with environment variables too	也能识别包含环境变量的路径
+Site shortcuts	网站快捷方式
+Searches YouTube	在 YouTube 上搜索
+Searches the map	在地图上搜索
+Finds an emoji to paste	查找表情符号并粘贴
+Finds symbols to paste too	也可查找符号并粘贴
+Finds the app in winget to install	在 winget 中查找并安装应用
+Sets the volume	设置音量
+Switches dark mode	切换深色模式
+Saves it as a note	直接保存为笔记
+Press Tab to ask AI what you typed	按 Tab 将输入的内容问 AI
 AI chat	AI 聊天
 Tab, the chat window and ‘Ask AI’ at the end of a search	Tab、对话窗口和搜索结果末尾的“问 AI”
 Pick a screen area to ask AI, translate or copy text · its 5 shortcuts	选择屏幕区域来问 AI、翻译或复制文字 · 5 个快捷键
@@ -917,7 +956,6 @@ AI actions	AI 操作
 Summarize, translate or polish selected text, and its shortcut	对选中文字进行总结、翻译、润色及其快捷键
 Calculator, units and currency	计算器、单位和汇率
 Typing a sum answers at once (12*3, 5km to mi, 100 usd)	输入算式立即得出结果 (12*3, 5km to mi, 100 usd)
-Dates · world clock	日期 · 世界时钟
 Answers ‘in 100 days’, ‘days until christmas’, ‘new york time’, ‘tokyo 3pm’ at once	立即回答 “in 100 days”“days until christmas”“new york time”“tokyo 3pm”
 ‘10 min timer’, ‘3pm meeting’ · the home's timers block · ones already set still ring	“10 min timer”“3pm meeting” · 主页的计时器区块 · 已设置的仍会照常响铃
 Calendar	日历
@@ -926,7 +964,6 @@ Pick screen colours, look up colour codes, gradient ideas, and its shortcut	屏�
 Find ‘heart’ or ‘arrow’ and paste it, and its shortcut	用 “heart”“arrow” 查找并粘贴，及其快捷键
 Volume & system	音量和系统
 ‘volume 30’, dark mode, Bluetooth and other switches	“volume 30”、深色模式、蓝牙等开关
-Site shortcuts	网站快捷方式
 Search a site by keyword, like ‘yt cats’	用关键词搜索网站，如 “yt cats”
 Your own scripts, snippets and chains	自己写的脚本、片段和组合
 Notes & tool windows	便笺和工具窗口
@@ -1063,7 +1100,6 @@ See the first-run setup and the guide again	再次查看首次设置和使用指
 Settings, favorites, app names and browser shortcuts in one file	把设置、收藏、应用名称和浏览器快捷方式存成一个文件
 Import settings	导入设置
 From an exported settings file	从导出的设置文件导入
-Bloom settings	Bloom 设置
 Refresh the app list	刷新应用列表
 Lock screen	锁定屏幕
 Lock Windows	锁定 Windows
@@ -1244,7 +1280,10 @@ Rename	重命名
 {0} ago	{0}前
 Last fetched	上次获取
  left	 剩余
+ · out ~{0:M/d HH:mm}	 · 预计用完 {0:M/d HH:mm}
  · resets {0:M/d HH:mm}	 · {0:M/d HH:mm} 重置
+out now	即将用完
+out in {0}	{0}后用完
 now	即将
 Su	日
 Mo	一
@@ -1272,6 +1311,7 @@ MMMM yyyy	yyyy年M月
 Last month (PgUp)	上个月 (PgUp)
 To today (Home)	回到今天 (Home)
 Next month (PgDn)	下个月 (PgDn)
+Click to go to the session window	点击转到会话窗口
 Search in your browser · site shortcuts (e.g. yt cats)	在浏览器中搜索 · 网站快捷方式 (例如 yt cats)
 Find files on this PC by name (Everything)	按名称查找本机文件 (Everything)
 Paste text, pictures and files you copied before	粘贴以前复制的文字、图片和文件
@@ -1310,9 +1350,9 @@ Applies immediately	立即生效
 Light	浅色
 Dark	深色
 Theme	主题
-Smooth motion	流畅动画
-Lower memory use	节省内存
-Smooth motion uses the GPU. Lower memory use saves about 30 MB, but may stutter on a slow CPU. Applies at next start.	流畅动画使用 GPU。节省内存可减少约 30 MB，但在较慢的 CPU 上可能卡顿。下次启动时应用。
+CPU (default)	CPU（默认）
+GPU (experimental)	GPU（实验性）
+Bloom draws with the CPU by default. GPU drawing is experimental: some PCs may stutter or freeze for seconds. Applies at next start.	默认使用 CPU 绘制。GPU 绘制为实验功能，在部分电脑上画面可能卡顿或停住几秒。下次启动时应用。
 Programs Bloom works with	Bloom 配合使用的程序
 Bloom works without them; each one turns its feature on. Install them from their official pages.	没有它们 Bloom 也能运行；装上后会开启对应功能。请从各自的官方页面安装。
 Find any file on the PC by name	按名称即时查找电脑上的任意文件
@@ -1411,16 +1451,14 @@ Result · Enter copies	结果 · 按 Enter 复制
 Refresh	刷新
 Remove from favorites	从收藏中移除
 Add to favorites	添加到收藏
-Draw an icon with AI…	用 AI 画图标…
-Back to the original icon	恢复原图标
 Add to a favorites folder…	添加到收藏夹…
 Remove from home ({0})	从主页移除 ({0})
 Pin to home ({0})	固定到主页 ({0})
 Removed ‘{0}’ from home	已从主页移除“{0}”
 Pinned ‘{0}’ to home	已把“{0}”固定到主页
 Remove from recent	从最近使用中删除
-Customize the home…	自定义主页…
 Draw with AI… (describe the picture)	用 AI 画… (用文字描述图案)
+Back to the original icon	恢复原图标
 Picture icon for ‘{0}’	“{0}”的图案图标
 Editing home · ▲ ▼ ✕ on blocks · ‹ › order and ✎ names the AI usage cards · Esc or ‘Done’ to finish	正在编辑主页 · 区块用 ▲ ▼ ✕ · AI 用量卡片用 ‹ › 调整顺序、✎ 改名 · 按 Esc 或“完成”结束
 Creating icon for ‘{0}’… (1 use)	正在生成“{0}”图标…（计入 1 次用量）
@@ -1436,11 +1474,11 @@ Add to a favorites folder · {0}	加入收藏文件夹 · {0}
 Removed from favorites	已从收藏移除
 Added to favorites	已添加到收藏
 Open in the chat window	在对话窗口中打开
+Model · thinking level	模型 · 思考级别
 Bloom · Quick AI	Bloom · 快速 AI
 Answer ready	回答完成
 No response. Send again.	无响应。请重新发送。
 Thinking · {0}	思考 · {0}
-Model · thinking level	模型 · 思考级别
 Haiku has no thinking level setting.	Haiku 不支持思考级别设置。
 Screen · Bloom Lens	屏幕 · Bloom Lens
 {0} attached	已附加 {0} 个
@@ -1460,6 +1498,7 @@ Done (Esc · Ctrl+E)	完成 (Esc · Ctrl+E)
 Order or hide the home blocks (Ctrl+E)	排列或隐藏主页区块 (Ctrl+E)
 Type to search	输入以搜索
 Search, or ask AI	搜索，或问 AI
+What you can type	可输入的内容
 Files	文件
 File name · Everything syntax (ext:pdf, dm:today)	文件名 · Everything 语法 (ext:pdf, dm:today)
 File search · Everything	文件搜索 · Everything
@@ -1505,6 +1544,7 @@ Pick an action · or type your own and Enter	选择操作 · 或自己输入后�
 AI actions · selected text, {0} chars	AI 操作 · 所选文字 {0} 字
 AI actions · copied text, {0} chars	AI 操作 · 已复制文字 {0} 字
 File kind · Ctrl+Tab steps	文件类型 · Ctrl+Tab 切换
+Pick an icon picture…	选择图标图片…
 From a file… (image, icon or program)	从文件选择… (图片、图标或程序)
 Default (the icons inside)	默认 (内部的图标)
 Icon for ‘{0}’	“{0}”的图标
@@ -1770,7 +1810,7 @@ Notification types	通知类型
 What a turn works on once it runs past 4 s	任务运行超过 4 秒时显示它在做什么
 When it ends, with how long it took (past 10 s)	结束时连同所用时间一起显示 (超过 10 秒)
 Shown when approval or an answer is needed · stays until work resumes	需要批准或回复时显示 · 保留到操作继续
-At 20% left of the 5-hour or weekly limit, and when used up	5 小时或每周额度剩余 20% 时，以及用完时
+5-hour · weekly limit at 20% left, when used up, or when a run-out is expected	5 小时 · 每周额度剩余 20% 时、用完时，或预计在重置前用完时
 When a low limit is full again after its reset	不足的额度在重置后恢复满时
 Performance	性能
 Motion and transparency	动画和透明效果
@@ -1783,9 +1823,9 @@ Lower uses less GPU and CPU	越低越省 GPU 和 CPU
 60	60
 Glass effect	玻璃效果
 Off: a solid background, lighter on the GPU	关闭：纯色背景，减轻 GPU 负担
-Restart Bloom to apply screen motion settings.	重新启动 Bloom 以应用界面动画设置。
-Smooth screen motion	流畅的界面动画
-Uses GPU for smooth motion. Turning it off saves about 30 MB; busy screens use more CPU.	使用 GPU 显示流畅动画。关闭后节省约 30 MB；动画较多时 CPU 用量增加。
+Restart Bloom to apply GPU drawing.	重新启动 Bloom 以应用 GPU 绘制。
+GPU drawing (experimental)	GPU 绘制（实验性）
+Draws the screen with the GPU. Some PCs may stutter or freeze for seconds. Off: the CPU draws, with about 30 MB less memory.	用 GPU 绘制界面。部分电脑上画面可能卡顿或停住几秒。关闭后用 CPU 绘制，内存少约 30 MB。
 Changes when Bloom restarts	重启 Bloom 后生效
 Memory	内存
 Memory Bloom uses now	Bloom 当前使用的内存
@@ -1802,6 +1842,10 @@ Version	版本
 Windows launcher	Windows 启动器
 What's new in this version	此版本的更新内容
 Also shown once at the first start after an update · Enter shows it	更新后首次启动时也会显示一次 · 按 Enter 查看
+Problem report	问题报告
+Copies the version, Windows and recent log (user name and e-mail addresses hidden) and opens a GitHub issue · Bloom sends nothing itself	复制版本、Windows 和最近日志（隐藏用户名和电子邮件地址），并打开 GitHub 问题页面 · Bloom 本身不发送任何内容
+Report copied	已复制诊断信息
+Paste it into the page that opened (Ctrl+V)	粘贴到打开的页面中（Ctrl+V）
 Never release · 150–300 MB per chat	不释放 · 每个聊天占用 150–300 MB
 Frees a chat's memory after {0} unused · history stays · the next first answer starts a few seconds later · 0 = never	{0} 未使用的聊天释放内存 · 保留记录 · 下一次首个回答会晚几秒 · 0 表示不释放
 Automatic updates require a setup installation · open releases	自动更新需通过安装程序安装 Bloom · 打开发布页面
@@ -1817,9 +1861,9 @@ Checks once after launch · downloads new versions for the next start	启动后�
 Another app already uses it — press another combination	已被其他应用占用 — 请按其他组合
 Off — click to set a shortcut	已关闭 — 点击设置快捷键
 Bloom already uses it	Bloom 已在使用此键
+No settings found	未找到设置
 Basics	基本
 Launcher	启动器
-No settings found	未找到设置
 Find a setting	查找设置
 Section	分类
 Change	更改

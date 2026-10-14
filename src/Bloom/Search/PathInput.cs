@@ -40,7 +40,13 @@ internal static partial class PathInput
 
     public static PathAnswer? Read(string text)
     {
-        if (Expand(text) is not { } full) return null;
+        if (Expand(text) is not { } full || !full.Contains('\\')) return null;
+        return ReadExpanded(full);
+    }
+
+    /// The caller expanded environment variables already; only discovery runs on the worker.
+    internal static PathAnswer ReadExpanded(string full)
+    {
         if (IsNetwork(full)) return new PathAnswer(full, true, false, Array.Empty<(string, bool)>());
         try
         {
@@ -48,7 +54,7 @@ internal static partial class PathInput
             if (File.Exists(full)) return new PathAnswer(full, false, true, Array.Empty<(string, bool)>());
             // not there (yet): what in its folder starts with the last part
             int cut = full.LastIndexOf('\\');
-            if (cut < 0) return null;
+            if (cut < 0) return new PathAnswer(full, true, false, Array.Empty<(string, bool)>());
             string dir = full[..(cut + 1)], start = full[(cut + 1)..];
             return Directory.Exists(dir) ? new PathAnswer(full, true, false, List(dir, start)) : new PathAnswer(full, true, false, Array.Empty<(string, bool)>());
         }

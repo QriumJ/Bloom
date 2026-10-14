@@ -91,7 +91,8 @@ internal static class CodexUsage
             if (!rl.TryGetProperty(key, out var w) || w.ValueKind != JsonValueKind.Object) continue;
             double used = Num(w, "usedPercent") ?? 0;
             DateTime? resets = Num(w, "resetsAt") is { } at ? DateTimeOffset.FromUnixTimeSeconds((long)at).LocalDateTime : null;
-            limits.Add(new UsageLimit(UsageLimit.Window((int)(Num(w, "windowDurationMins") ?? 0)), used, resets));
+            int mins = (int)(Num(w, "windowDurationMins") ?? 0);
+            limits.Add(new UsageLimit(UsageLimit.Window(mins), used, resets, UsageLimit.Mins(mins)));
         }
         if (limits.Count == 0) return null;
         string? plan = rl.TryGetProperty("planType", out var pt) ? UsageAccount.ChatGptPlan(pt.GetString()) : null;

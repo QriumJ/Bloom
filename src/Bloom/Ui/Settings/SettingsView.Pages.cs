@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -117,7 +118,7 @@ internal sealed partial class SettingsView
             ctl.Children.Add(Arrow('\uE70D', Tr("아래로 (Ctrl+↓)", "Down (Ctrl+↓)"), () => MoveHome(key, 1)));
             hsw.Margin = new Thickness(10, 0, 0, 0);
             ctl.Children.Add(hsw);
-            string about = key != "usage" ? kind.about
+            string about = key != "usage" || collected is not null ? kind.about
                 : AiUsage.Available ? Tr("5시간 · 주간 사용량 · 켜면 메모리 약 +2 MB", "5-hour and weekly usage · about +2 MB of memory when on")
                 : kind.about + Tr(" — Claude Code · Codex가 없습니다", " — neither Claude Code nor Codex found");
             // only a row that shows gets its key and the drag (other categories add nothing)
@@ -168,7 +169,7 @@ internal sealed partial class SettingsView
         }, null, filter);
         Header(Tr("웹 검색", "Web search"));
         Menu(Tr("검색 · 링크를 열 브라우저", "Browser for searches and links"), Tr("이 PC에 설치된 브라우저 중에서 · 웹 검색과 링크를 이 브라우저로 바로 엽니다", "From the browsers on this PC · web searches and links open in it"), G.Globe,
-            Web.Choices.Select(c => (c.value, c.label, (string?)null)).ToArray(), Web.Picked?.Key ?? "default", v => s.WebBrowser = v, filter);
+            collected is null ? Web.Choices.Select(c => (c.value, c.label, (string?)null)).ToArray() : [], collected is null ? Web.Picked?.Key ?? "default" : "", v => s.WebBrowser = v, filter); // collecting looks up no browsers
         Choice(Tr("검색 엔진", "Search engine"), null, G.Search, Web.Engines.Select(e => (e.key, e.name)).ToArray(), s.SearchEngine, v => s.SearchEngine = v, filter);
         Add(Tr("사이트 바로 가기", "Site shortcuts"), Tr($"단축어 + 스페이스 + 검색어 (예: yt 고양이) · {Quicklinks.Current.Items.Count}개 · Enter로 런처에서 관리", $"Keyword + space + words (e.g. yt cats) · {Quicklinks.Current.Items.Count} · Enter manages them in the launcher"), null, G.Link, () => host.OpenView(App.Mode.Quicklinks), null, filter);
         Header(Tr("이름", "Names"));
@@ -203,13 +204,13 @@ internal sealed partial class SettingsView
             AiModels.Claude.Select(m => (m, AiModels.Name(m))).ToArray(), s.AiModel, v => s.AiModel = v, filter);
         Choice(Tr("Claude 생각 수준", "Claude thinking level"), Tr("빠름은 생각 끔 · Haiku에서는 설정 불가 · 대화 중 Ctrl+E", "Fast = thinking off · not for Haiku · Ctrl+E during a chat"), G.Bulb,
             AiModels.ClaudeEfforts.Select(e => (e, AiModels.EffortName(e))).ToArray(), s.AiEffort, v => s.AiEffort = v, filter);
-        string? cli = ClaudeSession.FindCli(s.ClaudePath);
+        string? cli = collected is null ? ClaudeSession.FindCli(s.ClaudePath) : null; // collecting looks nowhere on the PC
         if (cli is not null && Demo.On) cli = Tr("설치됨", "Installed"); // recording mode: no path with the account name
         Add("Claude Code", cli ?? AiErrors.ClaudeMissing, cli is null ? ToolUi.TextButton(Tr("설치 안내", "Installation guide"), () => Launch.Open("https://docs.anthropic.com/en/docs/claude-code")) : null, G.Info, null, null, filter);
 
         Header("ChatGPT");
-        var gpts = GptCatalog.All;
-        string? gptSlug = s.GptModel is { Length: > 0 } g && gpts.Any(m => m.Slug == g) ? g : GptCatalog.DefaultSlug();
+        IReadOnlyList<GptCatalog.Model> gpts = collected is null ? GptCatalog.All : [];
+        string? gptSlug = collected is not null ? null : s.GptModel is { Length: > 0 } g && gpts.Any(m => m.Slug == g) ? g : GptCatalog.DefaultSlug();
         if (gpts.Count > 0)
             Menu(Tr("ChatGPT 모델", "ChatGPT model"), (GptCatalog.Find(gptSlug) is { } cur ? GptCatalog.About(cur) : Tr("Codex 기본 모델", "Codex's default model")) + Tr(" · 대화 중에는 Ctrl+M", " · Ctrl+M during a chat"), G.Model,
                 gpts.Select(m => (m.Slug, m.Name, (string?)GptCatalog.About(m))).ToArray(), gptSlug ?? gpts[0].Slug, v =>
@@ -221,8 +222,8 @@ internal sealed partial class SettingsView
             Add(Tr("ChatGPT 모델", "ChatGPT model"), Tr("Codex의 모델 목록이 아직 없음 — Codex를 실행하여 목록을 불러오세요", "No Codex model list yet — run Codex once to get it"), null, G.Model, null, null, filter);
         string gptId = gptSlug is null ? "chatgpt" : AiModels.Gpt(gptSlug);
         Choice(Tr("ChatGPT 생각 수준", "ChatGPT thinking level"), Tr("모델마다 단계가 다릅니다 · 대화 중 Ctrl+E", "The levels depend on the model · Ctrl+E during a chat"), G.Bulb,
-            AiModels.Efforts(gptId).Select(e => (e, AiModels.EffortName(e))).ToArray(), AiModels.Fit(gptId, s.GptEffort), v => s.GptEffort = v, filter);
-        string? codex = CodexSession.FindCli(s.CodexPath);
+            collected is null ? AiModels.Efforts(gptId).Select(e => (e, AiModels.EffortName(e))).ToArray() : [], collected is null ? AiModels.Fit(gptId, s.GptEffort) : "", v => s.GptEffort = v, filter); // collecting asks no model catalog
+        string? codex = collected is null ? CodexSession.FindCli(s.CodexPath) : null;
         if (codex is not null && Demo.On) codex = Tr("설치됨", "Installed");
         Add("Codex", codex is null ? AiErrors.CodexMissing : Tr($"{codex} · ChatGPT 로그인으로 사용", $"{codex} · uses your ChatGPT login"), codex is null ? ToolUi.TextButton(Tr("설치 안내", "Installation guide"), () => Launch.Open("https://github.com/openai/codex")) : null, G.Info, null, null, filter);
     }
@@ -258,8 +259,8 @@ internal sealed partial class SettingsView
         Header(Tr("이 PC의 다른 MCP 서버", "Other MCP servers on this PC"));
         // read where each program keeps them (Claude Code, Claude Desktop, Cursor, VS Code, Windsurf, Codex, files
         // brought in), once per opening of this page
-        mcpFound ??= McpCatalog.Found(s.McpFiles);
-        if (mcpFound.Count == 0)
+        mcpFound ??= collected is null ? McpCatalog.Found(s.McpFiles) : []; // collecting reads no program's settings files
+        if (mcpFound.Count == 0 && collected is null)
             Add(Tr("등록된 서버 없음", "No servers found"), Tr("Claude Code · Claude Desktop · Cursor · VS Code · Windsurf · Codex에 등록한 MCP가 여기 표시됩니다", "MCP servers set up in Claude Code, Claude Desktop, Cursor, VS Code, Windsurf or Codex show here"), null, G.Plug, null, null, filter);
         foreach (var d in mcpFound)
         {
@@ -347,10 +348,10 @@ internal sealed partial class SettingsView
         Header(Tr("글자 읽기", "Reading text"));
         var ocCopy = Toggle(s.OcrCopy, v => s.OcrCopy = v, out var ocT);
         Add(Tr("읽은 글자 바로 복사", "Copy the text at once"), Tr("끄면 런처에서 고른 뒤에 복사합니다", "Off: copy it from the launcher"), ocCopy, G.Copy, ocT, null, filter);
-        var langs = Ocr.WinOcr.Languages();
+        var langs = collected is null ? Ocr.WinOcr.Languages() : [];
         Choice(Tr("인식 언어", "Recognition language"), langs.Count == 0 ? Tr("설치된 인식 언어 없음 · Windows 언어 설정에서 추가하세요", "No recognition languages installed. Add one in Windows language settings.") : Tr($"설치된 인식기: {string.Join(", ", langs)}", $"Installed: {string.Join(", ", langs)}"), G.Keyboard,
             new[] { ("auto", Tr("자동", "Auto")) }.Concat(langs.Select(l => (l, LangName(l)))).ToArray(), s.OcrLanguage, v => s.OcrLanguage = v, filter);
-        if (langs.Count == 0)
+        if (langs.Count == 0 && collected is null)
             Add(Tr("Windows 언어 설정 열기", "Open Windows language settings"), null, null, G.Keyboard, () => Launch.Open("ms-settings:regionlanguage"), null, filter);
         Header(Tr("번역 · AI 빠른 동작", "Translation · AI actions"));
         string tp = s.TranslateProvider == "chatgpt" ? "chatgpt" : "claude";
@@ -370,7 +371,7 @@ internal sealed partial class SettingsView
         Choice(Tr("실시간 번역 간격", "Live translation interval"), Tr("화면을 다시 읽는 간격 (읽기는 사용량 없음 · 글이 바뀌고 멈췄을 때만 번역)", "How often the screen is read again (reading uses nothing · it translates only when the text changed and settled)"), G.History,
             new[] { ("1", Tr("1초", "1 s")), ("1.5", Tr("1.5초", "1.5 s")), ("3", Tr("3초", "3 s")), ("5", Tr("5초", "5 s")) }, s.LiveSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture), v => s.LiveSeconds = double.Parse(v, System.Globalization.CultureInfo.InvariantCulture), filter);
         Header(Tr("캡처 저장본", "Saved captures"));
-        var (shots, bytes) = Host.LensFiles();
+        var (shots, bytes) = collected is null ? Host.LensFiles() : (0, 0L); // a folder scan
         Add(Tr("캡처 저장본 폴더 열기", "Open the saved captures folder"), Tr($"{shots}장 · {Engine.Size(bytes)} · 이 PC에만 저장 · 최근 {Host.LensKeep}장만 보관", $"Pictures: {shots} · {Engine.Size(bytes)} · on this PC only · the last {Host.LensKeep} kept"), null, G.Folder, () =>
         {
             Directory.CreateDirectory(Host.LensDir);
@@ -392,9 +393,9 @@ internal sealed partial class SettingsView
         Shortcut("emoji", Tr("이모지 · 기호 단축키", "Emoji & symbols shortcut"), Tr("이모지를 선택하고 Enter를 누르면 앞의 창에 붙여넣습니다.", "Choose a symbol and press Enter to paste into the active window."), '\uE76E', s.EmojiHotkey, v => s.EmojiHotkey = v, filter);
         Shortcut("quick", Tr("AI 빠른 동작 단축키", "AI actions shortcut"), Tr("아무 앱에서 글을 선택하고 누르면 요약 · 번역 · 다듬기 (동작마다 사용량 1회 · 엔진은 Bloom Lens > 번역)", "Select text in any app and press it: summarize, translate, polish (1 use per action · engine: Bloom Lens > Translation)"), G.Sparkle, s.QuickHotkey, v => s.QuickHotkey = v, filter);
         Header(Tr("항목 단축키", "Item shortcuts"));
-        if (ItemKeys.All.Count == 0)
+        if (ItemKeys.All.Count == 0 && collected is null)
             Add(Tr("지정된 항목 없음", "None yet"), Tr("런처에서 앱 · 폴더 · 명령 · 창 배치를 고르고 Ctrl+K › 단축키 지정", "Pick an app, folder, command or layout in the launcher, then Ctrl+K › Set a shortcut"), null, G.Keyboard, null, null, filter);
-        foreach (var k in ItemKeys.All.ToList())
+        foreach (var k in collected is null ? ItemKeys.All.ToList() : []) // the user's own shortcuts are not settings lines
         {
             var item = k.Item;
             Shortcut("item:" + item.Id, item.Title, Tr("눌러서 바꾸기 · Backspace로 지우기", "Click to change · Backspace removes it"), G.Keyboard, k.Combo, v => ItemKeys.Set(item, v == "off" ? null : v), filter);
@@ -461,7 +462,19 @@ internal sealed partial class SettingsView
         Kind(Tr("진행 중", "Working"), Tr("작업이 시작되면 무엇을 하는지 (4초 넘게 걸릴 때)", "What a turn works on once it runs past 4 s"), G.Gears, s.NoticeStart, v => s.NoticeStart = v);
         Kind(Tr("작업 완료", "Done"), Tr("끝나면 걸린 시간과 함께 (10초 넘게 걸린 작업)", "When it ends, with how long it took (past 10 s)"), G.Done, s.NoticeDone, v => s.NoticeDone = v);
         Kind(Tr("승인 대기", "Needs approval"), Tr("승인 또는 답변이 필요할 때 표시 · 작업 재개까지 유지", "Shown when approval or an answer is needed · stays until work resumes"), G.Clock, s.NoticeWaiting, v => s.NoticeWaiting = v);
-        Kind(Tr("한도 임박", "Limit near"), Tr("5시간 · 주간 한도가 20% 남았을 때와 다 썼을 때", "At 20% left of the 5-hour or weekly limit, and when used up"), G.Warning, s.NoticeLimit, v => s.NoticeLimit = v);
+        Kind(Tr("알림 카드에서 승인", "Approve on the card"), Tr("Claude Code의 승인 요청을 카드에서 허용 · 거절 · 켜면 Claude Code 설정(settings.json)에 Bloom 훅을 추가하고, 끄면 뺍니다", "Allow or decline Claude Code's requests on the card · On adds Bloom's hook to Claude Code's settings.json, off takes it out"), G.Shield, s.NoticeApprove, v =>
+        {
+            s.NoticeApprove = v; // first: Bloom's start-up ClaudeHooks.Follow reads it in its turn on the file
+            if (!ClaudeHooks.Set(v))
+            {
+                s.NoticeApprove = !v;
+                Notices.Result(false, Tr("Bloom · 알림", "Bloom · Notifications"), Tr("Claude Code 설정을 바꾸지 못했습니다", "Couldn't change Claude Code's settings"), ClaudeHooks.SettingsFile);
+                Dispatcher.BeginInvoke(() => Build(lastFilter)); // the switch shows what holds
+                return;
+            }
+            ClaudeApprovals.Apply();
+        });
+        Kind(Tr("한도 임박", "Limit near"), Tr("5시간 · 주간 한도가 20% 남았을 때와 다 썼을 때 · 초기화 전 소진이 예상될 때", "5-hour · weekly limit at 20% left, when used up, or when a run-out is expected"), G.Warning, s.NoticeLimit, v => s.NoticeLimit = v);
         Kind(Tr("한도 복구", "Limit reset"), Tr("모자랐던 한도가 초기화되어 다시 찼을 때", "When a low limit is full again after its reset"), G.Sync, s.NoticeRecover, v => s.NoticeRecover = v);
     }
 
@@ -483,10 +496,11 @@ internal sealed partial class SettingsView
         var gpuSw = Toggle(s.GpuDrawing, v =>
         {
             s.GpuDrawing = v;
-            AskRestart(Tr("화면 움직임 설정을 적용하려면 Bloom을 다시 시작해야 합니다.", "Restart Bloom to apply screen motion settings."));
+            AskRestart(Tr("GPU로 그리기 설정을 적용하려면 Bloom을 다시 시작해야 합니다.", "Restart Bloom to apply GPU drawing."));
         }, out var gpuT);
-        Add(Tr("부드러운 화면 움직임", "Smooth screen motion"), s.GpuDrawing == (System.Windows.Media.RenderOptions.ProcessRenderMode != System.Windows.Interop.RenderMode.SoftwareOnly)
-            ? Tr("GPU로 화면 움직임을 부드럽게 표시합니다. 끄면 메모리를 약 30 MB 덜 쓰지만 움직임이 많은 화면에서는 CPU 사용이 늘어납니다.", "Uses GPU for smooth motion. Turning it off saves about 30 MB; busy screens use more CPU.")
+        // experimental since 10-14: GPU drawing froze the whole screen for seconds on one PC (Settings.GpuDrawing)
+        Add(Tr("GPU로 그리기 (실험적)", "GPU drawing (experimental)"), s.GpuDrawing == (System.Windows.Media.RenderOptions.ProcessRenderMode != System.Windows.Interop.RenderMode.SoftwareOnly)
+            ? Tr("GPU로 화면을 그립니다. 일부 PC에서는 화면이 끊기거나 몇 초 동안 멈출 수 있습니다. 끄면 CPU로 그리며 메모리를 약 30 MB 덜 씁니다.", "Draws the screen with the GPU. Some PCs may stutter or freeze for seconds. Off: the CPU draws, with about 30 MB less memory.")
             : Tr("다시 시작하면 바뀝니다", "Changes when Bloom restarts"), gpuSw, G.Screen, gpuT, null, filter);
         Header(Tr("메모리", "Memory"));
         using var me = System.Diagnostics.Process.GetCurrentProcess();
@@ -508,6 +522,12 @@ internal sealed partial class SettingsView
         Add(Tr("이번 버전에서 바뀐 점", "What's new in this version"), Tr("업데이트한 뒤 처음 켤 때도 한 번 표시합니다 · Enter로 보기", "Also shown once at the first start after an update · Enter shows it"), null, G.Document, () => host.ShowWhatsNew(), null, filter);
         UpdateRows(s, filter);
         Add(Tr("Bloom 둘러보기", "Bloom tour"), Tr("처음 설정과 사용법 안내를 다시 보기", "See the first-run setup and the guide again"), null, G.Info, () => host.ShowOnboarding(), null, filter);
+        Add(Tr("문제 보고", "Problem report"), Tr("버전 · Windows · 최근 로그를 복사하고 GitHub 이슈 작성 페이지를 엽니다 · 사용자 이름과 이메일 주소는 가려지며 Bloom이 직접 보내는 것은 없습니다", "Copies the version, Windows and recent log (user name and e-mail addresses hidden) and opens a GitHub issue · Bloom sends nothing itself"), null, G.Warning, () =>
+        {
+            Launch.Copy(ProblemReport.Build());
+            Web.Open(ProblemReport.IssueUrl());
+            Notices.Result(true, Tr("문제 보고", "Problem report"), Tr("진단 정보 복사 완료", "Report copied"), Tr("열린 페이지에 붙여넣으세요 (Ctrl+V)", "Paste it into the page that opened (Ctrl+V)"));
+        }, null, filter);
     }
 
     /// A switch that only takes hold at the next start (언어, GPU로 그리기): asks whether to restart now.

@@ -34,6 +34,7 @@ internal sealed partial class Host
     /// The AI 채팅 window while it shows (else zero): what a tool the AI brings up floats beside.
     public IntPtr ChatWindowHandle => chatWindow is { IsVisible: true } c ? new System.Windows.Interop.WindowInteropHelper(c).Handle : IntPtr.Zero;
     private WinKeyHook? winKey;
+    private StallWatch? stalls;
     private Tray? tray;
     private Dispatcher ui = null!;
     private DispatcherTimer? dataTick;
@@ -47,7 +48,7 @@ internal sealed partial class Host
     public void Start()
     {
         ui = Application.Current.Dispatcher;
-        Demo.On = Opt.Demo; // before anything reads the PC
+        Demo.On = Opt.Demo || Opt.ResponsiveRounds is not null; // before anything reads the PC
         if (Opt.Lang is { } lang) Lang.Init(lang); // before the settings, which would fix it otherwise
         Settings.Load();
         Usage.Load();
@@ -77,8 +78,8 @@ internal sealed partial class Host
             Mcp.Start();
             return (Mcp.Server, App.Mcp.BloomTools.Doing);
         };
-        ClaudeSession.ExtraMcp = McpCatalog.Picked;
-        CodexSession.ExtraMcp = McpCatalog.Picked;
+        ClaudeSession.PrepareMcp = McpCatalog.PreparePicked;
+        CodexSession.PrepareMcp = McpCatalog.PreparePicked;
         CodexSession.Relay = () =>
         {
             Mcp.Start();
@@ -97,6 +98,12 @@ internal sealed partial class Host
         Icons.Start(ui);
         Window = new Launcher(this) { Capturing = Opt.CaptureDir is not null };
         Tools = new ToolDock(this);
+        if (Opt.ResponsiveRounds is { } responsive)
+        {
+            _ = ResponsivenessBench.Run(this, ui, responsive);
+            return; // synthetic sources only: no watchers, clipboard listeners, provider polling or global hooks
+        }
+        if (!Demo.On) _ = GptCatalog.RefreshAsync();
         if (Opt.ChatFile is not null)
         {
             _ = Captures.Chat(this, Opt.ChatFile, Opt.QaModel ?? "haiku", Opt.QaEffort, Opt.QaAsk?.Split('|'));
@@ -135,6 +142,8 @@ internal sealed partial class Host
             if (!Window.IsActive && chatWindow?.IsActive != true) Notices.Ask(ask.Says, () => OpenChat(thread));
         };
         Rates.Updated += () => Later();
+        RecentFiles.Updated += Later;
+        OpenWindows.Updated += Later;
         Clipboard.Changed += () => Later();
         Quicklinks.Changed += () => Later();
         UserCommands.Changed += () => Later();
@@ -167,6 +176,7 @@ internal sealed partial class Host
             AiUsage.Start(ui);
             Notices.Quiet = Opt.MeasureSeconds is not null || Opt.SummonRounds is not null;
             if (!Opt.Demo) Notices.Start(ui); // recording mode: no cards from the real Claude Code and Codex
+            if (!Opt.Demo) ClaudeApprovals.Start(ui);
             if (Opt.MeasureSeconds is { } measure) MeasureLater(measure);
             if (Opt.SummonRounds is { } rounds) _ = SummonBench.Run(this, ui, rounds);
             if (!Opt.Demo) Clipboard.Start(); // recording mode: the PC's clipboard stays out, the samples stay in
@@ -181,6 +191,8 @@ internal sealed partial class Host
             }
             if (Settings.Current.Autostart && !Paths.IsDev && !Autostart.IsCurrent()) Autostart.Set(true);
             if (!Opt.Demo) Updates.Start(ui);
+            // UI-thread stalls go to the log, longer ones with a dump in Local\stalls; watched once start-up has settled
+            ui.BeginInvoke(DispatcherPriority.ApplicationIdle, () => stalls = new StallWatch(ui, Log.Write, () => StallWatch.TriageDump(System.IO.Path.Combine(Paths.Local, "stalls"))));
             Window.Prewarm();
             Tools.Restore(); // floating tool windows come back now, attached ones with the launcher
             if (Settings.Current.Onboarded != true) ShowOnboarding();
@@ -226,7 +238,7 @@ internal sealed partial class Host
                 return $"private {me.PrivateMemorySize64 / 1048576.0:0.0} MB · working set {me.WorkingSet64 / 1048576.0:0.0} MB · managed {GC.GetTotalMemory(false) / 1048576.0:0.0} MB (allocated since start {GC.GetTotalAllocatedBytes() / 1048576.0:0} MB, {GC.CollectionCount(0)} GCs) · cpu {me.TotalProcessorTime.TotalSeconds:0.00} s";
             }
             string before = Line();
-            MemoryTrim.Now(); // what the idle trim gives back
+            MemoryTrim.Now(); // explicit diagnostic collection; routine idle cleanup does not force GC
             System.IO.File.WriteAllText(Paths.In("memory.txt"), before + "\n" + "after trim: " + Line() + "\n");
             Quit();
         };
@@ -325,10 +337,6 @@ internal sealed partial class Host
             spaceWindow.Closed += (_, _) =>
             {
                 spaceWindow = null;
-                // a drive's map is hundreds of MB: give it back now, not at the next idle trim
-                // (after a moment: WPF lets go of a closed window's visuals on its next passes; Aggressive also
-                // hands the emptied GC segments back to Windows, not only the working set)
-                _ = Task.Delay(2000).ContinueWith(_ => MemoryTrim.Soon(aggressive: true), TaskScheduler.Default);
             };
             spaceWindow.Show();
         }
@@ -505,6 +513,7 @@ internal sealed partial class Host
     /// Pending debounced writes go to disk now (quit, restart, Windows signing out).
     public void SaveAll()
     {
+        Chats.Flush(); // explicit save/export boundary; normal chat updates queue immutable snapshots
         Settings.Flush();
         Usage.Flush();
         QueryMemory.Flush();
@@ -529,6 +538,7 @@ internal sealed partial class Host
     /// 설정 > 정보 > 다시 시작해서 업데이트: everything saved, then the update goes in and the new Bloom starts.
     public void UpdateNow()
     {
+        stalls?.Dispose(); // the saving and shutting down below may hold the UI thread on purpose
         Tools.Save();
         SaveAll();
         Chats.Shutdown();
@@ -538,12 +548,13 @@ internal sealed partial class Host
     public void Quit(bool save = true)
     {
         Log.Write("quit");
+        stalls?.Dispose(); // the saving and shutting down below may hold the UI thread on purpose
         if (save)
         {
             Tools.Save(); // where the tool windows are, before the settings are written
             SaveAll();
         }
-        Chats.Shutdown();
+        Chats.Shutdown(save);
         winKey?.Dispose();
         Clipboard.Dispose();
         Shortcuts?.Dispose();

@@ -140,7 +140,7 @@ internal sealed partial class Engine
     }
 
     /// The root search: "설치 vlc" → a row that looks it up in winget.
-    private Section? RootWinget(string text)
+    internal Section? RootWinget(string text)
     {
         var m = WingetLine().Match(text);
         if (!m.Success) return null;

@@ -51,6 +51,7 @@ internal static partial class Captures
         ["readme"] = ReadmeScreens,
         ["new"] = NewScreens,
         ["draw"] = DrawScreens,
+        ["guide"] = GuideScreens,
     };
 
     public static async Task Run(Host host, string dir)

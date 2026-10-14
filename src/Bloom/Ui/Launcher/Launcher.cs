@@ -261,7 +261,12 @@ internal sealed partial class Launcher : Window, IChatHost
         Deactivated += (_, _) => OnDeactivated();
         IsVisibleChanged += (_, e) =>
         {
-            if (e.NewValue is false) Win32.AboveNormal(false); // Summon raised it for the time it shows
+            if (e.NewValue is false)
+            {
+                Win32.AboveNormal(false); // Summon raised it for the time it shows
+                ShowPreview(null);
+            }
+            else if (Split) ShowPreview(Selected);
         };
         Activated += (_, _) =>
         {
@@ -286,6 +291,15 @@ internal sealed partial class Launcher : Window, IChatHost
         };
         trim.Tick += (_, _) => Trim();
         Theme.Changed += ApplyTheme;
+        GptCatalog.Updated += CatalogUpdated;
+        Engine.PathReady += PathReady;
+        Closed += (_, _) =>
+        {
+            Engine.PathReady -= PathReady;
+            GptCatalog.Updated -= CatalogUpdated;
+            Engine.ClosePathLookup();
+            DisposePreview();
+        };
         // Alt+F4 hides the launcher; only Quit really closes it
         Closing += (_, e) =>
         {
@@ -461,8 +475,8 @@ internal sealed partial class Launcher : Window, IChatHost
         trim.Start();
     }
 
-    /// A minute after hiding, give memory back (the launcher mostly waits in the tray): the working set drops from
-    /// ~150 MB to ~10 MB (measured); the next open pages back what it touches.
+    /// Routine idle notification. MemoryTrim leaves normal GC to the runtime, because other Bloom
+    /// windows (including the screenshot pen) can remain active while the launcher is hidden.
     private readonly DispatcherTimer trim = new(DispatcherPriority.ApplicationIdle) { Interval = TimeSpan.FromMinutes(1) };
 
     private void Trim()
@@ -657,7 +671,7 @@ internal sealed partial class Launcher : Window, IChatHost
         UpdateLayout();
         Hide();
         ShowActivated = activates;
-        trim.Start(); // the start-up allocations are given back too, not only after the first use
+        trim.Start(); // routine idle notification; no forced GC or working-set eviction
     }
 
     public void ShowToast(string text)

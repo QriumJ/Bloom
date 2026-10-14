@@ -33,10 +33,10 @@ internal static class SettingsTransfer
     /// Writes the current settings (flush them first) into `path`; returns how many files went in.
     public static int Export(string path, string version)
     {
-        string tmp = path + ".tmp";
         int n = 0;
-        using (var zip = ZipFile.Open(tmp, ZipArchiveMode.Create))
+        AtomicFile.Write(path, stream =>
         {
+            using var zip = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true);
             foreach (string f in Files)
             {
                 string src = Paths.In(f);
@@ -44,7 +44,7 @@ internal static class SettingsTransfer
                 if (f == "settings.json" && JsonNode.Parse(File.ReadAllText(src)) is JsonObject settings)
                 {
                     // this PC's own values stay out of the file (import keeps the local ones anyway): CLI paths, AI account folders and e-mails
-                    foreach (var key in settings.Select(p => p.Key).Where(k => Local.Contains(k, StringComparer.OrdinalIgnoreCase)).ToList()) settings.Remove(key);
+                    RemoveLocal(settings);
                     using var sw = new StreamWriter(zip.CreateEntry(f, CompressionLevel.Optimal).Open());
                     sw.Write(settings.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
                 }
@@ -54,14 +54,16 @@ internal static class SettingsTransfer
             var manifest = new JsonObject { ["app"] = "Bloom", ["version"] = version, ["exported"] = DateTimeOffset.Now.ToString("o"), ["files"] = new JsonArray(Files.Select(f => (JsonNode)f).ToArray()) };
             using var w = new StreamWriter(zip.CreateEntry(Manifest).Open());
             w.Write(manifest.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
-        }
-        File.Move(tmp, path, true);
+        });
         return n;
     }
 
     /// Checks `path` and puts its files into the data folder (the app reloads them afterwards). Throws with a message
     /// for the user when the file is not a Bloom settings file; returns the names of the files that were replaced.
-    public static List<string> Import(string path)
+    public static List<string> Import(string path) => Import(path, null);
+
+    /// An explicit timestamp lets recovery tests exercise same-second imports without depending on wall-clock timing.
+    internal static List<string> Import(string path, DateTime? backupTimestamp)
     {
         using var zip = ZipFile.OpenRead(path);
         if (zip.GetEntry(Manifest) is not { } m) throw Invalid(Tr("Bloom 설정 파일이 아닙니다. Bloom에서 내보낸 파일을 선택하세요.", "Not a Bloom settings file. Choose a file exported from Bloom."));
@@ -82,15 +84,18 @@ internal static class SettingsTransfer
         if (incoming.Count == 0) throw Invalid(Tr("설정이 없는 파일입니다. Bloom에서 내보낸 파일을 선택하세요.", "No settings in this file. Choose a file exported from Bloom."));
         if (incoming.TryGetValue("settings.json", out string? settings)) incoming["settings.json"] = KeepLocal(settings);
 
-        string backup = Paths.In(Path.Combine("backups", DateTime.Now.ToString("yyyyMMdd-HHmmss")));
+        string backup = Paths.In(Path.Combine("backups", (backupTimestamp ?? DateTime.Now).ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(backup);
         foreach (string f in incoming.Keys)
-            if (File.Exists(Paths.In(f))) File.Copy(Paths.In(f), Path.Combine(backup, f), true);
+            if (File.Exists(Paths.In(f))) File.Copy(Paths.In(f), Path.Combine(backup, f));
         foreach (var (f, text) in incoming)
         {
             string dest = Paths.In(f);
-            File.WriteAllText(dest + ".tmp", text);
-            File.Move(dest + ".tmp", dest, true);
+            AtomicFile.Write(dest, stream =>
+            {
+                using var writer = new StreamWriter(stream);
+                writer.Write(text);
+            });
         }
         return incoming.Keys.ToList();
     }
@@ -100,13 +105,18 @@ internal static class SettingsTransfer
     {
         var node = (JsonObject)JsonNode.Parse(imported)!;
         JsonObject? here = File.Exists(Paths.In("settings.json")) ? JsonNode.Parse(File.ReadAllText(Paths.In("settings.json"))) as JsonObject : null;
+        RemoveLocal(node);
         foreach (string key in Local)
         {
-            string? match = node.Select(kv => kv.Key).FirstOrDefault(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
-            if (match is not null) node.Remove(match);
             string? mine = here?.Select(kv => kv.Key).FirstOrDefault(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
             if (mine is not null) node[mine] = here![mine]?.DeepClone();
         }
         return node.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private static void RemoveLocal(JsonObject settings)
+    {
+        foreach (string key in settings.Select(p => p.Key).Where(k => Local.Contains(k, StringComparer.OrdinalIgnoreCase)).ToList())
+            settings.Remove(key);
     }
 }

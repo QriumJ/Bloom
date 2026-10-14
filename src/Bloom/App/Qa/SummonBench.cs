@@ -32,7 +32,7 @@ internal static class SummonBench
         var all = new List<Opening>();
         for (int i = 0; i < rounds; i++)
         {
-            MemoryTrim.Now(); // what a minute hidden does
+            MemoryTrim.Now(); // explicit cold-memory probe; routine hidden-window cleanup no longer forces GC
             await Task.Delay(2000);
             if (await Open(host, ui, true) is { } cold) all.Add(cold);
             await Task.Delay(1500);

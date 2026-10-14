@@ -37,9 +37,6 @@ internal sealed partial class Engine
         var list = new List<ActionItem>();
         list.Add(new ActionItem { Title = Tr("폴더 이름 바꾸기", "Rename folder"), Glyph = G.Settings, StayOpen = true, Run = () => host.Window.StartForm(GroupForm(g, null)) });
         list.Add(new ActionItem { Title = Tr("아이콘 바꾸기…", "Change icon…"), Glyph = G.Palette, StayOpen = true, Run = () => host.Window.PickGroupIcon(g.Id) });
-        list.Add(new ActionItem { Title = Tr("아이콘 그림 고르기…", "Pick an icon picture…"), Glyph = G.Palette, StayOpen = true, Run = () => host.Window.PickPicture(g.Id, g.Title) });
-        list.Add(new ActionItem { Title = Tr("앞으로 옮기기", "Move left"), Keys = "Ctrl+Shift+Left", Glyph = G.Back, StayOpen = true, Run = () => { Favorites.Move(g.Id, -1); host.Window.Refresh(true); } });
-        list.Add(new ActionItem { Title = Tr("뒤로 옮기기", "Move right"), Keys = "Ctrl+Shift+Right", Glyph = G.NewWindow, StayOpen = true, Run = () => { Favorites.Move(g.Id, 1); host.Window.Refresh(true); } });
         list.Add(new ActionItem
         {
             Title = Tr("폴더 풀기 (안의 항목은 즐겨찾기 줄로)", "Ungroup (the items go back to the favorites row)"),

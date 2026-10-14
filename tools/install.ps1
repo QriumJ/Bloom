@@ -22,7 +22,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $src 'Bloom.exe'))) { throw 'dist\ap
 # 1. a running copy quits: its own --quit first, the PID only if it is still there after 5 s
 $running = @(Get-CimInstance Win32_Process -Filter "Name='Bloom.exe'" | Where-Object { $_.ExecutablePath -eq $exe })
 if ($running.Count -gt 0) {
-    Start-Process -FilePath $exe -ArgumentList '--quit' -Wait
+    Start-Process -FilePath $exe -ArgumentList '--quit' -WindowStyle Hidden -Wait
     foreach ($p in $running) { Wait-Process -Id $p.ProcessId -Timeout 5 -ErrorAction SilentlyContinue }
     foreach ($p in $running) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
     'stopped the running Bloom'
@@ -80,7 +80,7 @@ if ($running.Count -gt 0) {
     $s.Arguments = '--autostart'
     $s.WorkingDirectory = $dest
     $s.Save()
-    Start-Process -FilePath "$env:WINDIR\explorer.exe" -ArgumentList "`"$start`""
+    Start-Process -FilePath "$env:WINDIR\explorer.exe" -WindowStyle Hidden -ArgumentList "`"$start`""
     Start-Sleep -Seconds 2
     Remove-Item -LiteralPath $start -ErrorAction SilentlyContinue
     'started the new copy'

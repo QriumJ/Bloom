@@ -22,14 +22,21 @@ internal sealed record UsageAccount(string Name, string? Plan, List<UsageLimit> 
     };
 }
 
-/// A limit's title, percent used and reset time (null means the reset time is unknown).
-internal sealed record UsageLimit(string Title, double Percent, DateTime? Resets)
+/// A limit's title, percent used, reset time (null means the reset time is unknown) and the window's length in minutes
+/// (null when the provider doesn't say; UsagePace needs it).
+internal sealed record UsageLimit(string Title, double Percent, DateTime? Resets, int? WindowMins = null)
 {
+    /// The two windows every plan has: the 5-hour session and the week.
+    public const int SessionMins = 300, WeekMins = 10080;
+
+    /// The window length as the providers report it, or null for none (0 or less).
+    public static int? Mins(double mins) => mins > 0 ? (int)mins : null;
+
     /// Names a limit window from its length in minutes, as Codex's app-server and wham report it (Claude's /usage names
     /// its own): 300 → "5시간", 10080 → "주간".
     public static string Window(int mins) => mins switch
     {
-        10080 => Tr("주간", "Weekly"),
+        WeekMins => Tr("주간", "Weekly"),
         >= 1440 when mins % 1440 == 0 => Tr($"{mins / 1440}일", $"{mins / 1440}d"),
         >= 60 => Tr($"{mins / 60}시간", $"{mins / 60}h"),
         > 0 => Tr($"{mins}분", $"{mins} min"),

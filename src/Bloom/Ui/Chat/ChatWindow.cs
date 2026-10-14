@@ -179,12 +179,14 @@ internal sealed partial class ChatWindow : Window, IChatHost
         host.Chats.Updated += OnUpdated;
         host.Chats.SessionsChanged += OnSessions;
         host.Chats.GroupsChanged += OnSessions;
+        GptCatalog.Updated += OnCatalog;
         Theme.Changed += OnTheme;
         Closed += (_, _) =>
         {
             host.Chats.Updated -= OnUpdated;
             host.Chats.SessionsChanged -= OnSessions;
             host.Chats.GroupsChanged -= OnSessions;
+            GptCatalog.Updated -= OnCatalog;
             Theme.Changed -= OnTheme;
         };
         SourceInitialized += (_, _) => Shots.SolidCaption(this);
@@ -432,6 +434,19 @@ internal sealed partial class ChatWindow : Window, IChatHost
     {
         Header();
         BuildList();
+    }
+
+    private void OnCatalog()
+    {
+        if (Dispatcher.HasShutdownStarted) return;
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!IsVisible) return;
+            bool reopen = tools.Children.OfType<Dropdown>().FirstOrDefault()?.IsOpen == true;
+            foreach (var menu in tools.Children.OfType<Dropdown>()) menu.Close();
+            Header();
+            if (reopen) PickModel();
+        }, System.Windows.Threading.DispatcherPriority.Background);
     }
 
     private void OnTheme()

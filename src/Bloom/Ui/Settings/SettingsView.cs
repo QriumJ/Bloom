@@ -28,6 +28,9 @@ internal sealed partial class SettingsView : ScrollViewer
     private string lastFilter = "";
     private List<Ai.McpServerDef>? mcpFound; // 설정 > PC 작업 · MCP: the servers found on this PC, read once a visit
 
+    /// Collect mode (SettingsCatalog): the lines the pages add are recorded here as text instead of built as rows.
+    private List<SettingsCatalog.Line>? collected;
+
     /// The open category; kept for the next time the window opens.
     private static string current = "general";
 
@@ -55,15 +58,26 @@ internal sealed partial class SettingsView : ScrollViewer
         {
             Updates.Changed += OnUpdates;
             UsageLogin.Changed += OnUpdates;
+            GptCatalog.Updated += OnCatalog;
         };
         Unloaded += (_, _) =>
         {
             Updates.Changed -= OnUpdates;
             UsageLogin.Changed -= OnUpdates;
+            GptCatalog.Updated -= OnCatalog;
         };
     }
 
     private void OnUpdates() => Dispatcher.BeginInvoke(() => Build(lastFilter));
+
+    private void OnCatalog()
+    {
+        if (Dispatcher.HasShutdownStarted) return;
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (IsLoaded && IsVisible && (current is "ai" or "screen" || lastFilter.Length > 0)) Build(lastFilter);
+        }, System.Windows.Threading.DispatcherPriority.Background);
+    }
 
     private static Row Line(string title, string? sub, FrameworkElement? control, char glyph)
     {
@@ -101,7 +115,7 @@ internal sealed partial class SettingsView : ScrollViewer
         groupTitle = "";
         card = null;
         pageShown = false;
-        if (filter.Length == 0 && key == current)
+        if (collected is null && filter.Length == 0 && key == current)
         {
             var t = Theme.T(title, 22, Theme.P.Text, Theme.Semi);
             t.Margin = new Thickness(32, 26, 28, 0);
@@ -155,6 +169,11 @@ internal sealed partial class SettingsView : ScrollViewer
     /// A line (when it shows: the open category, or a match while filtering) → its row, else null.
     private Row? Add(string title, string? sub, FrameworkElement? control, char glyph, Action? toggle, Func<int, bool>? step, string filter)
     {
+        if (collected is not null)
+        {
+            collected.Add(new SettingsCatalog.Line(title, sub ?? "", groupTitle, pageKey, pageTitle));
+            return null;
+        }
         if (filter.Length > 0)
         {
             var q = new Query(filter);
@@ -176,6 +195,14 @@ internal sealed partial class SettingsView : ScrollViewer
         return r;
     }
 
+    /// Collect mode: records the line and tells the helper not to build its control (the helpers that end in Add).
+    private bool Record(string title, string? sub, string filter)
+    {
+        if (collected is null) return false;
+        Add(title, sub, null, '\0', null, null, filter);
+        return true;
+    }
+
     private static Switch Toggle(bool value, Action<bool> set, out Action toggle)
     {
         var sw = new Switch(value);
@@ -191,6 +218,7 @@ internal sealed partial class SettingsView : ScrollViewer
     /// A segmented choice: click or ←→ picks, Enter goes round.
     private void Choice(string title, string? sub, char glyph, (string value, string label)[] options, string value, Action<string> set, string filter)
     {
+        if (Record(title, sub, filter)) return;
         var seg = new Segmented(options, value);
         void Pick(string v)
         {
@@ -215,6 +243,7 @@ internal sealed partial class SettingsView : ScrollViewer
             _ when value != "off" => what, // "ok", or set but not registered (its feature is off)
             _ => Tr("꺼짐 · 클릭하여 단축키 지정", "Off — click to set a shortcut"),
         };
+        if (Record(title, sub, filter)) return;
         var keys = new KeyRecorder(value)
         {
             Listening = on => host.Shortcuts?.Pause(on),
@@ -235,6 +264,7 @@ internal sealed partial class SettingsView : ScrollViewer
     /// in it; the line under it (`sub` of the value) follows a change.
     private void Duration(string title, Func<int, string> sub, char glyph, int value, int max, (string key, string label, int minutes)[] units, Action<int> set, string filter)
     {
+        if (Record(title, sub(value), filter)) return;
         var field = new DurationField(value, max, units) { Done = () => FocusFilter?.Invoke() };
         field.Changed += v =>
         {
@@ -248,6 +278,7 @@ internal sealed partial class SettingsView : ScrollViewer
     /// A choice from a list that opens under the value (many options): click or Enter opens it, ←→ step.
     private void Menu(string title, string? sub, char glyph, (string value, string label, string? sub)[] options, string value, Action<string> set, string filter)
     {
+        if (Record(title, sub, filter)) return;
         var dd = new Dropdown(options, value);
         void Pick(string v)
         {
@@ -276,9 +307,22 @@ internal sealed partial class SettingsView : ScrollViewer
         homeRows.Clear();
         pages.Clear();
         hits.Clear();
-        var s = Settings.Current;
+        BuildPages(Settings.Current, filter);
 
-        // the sidebar in four sections, 정보 on its own at the end
+        if (filter.Length > 0 && rows.Count == 0)
+        {
+            var none = Theme.T(Tr("검색된 설정 없음", "No settings found"), 13, Theme.P.TextFaint);
+            none.Margin = new Thickness(32, 26, 28, 0);
+            stack.Children.Add(none);
+        }
+        BuildNav(filter);
+        if (keep == 0) ScrollToTop();
+        Select(Math.Min(keep, rows.Count - 1));
+    }
+
+    /// Every category in the sidebar's four sections, 정보 on its own at the end (one source of the lines, for Build and Collect).
+    private void BuildPages(Settings s, string filter)
+    {
         section = Tr("기본", "Basics");
         PageGeneral(s, filter);
         PageFeatures(s, filter);
@@ -297,16 +341,15 @@ internal sealed partial class SettingsView : ScrollViewer
         PageTools(s, filter);
         section = "";
         PageAbout(s, filter);
+    }
 
-        if (filter.Length > 0 && rows.Count == 0)
-        {
-            var none = Theme.T(Tr("검색된 설정 없음", "No settings found"), 13, Theme.P.TextFaint);
-            none.Margin = new Thickness(32, 26, 28, 0);
-            stack.Children.Add(none);
-        }
-        BuildNav(filter);
-        if (keep == 0) ScrollToTop();
-        Select(Math.Min(keep, rows.Count - 1));
+    /// Every line of every category as text, for the launcher's settings search (SettingsCatalog). Nothing is built;
+    /// the pages skip what reads the disk or the PC (MCP servers, Lens files, CLIs) while this runs.
+    public List<SettingsCatalog.Line> Collect()
+    {
+        collected = new();
+        BuildPages(Settings.Current, "");
+        return collected;
     }
 
     /// The categories on the left under their section names: the open one in rose; while filtering, how many lines each has.

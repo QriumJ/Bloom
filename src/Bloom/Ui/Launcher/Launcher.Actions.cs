@@ -2,9 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
 using Bloom.App;
 using Bloom.Core;
 using Bloom.Search;
@@ -50,18 +47,10 @@ internal sealed partial class Launcher
                 StayOpen = true,
                 Run = () => ToggleFavorite(item),
             });
-            if (fav && Mode == Mode.Root && box.Text.Length == 0)
-            {
-                list.Add(new ActionItem { Title = Tr("앞으로 옮기기", "Move left"), Keys = "Ctrl+Shift+Left", Glyph = G.Back, StayOpen = true, Run = () => MoveFavorite(item, -1) });
-                list.Add(new ActionItem { Title = Tr("뒤로 옮기기", "Move right"), Keys = "Ctrl+Shift+Right", Glyph = G.NewWindow, StayOpen = true, Run = () => MoveFavorite(item, 1) });
-            }
+            // the menu keeps what is about the item itself (user, 10-14: too long, its end was cut off): a favorite
+            // moves with Ctrl+Shift+←→ or a drag in the row, and AI drawing and the original icon sit in 아이콘 바꾸기
             if (fav)
-            {
-                list.Add(new ActionItem { Title = Tr("아이콘 그림 고르기…", "Pick an icon picture…"), Glyph = G.Palette, StayOpen = true, Run = () => PickPicture(item.Id, item.Title) });
-                list.Add(new ActionItem { Title = Tr("AI로 아이콘 그리기…", "Draw an icon with AI…"), Glyph = G.Sparkle, StayOpen = true, Run = () => StartForm(Engine.AiIconForm(item.Id, item.Title)) });
-                if (Favorites.Find(item.Id)?.Mono is not null)
-                    list.Add(new ActionItem { Title = Tr("원래 아이콘으로", "Back to the original icon"), Glyph = G.Refresh, StayOpen = true, Run = () => { Favorites.SetMono(item.Id, null); Refresh(true); } });
-            }
+                list.Add(new ActionItem { Title = Tr("아이콘 바꾸기…", "Change icon…"), Glyph = G.Palette, StayOpen = true, Run = () => PickPicture(item.Id, item.Title) });
             list.Add(new ActionItem { Title = Tr("즐겨찾기 폴더에 넣기…", "Add to a favorites folder…"), Glyph = G.Folder, StayOpen = true, Run = () => PickGroup(item) });
             list.AddRange(Engine.ItemKeyActions(item));
             if (Home.ForCommand(item.Id) is { } widget)
@@ -72,8 +61,6 @@ internal sealed partial class Launcher
             if (Usage.Current.Items.ContainsKey(item.Id) && Mode == Mode.Root && box.Text.Length == 0 && !fav)
                 list.Add(new ActionItem { Title = Tr("최근 사용에서 지우기", "Remove from recent"), Glyph = G.Delete, StayOpen = true, Run = () => { Usage.Forget(item.Id); Refresh(false); } });
         }
-        if (Mode == Mode.Root && box.Text.Length == 0)
-            list.Add(new ActionItem { Title = Tr("홈 화면 꾸미기…", "Customize the home…"), Glyph = G.Settings, Run = () => host.OpenSettings("home") });
         return list;
     }
 

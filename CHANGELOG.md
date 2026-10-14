@@ -2,6 +2,32 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.14.0
+
+- Claude Code and Codex task cards (working, done, needs approval) now take you to the session: a click brings the terminal or editor window the task runs in to the front.
+- AI usage shows when a limit will run out at the current pace. If a 5-hour or weekly limit would be used up before it resets, its card says "out in 3 h", and a notification says so once per window (Settings › Notifications › Limit near).
+- Type `?` alone in the search line to see what Bloom understands, with examples by kind; Enter puts one in the search line. The empty search line shows one example at a time.
+- Bloom's own settings show up in search: type a setting's name (glass, shortcut) and Enter opens it in the settings window.
+- Settings › About › Problem report copies the version, Windows and the recent log (user name and e-mail addresses hidden) and opens a GitHub issue page. Bloom sends nothing itself.
+- The Ctrl+K menu is shorter. The icon choices are one "Change icon…" line (AI drawing and the original icon are inside it); Move left/right, Customize the home and Copy name are gone (Ctrl+Shift+←/→, dragging and Ctrl+E still do those).
+- Fixed: a long Ctrl+K menu could run past the bottom of the launcher and get cut off. It now fits inside and scrolls.
+- Bloom draws with the CPU by default, and GPU drawing is marked experimental: on some PCs it made the screen stutter or freeze for seconds.
+- Approve on the card (Settings › Notifications, off by default): when Claude Code asks for permission, its card offers Allow, Decline and Answer in terminal. Turning it on adds Bloom's hook to Claude Code's settings.json; turning it off takes it out. While the session's window is in front, the terminal asks as before.
+- When Bloom stops responding for half a second or more, its log says so. A freeze past 0.8 s also leaves a small diagnostic file (`%LOCALAPPDATA%\Bloom\stalls`, the newest five, never sent) that shows where Bloom was stuck.
+
+### 한국어
+
+- Claude Code · Codex 작업 알림 카드(진행 중 · 작업 완료 · 승인 대기)를 누르면 그 작업이 실행 중인 터미널이나 편집기 창으로 이동합니다.
+- AI 사용량에 소진 예상을 표시합니다. 지금 속도로 5시간 · 주간 한도를 초기화 전에 다 쓸 것으로 예상되면 카드에 '3시간 뒤 소진'처럼 표시하고, 한도 기간마다 한 번 알림을 보냅니다(설정 › 알림 › 한도 임박).
+- 검색창에 `?`만 입력하면 쓸 수 있는 표현을 종류별 예시로 표시합니다. Enter를 누르면 예시가 검색창에 들어갑니다. 빈 검색창에도 예시가 하나씩 표시됩니다.
+- Bloom 설정을 검색할 수 있습니다. `유리 효과`, `단축키`처럼 설정 이름을 입력하고 Enter를 누르면 설정 창에서 열립니다.
+- 설정 › 정보 › 문제 보고: 버전, Windows, 최근 로그(사용자 이름과 이메일 주소는 가림)를 복사하고 GitHub 이슈 작성 페이지를 엽니다. Bloom이 직접 보내는 것은 없습니다.
+- Ctrl+K 메뉴를 줄였습니다. 아이콘 항목은 '아이콘 바꾸기…' 하나로 합쳤고(AI로 그리기와 원래 아이콘은 그 안에 있습니다), 앞으로 · 뒤로 옮기기, 홈 화면 꾸미기, 이름 복사는 뺐습니다(Ctrl+Shift+←/→, 끌어서 옮기기, Ctrl+E는 그대로입니다).
+- 수정: Ctrl+K 메뉴가 길면 런처 아래로 넘쳐 끝이 잘리던 문제를 고쳤습니다. 이제 런처 안에 맞춰지고 메뉴 안에서 스크롤됩니다.
+- 기본으로 CPU로 그리고, GPU로 그리기는 실험적 기능으로 표시합니다. 일부 PC에서 GPU로 그리면 화면이 끊기거나 몇 초 동안 멈췄습니다.
+- 알림 카드에서 승인(설정 › 알림, 기본은 꺼짐): Claude Code가 승인을 요청하면 카드에 허용 · 거절 · 터미널에서 답하기가 표시됩니다. 켜면 Claude Code 설정(settings.json)에 Bloom 훅을 추가하고, 끄면 뺍니다. 세션 창을 보고 있을 때는 지금처럼 터미널에서 묻습니다.
+- Bloom이 0.5초 이상 응답하지 않으면 로그에 기록합니다. 0.8초 넘게 멈추면 멈춘 위치를 담은 작은 진단 파일도 남깁니다(`%LOCALAPPDATA%\Bloom\stalls`, 최근 5개, 외부로 보내지 않음).
+
 ## 0.13.3
 
 - Fixed: a favorites folder's tile on the home could keep its old small icons after one of its items got a new icon.

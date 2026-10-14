@@ -146,11 +146,27 @@ internal sealed partial class Launcher
     /// Views with the preview pane on the right.
     private bool Split => View(Mode).Split;
 
+    private PreviewLoader? previewLoader;
+
+    private void DisposePreview() => previewLoader?.Dispose();
+
     private void ShowPreview(ResultItem? item)
     {
-        string? id = item?.Detail is null ? null : item.Id;
+        string? id = item is null || (item.Detail is null && item.ReadDetail is null) ? null : item.Id;
         if (id is not null && id == previewId) return; // the same row after a refresh
         previewId = id;
+        previewLoader?.Invalidate();
+        if (item?.ReadDetail is { } read)
+        {
+            preview.Show(null); // stop the previous video/decode while the selected file is read
+            if (IsVisible)
+            {
+                previewLoader ??= new PreviewLoader(Dispatcher, () => IsVisible, d => preview.Show(d));
+                _ = previewLoader.Request(read);
+            }
+            else previewId = null; // reopening the same row must still start its preview
+            return;
+        }
         Detail? d = null;
         try
         {
@@ -188,6 +204,8 @@ internal sealed partial class Launcher
             StayOpen = true,
             Run = () => Set($"glyph:{(int)x.glyph:X4}"),
         }).ToList();
+        // the picture icons (and AI drawing) live here too, so the folder's own menu has one icon line
+        list.Insert(0, new ActionItem { Title = Tr("아이콘 그림 고르기…", "Pick an icon picture…"), Glyph = G.Palette, StayOpen = true, Run = () => PickPicture(id, g.Title) });
         list.Add(new ActionItem { Title = Tr("파일에서 고르기… (이미지 · 아이콘 · 프로그램)", "From a file… (image, icon or program)"), Glyph = G.Folder, StayOpen = true, Run = () => PickIconFile(id) });
         if (g.Icon is not null) list.Add(new ActionItem { Title = Tr("기본으로 (안의 앱 아이콘)", "Default (the icons inside)"), Glyph = G.Refresh, StayOpen = true, Run = () => Set(null) });
         actions.Open(Tr($"‘{ClipText(g.Title, 16)}’ 아이콘", $"Icon for ‘{ClipText(g.Title, 16)}’"), list);

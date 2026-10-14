@@ -17,13 +17,15 @@ internal sealed partial class Engine
     {
         var sections = new List<Section>();
         var q = new Query(text);
-        if (q.IsEmpty) return RootEmpty(sections);
         // a typed path answers alone: the folder, what is in it, Tab to go in
-        if (PathInput.Looks(text) && RootPath(text) is { } path)
+        if (PathInput.Expand(text) is { } full && full.Contains('\\'))
         {
-            sections.Add(path);
+            sections.Add(RootPath(full));
             return sections;
         }
+        pathLookup.Clear();
+        if (q.IsEmpty) return RootEmpty(sections);
+        if (q.Lower == Expressions.Key) return RootGuide(); // 쓸 수 있는 표현
         // a feature switched off in 설정 > 기능 answers nothing here (Features)
         bool noteFirst = false;
         var notes = Features.On("notes") ? RootNotes(text, q, out noteFirst) : null;
@@ -48,63 +50,57 @@ internal sealed partial class Engine
 
         var results = new Section(Tr("결과", "Results"));
         if (Web.AsUrl(text) is { } url) results.Items.Add(FromUrl(url, text.Trim(), Tr("브라우저에서 열기", "Open in the browser"), ItemKind.Url, Tr("링크", "Link")));
-        var scored = new List<ResultItem>();
+        var scored = new List<RootCandidate>();
         var learned = QueryMemory.Boosts(text); // what was picked for this line before
         int Learned(string id) => learned.TryGetValue(id, out int b) ? b : 0;
         foreach (var a in Apps.Apps)
         {
             int sc = Matcher.Score(q, a.Match);
             if (sc <= 0) continue;
-            var item = FromApp(a);
-            item.Score = sc + Usage.Boost(a.Id) + Learned(a.Id) + 10;
-            scored.Add(item);
+            scored.Add(new(a, sc + Usage.Boost(a.Id) + Learned(a.Id) + 10));
         }
         foreach (var e in SystemItems.All)
         {
             int sc = Matcher.Score(q, e.Match);
             if (sc <= 0 || !Features.Shows(e.Id)) continue;
-            var item = FromSys(e);
-            item.Score = sc + Usage.Boost(e.Id) + Learned(e.Id) + (e.Kind == "cmd" ? 6 : e.Kind == "setting" ? -12 : -6);
-            scored.Add(item);
+            scored.Add(new(e, sc + Usage.Boost(e.Id) + Learned(e.Id) + (e.Kind == "cmd" ? 6 : e.Kind == "setting" ? -12 : -6)));
         }
         foreach (var l in Features.On("quicklinks") ? Quicklinks.Current.Items : new())
         {
             int sc = Matcher.Score(q, l.Match);
             if (sc <= 0) continue;
-            var item = FromQuicklink(l, null);
-            item.Score = sc + Usage.Boost(item.Id) + Learned(item.Id) + 4;
-            scored.Add(item);
+            string id = "ql:" + l.Id;
+            scored.Add(new(l, sc + Usage.Boost(id) + Learned(id) + 4));
         }
         foreach (var c in Features.On("mine") ? UserCommands.Current.Items : new())
         {
             int sc = Matcher.Score(q, c.Match);
             if (sc <= 0) continue;
-            var item = FromCommand(c, null);
-            item.Score = sc + Usage.Boost(item.Id) + Learned(item.Id) + 5;
-            scored.Add(item);
+            string id = "my:" + c.Id;
+            scored.Add(new(c, sc + Usage.Boost(id) + Learned(id) + 5));
         }
         foreach (var item in Features.On("system") ? RootToggles(q) : Enumerable.Empty<ResultItem>())
         {
             item.Score += Learned(item.Id) + 2;
-            scored.Add(item);
+            scored.Add(new(item, item.Score));
         }
         foreach (var item in Features.On("layout") ? RootLayouts(q) : Enumerable.Empty<ResultItem>())
         {
             item.Score += Learned(item.Id) + 2;
-            scored.Add(item);
+            scored.Add(new(item, item.Score));
         }
         if (Matcher.Score(q, NewGroupMatch) is > 0 and var gs)
         {
             var item = NewGroupItem();
             item.Score = gs + 2;
-            scored.Add(item);
+            scored.Add(new(item, item.Score));
         }
-        scored.Sort((x, y) => y.Score.CompareTo(x.Score));
-        foreach (var it in scored.Take(9)) results.Items.Add(it);
+        RootRanking.AppendTop(scored, results.Items, MaterializeRoot);
         if (results.Items.Count > 0) sections.Add(results);
         if (notes is not null && !sections.Contains(notes)) sections.Add(notes);
         if (Features.On("windows") && RootWindows(q) is { } windows) sections.Add(windows);
         if (RootRecent(q) is { } recent) sections.Add(recent);
+        if (RootSettings(q) is { } settings) sections.Add(settings); // below apps and commands
         bool strong = sections.Count > 0; // anything answered the line: the fallbacks go last
 
         var fall = new Section(strong ? Tr("다른 곳에서 찾기", "Search elsewhere") : Tr("결과 없음 · 다른 곳에서 찾기", "No results · search elsewhere")) { Fallback = true };
@@ -120,6 +116,16 @@ internal sealed partial class Engine
         else sections.Insert(0, fall);
         return sections;
     }
+
+    private ResultItem MaterializeRoot(object source) => source switch
+    {
+        AppEntry app => FromApp(app),
+        SysEntry system => FromSys(system),
+        Quicklink link => FromQuicklink(link, null),
+        UserCommand command => FromCommand(command, null),
+        ResultItem item => item,
+        _ => throw new InvalidOperationException("Unknown root search candidate."),
+    };
 
     /// An answer on the calculator card (sums, units, dates, other cities' clocks): Enter copies it.
     private static ResultItem CalcItem(string id, CalcAnswer calc) => new()

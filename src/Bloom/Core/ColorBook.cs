@@ -18,8 +18,9 @@ internal sealed partial class ColorBook
 
     public static void Load()
     {
+        saver?.Dispose();
         Current = Json.Load<ColorBook>(Paths.In("colors.json"));
-        saver = new Saver(() => Json.Save(Paths.In("colors.json"), Current));
+        saver = Saver.ForJson(Paths.In("colors.json"), () => Current);
     }
 
     /// The colour the colour view is about (the newest one).

@@ -29,7 +29,7 @@ internal sealed class AppIndex : IDisposable
     private volatile List<AppEntry> apps = new();
     private readonly List<FileSystemWatcher> watchers = new();
     private readonly Timer debounce;
-    private int scanning;
+    private readonly RescanRequests scans = new();
 
     public event Action? Changed;
 
@@ -94,27 +94,27 @@ internal sealed class AppIndex : IDisposable
     /// Re-reads everything on a background STA thread (the shell objects want one).
     public void Rescan()
     {
-        if (Interlocked.Exchange(ref scanning, 1) == 1) return;
+        if (!scans.Request()) return;
         var t = new Thread(() =>
         {
-            try
+            do
             {
-                var started = DateTime.UtcNow;
-                var list = Scan();
-                if (keep is { } only) list = list.Where(only).ToList();
-                apps = list;
-                Ready = true;
-                Log.Write($"apps: {list.Count} in {(DateTime.UtcNow - started).TotalMilliseconds:0} ms");
-                Changed?.Invoke();
+                try
+                {
+                    var started = DateTime.UtcNow;
+                    var list = Scan();
+                    if (keep is { } only) list = list.Where(only).ToList();
+                    apps = list;
+                    Ready = true;
+                    Log.Write($"apps: {list.Count} in {(DateTime.UtcNow - started).TotalMilliseconds:0} ms");
+                    Changed?.Invoke();
+                }
+                catch (Exception e)
+                {
+                    Log.Error("app scan", e);
+                }
             }
-            catch (Exception e)
-            {
-                Log.Error("app scan", e);
-            }
-            finally
-            {
-                Interlocked.Exchange(ref scanning, 0);
-            }
+            while (scans.NextPass());
         })
         { IsBackground = true, Name = "app-scan" };
         t.SetApartmentState(ApartmentState.STA);

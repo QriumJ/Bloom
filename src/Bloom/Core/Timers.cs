@@ -30,8 +30,9 @@ internal sealed class Timers
 
     public static void Load()
     {
+        saver?.Dispose();
         Current = Json.Load<Timers>(Paths.In("timers.json"));
-        saver = new Saver(() => Json.Save(Paths.In("timers.json"), Current));
+        saver = Saver.ForJson(Paths.In("timers.json"), () => Current);
     }
 
     public static IEnumerable<TimerEntry> Waiting => Current.Items.OrderBy(t => t.Due);

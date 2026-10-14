@@ -14,6 +14,7 @@ internal sealed class AppNames
 
     public static void Load()
     {
+        saver?.Dispose();
         Current = Json.Load<AppNames>(Paths.In("names.json"));
         saver = new Saver(() =>
         {

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,6 +16,15 @@ internal sealed partial class Launcher
 {
     // ── list ────────────────────────────────────────────────────────────────────────────────────
     public ResultItem? Selected => inStrip && strip is { } st && stripSel < st.Items.Count ? st.Items[stripSel] : sel >= 0 && sel < rows.Count ? rows[sel].Item : null;
+
+    private void PathReady(string full)
+    {
+        if (Dispatcher.HasShutdownStarted) return;
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (IsVisible && Mode == Mode.Root && PathInput.Expand(box.Text) == full) Refresh(true);
+        }, System.Windows.Threading.DispatcherPriority.Background);
+    }
 
     private void OnText()
     {
@@ -110,7 +118,7 @@ internal sealed partial class Launcher
         }
     }
 
-    /// Rows built at once; a longer list gets the rest right after, at Background priority, so it shows without a wait
+    /// Rows built at once; a longer list gets the rest in bounded Background slices, so input can run between them
     /// (a row costs 1–2 ms: the emoji view's 88 took ~200 ms in one go). The kept row is always among the first ones.
     /// While the launcher opens, only what a screen holds comes first (ScreenRows) and the rest waits for it to be on
     /// screen (afterReveal): built first, they held the reveal back by their own time and a second layout pass.
@@ -216,9 +224,11 @@ internal sealed partial class Launcher
                 int from = next;
                 void Rest()
                 {
-                    if (v != renderVersion) return; // a newer list is showing
-                    for (int i = from; i < steps.Count; i++) steps[i].run();
-                    if (keepScroll) scroll.ScrollToVerticalOffset(offset);
+                    RenderSlices.Run(Dispatcher, from, steps.Count, i => steps[i].run(), () => v == renderVersion,
+                        () =>
+                        {
+                            if (keepScroll) scroll.ScrollToVerticalOffset(offset);
+                        });
                 }
                 if (opening) afterReveal = Rest;
                 else Dispatcher.BeginInvoke(Rest, System.Windows.Threading.DispatcherPriority.Background);

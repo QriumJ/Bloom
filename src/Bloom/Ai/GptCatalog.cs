@@ -1,95 +1,94 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Threading;
 using Bloom.Core;
 
 namespace Bloom.Ai;
 
-/// The ChatGPT models Codex offers this login, from Codex's own cache (~/.codex/models_cache.json,
-/// refreshed by the Codex CLI and app): the ones its model menu lists, in its order, each with the
-/// reasoning levels it takes. Read again whenever the file changes.
+/// UI reads use the last snapshot for the selected account. Filesystem checks and parsing stay on a worker.
 internal static class GptCatalog
 {
     public sealed record Model(string Slug, string Name, string[] Levels, string Description);
-
-    private static readonly string[] FallbackLevels = { "low", "medium", "high", "xhigh" };
+    internal static readonly string[] FallbackLevels = { "low", "medium", "high", "xhigh" };
+    private readonly record struct Source(string? AccountHome, string DefaultHome);
     private static readonly object gate = new();
-    private static List<Model> list = new();
-    private static DateTime stamp = DateTime.MinValue, configStamp = DateTime.MinValue;
-    private static string? configModel, loaded; // loaded: the models_cache.json read last (the chat account may change)
+    private static readonly Dictionary<Source, BackgroundSnapshot<CatalogReader.Snapshot>> caches = new();
 
     public static string Home => CodexAuth.DefaultHome();
+    public static event Action? Updated;
 
-    public static IReadOnlyList<Model> All
+    // Account/settings access belongs to the caller; worker closures contain paths only.
+    private static BackgroundSnapshot<CatalogReader.Snapshot> Cache()
     {
-        get
+        var source = new Source(AiAccounts.ChatHome("chatgpt"), Home);
+        lock (gate)
         {
-            lock (gate)
-            {
-                Load();
-                return list;
-            }
+            if (caches.TryGetValue(source, out var cache)) return cache;
+            var reader = new CatalogReader(source.AccountHome, source.DefaultHome);
+            cache = new(CatalogReader.Snapshot.Empty, reader.Load, 2000, "model catalog");
+            cache.Updated += () => Updated?.Invoke();
+            caches.Add(source, cache);
+            return cache;
         }
     }
 
-    private static string Str(JsonElement e, string k) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
+    private static CatalogReader.Snapshot Read() => Demo.On ? CatalogReader.Snapshot.Empty : Cache().Read();
+    public static bool Ready => Read().Loaded;
+    public static IReadOnlyList<Model> All => Read().Models;
 
-    private static void Load()
+    /// Call on the owning UI thread before resolving a send's model/effort. Waiting never blocks its Dispatcher.
+    public static Task<bool> RefreshAsync(CancellationToken cancellation = default)
     {
-        // the chat account's own list (the plan decides the models), else the default folder's until Codex ran there once
-        string file = AiAccounts.ChatHome("chatgpt") is { } home && File.Exists(Path.Combine(home, "models_cache.json")) ? Path.Combine(home, "models_cache.json") : Path.Combine(Home, "models_cache.json");
-        try
+        cancellation.ThrowIfCancellationRequested();
+        return Demo.On ? Task.FromResult(true) : RefreshCurrentAsync(Cache, cancellation);
+    }
+
+    internal static async Task<bool> RefreshCurrentAsync(Func<BackgroundSnapshot<CatalogReader.Snapshot>> capture,
+        CancellationToken cancellation = default)
+        => await ResolveCurrentAsync(capture, snapshot => snapshot.Loaded, cancellation).ConfigureAwait(false);
+
+    /// Resolve values (or start an async operation) in the same UI callback that validates the account.
+    public static Task<T> ResolveAsync<T>(Func<T> resolve, CancellationToken cancellation = default)
+    {
+        cancellation.ThrowIfCancellationRequested();
+        return Demo.On ? Task.FromResult(resolve()) : ResolveCurrentAsync(Cache, _ => resolve(), cancellation);
+    }
+
+    internal static async Task<T> ResolveCurrentAsync<T>(Func<BackgroundSnapshot<CatalogReader.Snapshot>> capture,
+        Func<CatalogReader.Snapshot, T> resolve, CancellationToken cancellation = default)
+    {
+        var owner = Dispatcher.CurrentDispatcher;
+        var cache = capture();
+        while (true)
         {
-            var t = File.GetLastWriteTimeUtc(file); // 1601 when it is missing
-            if (t == stamp && file == loaded) return;
-            stamp = t;
-            loaded = file;
-            var rows = new List<(int prio, Model m)>();
-            if (File.Exists(file))
+            var snapshot = await cache.Refresh().WaitAsync(cancellation).ConfigureAwait(false);
+            var attempt = await owner.InvokeAsync(() =>
             {
-                using var doc = JsonDocument.Parse(File.ReadAllBytes(file));
-                if (doc.RootElement.TryGetProperty("models", out var models) && models.ValueKind == JsonValueKind.Array)
-                    foreach (var m in models.EnumerateArray())
-                    {
-                        string slug = Str(m, "slug");
-                        if (slug.Length == 0 || Str(m, "visibility") != "list") continue;
-                        var levels = new List<string>();
-                        if (m.TryGetProperty("supported_reasoning_levels", out var lv) && lv.ValueKind == JsonValueKind.Array)
-                            foreach (var l in lv.EnumerateArray())
-                            {
-                                string e = l.ValueKind == JsonValueKind.String ? l.GetString() ?? "" : Str(l, "effort");
-                                if (e.Length > 0) levels.Add(e);
-                            }
-                        int prio = m.TryGetProperty("priority", out var p) && p.ValueKind == JsonValueKind.Number && p.TryGetInt32(out int pi) ? pi : 999;
-                        string name = Str(m, "display_name") is { Length: > 0 } dn ? dn : slug;
-                        rows.Add((prio, new Model(slug, name, levels.Count > 0 ? levels.ToArray() : FallbackLevels, Str(m, "description"))));
-                    }
-            }
-            list = rows.OrderBy(r => r.prio).Select(r => r.m).ToList();
-        }
-        catch (Exception e)
-        {
-            Log.Error("codex models", e);
+                var current = capture();
+                bool ready = ReferenceEquals(current, cache);
+                return (Current: current, Ready: ready, Value: ready ? resolve(snapshot) : default!);
+            }, DispatcherPriority.Normal, cancellation).Task.ConfigureAwait(false);
+            if (attempt.Ready) return attempt.Value;
+            cache = attempt.Current; // account changed during the read: resolve from the new source
         }
     }
 
-    public static Model? Find(string? slug) => slug is null ? null : All.FirstOrDefault(m => m.Slug == slug);
+    public static Model? Find(string? slug) => slug is null ? null : All.FirstOrDefault(model => model.Slug == slug);
 
-    /// Codex's own default: the top-level `model` of config.toml when the menu has it, else the
-    /// menu's first model.
     public static string? DefaultSlug()
     {
-        string? cfg = ConfigModel();
-        var all = All;
-        if (cfg is not null && (all.Count == 0 || all.Any(m => m.Slug == cfg))) return cfg;
-        return all.Count > 0 ? all[0].Slug : cfg;
+        var snapshot = Read();
+        string? configured = snapshot.ConfigModel;
+        if (configured is not null && (snapshot.Models.Count == 0 || snapshot.Models.Any(model => model.Slug == configured))) return configured;
+        return snapshot.Models.Count > 0 ? snapshot.Models[0].Slug : configured;
     }
 
-    public static string Name(string? slug) => (slug ?? DefaultSlug()) is { } s ? Find(s)?.Name ?? s : "ChatGPT";
-
+    public static string Name(string? slug) => (slug ?? DefaultSlug()) is { } value ? Find(value)?.Name ?? value : "ChatGPT";
     public static string[] Levels(string? slug) => Find(slug ?? DefaultSlug())?.Levels ?? FallbackLevels;
+    public static string? ConfigModel() => Read().ConfigModel;
 
     /// A short Korean line for the menus (Codex's own words for a kind not known here).
     public static string About(Model m)
@@ -106,36 +105,4 @@ internal static class GptCatalog
         return d;
     }
 
-    /// The top-level `model` of ~/.codex/config.toml (the launcher runs Codex with --ignore-user-config,
-    /// so it passes the model itself).
-    public static string? ConfigModel()
-    {
-        lock (gate)
-        {
-            string file = Path.Combine(Home, "config.toml");
-            try
-            {
-                var t = File.GetLastWriteTimeUtc(file);
-                if (t == configStamp) return configModel;
-                configStamp = t;
-                configModel = null;
-                if (!File.Exists(file)) return null;
-                foreach (string line in File.ReadLines(file))
-                {
-                    string s = line.Trim();
-                    if (s.StartsWith('[')) break;
-                    if (s.Split('=', 2) is [var k, var v] && k.Trim() == "model")
-                    {
-                        configModel = v.Trim().Trim('"', '\'');
-                        break;
-                    }
-                }
-            }
-            catch
-            {
-                configModel = null; // no config: Codex's own default
-            }
-            return configModel;
-        }
-    }
 }

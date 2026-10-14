@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Bloom.Core;
 
 namespace Bloom.Search;
@@ -10,29 +11,32 @@ namespace Bloom.Search;
 internal sealed record RecentFile(string Path, bool Folder, DateTime Opened);
 
 /// Windows' own recent items (%APPDATA%\Microsoft\Windows\Recent\*.lnk, what Explorer's 홈 lists), newest first.
-/// Works without Everything. The shortcuts are read at most every 5 s; targets that are gone are left out.
+/// Works without Everything. Shortcut IO stays on one background STA; UI reads the previous snapshot.
 internal static class RecentFiles
 {
-    private static List<RecentFile> cache = new();
-    private static long cachedAt;
+    private static readonly BackgroundSnapshot<List<RecentFile>> snapshot = new(new(), Scan, 5000, "recent files");
     private static DateTime folderStamp;
+    private static bool scanned;
+    public static event Action? Updated { add => snapshot.Updated += value; remove => snapshot.Updated -= value; }
 
     public static string Folder => Environment.GetFolderPath(Environment.SpecialFolder.Recent);
 
     public static List<RecentFile> List(int max = 150)
     {
-        if (Demo.On) return new(); // recording mode: nothing of this PC
-        long now = Environment.TickCount64;
+        if (Demo.On) return new();
+        var list = snapshot.Read();
+        return max >= list.Count ? list : list.Take(Math.Max(0, max)).ToList();
+    }
+
+    public static Task<List<RecentFile>> Refresh() => Demo.On ? Task.FromResult(new List<RecentFile>()) : snapshot.Refresh();
+
+    private static List<RecentFile> Scan()
+    {
+        const int max = 150;
         DateTime stamp;
-        try
-        {
-            stamp = Directory.GetLastWriteTimeUtc(Folder);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return cache;
-        }
-        if (cache.Count > 0 && (now - cachedAt < 5000 || stamp == folderStamp)) return cache;
+        try { stamp = Directory.GetLastWriteTimeUtc(Folder); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return snapshot.Current; }
+        if (scanned && stamp == folderStamp) return snapshot.Current;
         var list = new List<RecentFile>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         using var resolver = new LinkResolver();
@@ -43,7 +47,7 @@ internal static class RecentFiles
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return cache;
+            return snapshot.Current;
         }
         foreach (var lnk in links)
         {
@@ -54,9 +58,8 @@ internal static class RecentFiles
             list.Add(new RecentFile(target, folder, lnk.LastWriteTime));
             if (list.Count >= max) break;
         }
-        cache = list;
-        cachedAt = now;
         folderStamp = stamp;
+        scanned = true;
         return list;
     }
 }

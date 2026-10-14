@@ -18,8 +18,9 @@ internal sealed partial class SettingsView
         foreach (var (kind, title) in new[] { ("claude", "Claude"), ("chatgpt", "ChatGPT") })
         {
             Header(title);
-            string chatId = AiAccounts.Chat(kind).Id;
-            foreach (var a in AiAccounts.All.Where(a => a.Kind == kind).ToList())
+            // the accounts are the user's data, not settings lines: collecting skips them (and leaves AiAccounts alone)
+            string chatId = collected is null ? AiAccounts.Chat(kind).Id : "";
+            foreach (var a in collected is null ? AiAccounts.All.Where(a => a.Kind == kind).ToList() : [])
             {
                 string status = UsageLogin.Running == a.Id ? Tr("로그인 진행 중 · 열린 터미널에서 마치세요", "Signing in · finish in the terminal that opened")
                     : UsageLogin.Open(a) ? Tr("로그인 터미널이 열려 있음 · 닫으면 계정을 바꿀 수 있습니다", "Sign-in terminal still open · close it to change the account")

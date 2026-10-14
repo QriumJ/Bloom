@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using Bloom.Core;
 using Bloom.Native;
 
@@ -23,17 +24,23 @@ internal sealed class OpenWindow
 /// (other virtual desktops, suspended Store apps), never Bloom's own. Read again at most every 1.5 s.
 internal static class OpenWindows
 {
-    private static List<OpenWindow> cache = new();
-    private static long cachedAt;
+    private static readonly BackgroundSnapshot<List<OpenWindow>> snapshot = new(new(), Scan, 1500, "open windows");
     private static readonly Dictionary<uint, (string? exe, string app)> programs = new();
 
-    public static int Count => cache.Count;
+    public static int Count => snapshot.Current.Count;
+    public static event Action? Updated { add => snapshot.Updated += value; remove => snapshot.Updated -= value; }
 
     public static List<OpenWindow> List(bool fresh = false)
     {
         if (Demo.On) return new(); // recording mode: no window titles of this PC
-        long now = Environment.TickCount64;
-        if (!fresh && now - cachedAt < 1500) return cache;
+        if (fresh) snapshot.Invalidate();
+        return snapshot.Read();
+    }
+
+    public static Task<List<OpenWindow>> Refresh() => Demo.On ? Task.FromResult(new List<OpenWindow>()) : snapshot.Refresh();
+
+    private static List<OpenWindow> Scan()
+    {
         var list = new List<OpenWindow>();
         uint me = (uint)Environment.ProcessId;
         var seenPids = new HashSet<uint>();
@@ -59,13 +66,11 @@ internal static class OpenWindows
         // programs that ended leave the name cache (pids are reused)
         foreach (uint pid in new List<uint>(programs.Keys))
             if (!seenPids.Contains(pid)) programs.Remove(pid);
-        cache = list;
-        cachedAt = now;
         return list;
     }
 
     /// Forgets the list so the next one is read now (after closing a window).
-    public static void Invalidate() => cachedAt = 0;
+    public static void Invalidate() => snapshot.Invalidate();
 
     private static bool Switchable(IntPtr h)
     {

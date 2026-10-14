@@ -70,6 +70,8 @@ Search by part of a name. Calculations update as you type; timers accept time ex
   - Sleep, screen off, empty the Recycle Bin, end processes, lock · restart · shut down
 - **Ctrl+K** on any result lists everything you can do with it. On a file: rename, move or copy to another folder, Recycle Bin — the way Explorer does it, with the same progress window and name-clash questions.
 - Recent selections take priority when you repeat a search. Clear the learning history in settings.
+- **What you can type**: type `?` alone to list the inputs Bloom understands, by kind; Enter puts an example in the search line. The empty search line shows one example at a time.
+- **Bloom settings**: type a setting's name (`glass`, `shortcut`) to find it; Enter opens it in the settings window.
 
 ### Paths, windows, dates and installs
 
@@ -111,8 +113,8 @@ No API key. Answers come from the Claude Code or Codex CLI you have installed an
 - **AI actions** (Ctrl+Alt+A): in any app, turn the selected text (or the clipboard when nothing is selected) into something else and paste it back.
   - Summarize · translate · fix spelling · polish · shorter · longer · formal · casual · key points as a list · explain simply · draft a reply
   - Or write your own instruction.
-- **Usage**: the home shows Claude's and ChatGPT's 5-hour and weekly limits, as used or as left, refreshed every 5 or 10 minutes. Several accounts of each are supported (Settings › AI accounts): each one signs in with the CLI's own login, and AI chat uses the account you pick. Nothing switches accounts on its own.
-- **Work notifications**: a card in a screen corner and a sound when a Claude Code or Codex task starts, finishes, waits for approval, or nears or regains its usage limit.
+- **Usage**: the home shows Claude's and ChatGPT's 5-hour and weekly limits, as used or as left, refreshed every 5 or 10 minutes. Several accounts of each are supported (Settings › AI accounts): each one signs in with the CLI's own login, and AI chat uses the account you pick. Nothing switches accounts on its own. When the current pace would use a limit up before its reset, the card shows when it runs out and a notification says so.
+- **Work notifications**: a card in a screen corner and a sound when a Claude Code or Codex task starts, finishes, waits for approval, or nears or regains its usage limit. Click a task's card to go to the terminal or editor window it runs in.
   - Pick one of six positions, the size, the sound and which events.
   - Notifications are hidden during full-screen games and presentations.
 
@@ -181,12 +183,13 @@ Shows drive and folder space as a map. Each file and folder occupies a block pro
 - **Look · performance**
   - Dark, light or system theme, and accent color presets
   - Animations on · reduced · off, how many per second (30 · 60 · max), glass off
-  - Draw with the GPU (smooth) or the CPU (about 30 MB less memory; a slow CPU may stutter on busy screens), picked at first start or in Settings › Performance
+  - Bloom draws with the CPU by default. GPU drawing is experimental: on some PCs the screen may stutter or freeze for a few seconds. Pick it at first start or in Settings › Performance
   - Features that use memory say in the settings how much they add.
 - **Language · first start · moving**
   - 한국어 / English / 日本語 / 简体中文 (auto follows Windows); Bloom restarts after a change. Search words, times and units are typed in English or Korean in every language.
   - First-run setup covers how to open Bloom, the home and AI features.
   - Export the settings, favorites, app names and browser shortcuts to one file, and import them on another PC.
+- **Problem report**: Settings › About › Problem report copies the version, Windows and the recent log (user name and e-mail addresses hidden) and opens a GitHub issue page. Bloom sends nothing itself.
 
 ## Shortcuts
 
@@ -300,6 +303,13 @@ dotnet build tests\Bloom.Tests\Bloom.Tests.csproj -c Debug --no-incremental -p:A
 dotnet format whitespace src\Bloom\Bloom.csproj --verify-no-changes
 dotnet format whitespace tests\Bloom.Tests\Bloom.Tests.csproj --verify-no-changes
 ```
+
+For a bounded responsiveness probe, run the Release executable with
+`--data <isolated-folder> --no-hook --no-tray --qa-responsive 3`.
+It writes `responsiveness.json` and `responsiveness.txt` using synthetic search results,
+an Input-priority heartbeat, and one half-duty CPU worker. The ink samples measure
+completed strokes and export, not live mouse or display latency. See
+[the responsiveness notes](docs/wiki/responsiveness.md) for comparison results and limits.
 
 </details>
 

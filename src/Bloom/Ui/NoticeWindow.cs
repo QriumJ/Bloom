@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -15,7 +16,8 @@ using Bloom.Search;
 namespace Bloom.Ui;
 
 /// The notices (App\Notices) as cards in the screen corner or edge picked in 설정 > 알림, newest nearest the edge, at the
-/// size picked there. Drawn like the timer card (AlarmWindow). Never takes the focus; a click closes a card, the mouse
+/// size picked there. Drawn like the timer card (AlarmWindow). Never takes the focus; a click closes a card (after the
+/// card's own Click, if it has one: a turn's card goes to its session window), the mouse
 /// over one holds it, and a card with a key (승인 대기) stays until Notices takes it away.
 internal sealed class NoticeWindow : Window
 {
@@ -58,7 +60,11 @@ internal sealed class NoticeWindow : Window
     {
         double s = Settings.Current.NoticeSize switch { "s" => 0.85, "l" => 1.2, "xl" => 1.4, _ => 1 };
         scale.ScaleX = scale.ScaleY = s;
-        if (n.Key is { } k && keyed.Remove(k, out var old)) stack.Children.Remove(old);
+        if (n.Key is { } k && keyed.Remove(k, out var old))
+        {
+            stack.Children.Remove(old);
+            TellGone(old);
+        }
         var card = Card(n);
         if (AtTop) stack.Children.Insert(0, card);
         else stack.Children.Add(card);
@@ -77,10 +83,15 @@ internal sealed class NoticeWindow : Window
 
     public void Clear()
     {
+        var all = stack.Children.OfType<FrameworkElement>().ToList();
         stack.Children.Clear();
         keyed.Clear();
         Hide();
+        foreach (var card in all) TellGone(card);
     }
+
+    /// A card is off the window: its notice's Gone (an approval card left unanswered: the terminal asks).
+    private static void TellGone(FrameworkElement card) => (card.Tag as Notice)?.Gone?.Invoke();
 
     public void Capture(string file) => Shots.Save((FrameworkElement)Content, file);
 
@@ -117,6 +128,15 @@ internal sealed class NoticeWindow : Window
         var title = Theme.T(n.Title, 14, Theme.P.Text, Theme.Medium); // one line each, then … (the tooltip has it all)
         title.Margin = new Thickness(0, 3, 0, 0);
         text.Children.Add(title);
+        if (n.Body is { Length: > 0 } body)
+            text.Children.Add(new SmoothBorder
+            {
+                Background = Theme.P.Well,
+                CornerRadius = new CornerRadius(7),
+                Padding = new Thickness(8, 5, 8, 6),
+                Margin = new Thickness(0, 6, 0, 0),
+                Child = new TextBlock { Text = body, TextWrapping = TextWrapping.Wrap, FontFamily = Theme.Mono, FontSize = 12, Foreground = Theme.P.Text },
+            });
         if (n.Detail is { Length: > 0 } d)
         {
             var detail = Theme.T(d, 12, Theme.P.TextFaint);
@@ -128,6 +148,17 @@ internal sealed class NoticeWindow : Window
             var button = ToolUi.TextButton(actionText, action);
             button.Margin = new Thickness(0, 8, 0, 0);
             text.Children.Add(button);
+        }
+        if (n.Buttons is { Count: > 0 } choices)
+        {
+            var row2 = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
+            foreach (var (label, run) in choices)
+            {
+                var button = ToolUi.TextButton(label, run);
+                button.Margin = new Thickness(0, 0, 6, 0);
+                row2.Children.Add(button);
+            }
+            text.Children.Add(row2);
         }
         var row = new Grid();
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -147,11 +178,13 @@ internal sealed class NoticeWindow : Window
             Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 16, ShadowDepth = 2, Direction = 270, Opacity = 0.3 },
             Cursor = Cursors.Hand,
             Child = row,
-            ToolTip = n.Detail is { Length: > 0 } ? $"{n.Title}\n{n.Detail}" : n.Title,
+            Tag = n,
+            ToolTip = (n.Detail is { Length: > 0 } ? $"{n.Title}\n{n.Detail}" : n.Title) + (n.Body is { Length: > 0 } ? "\n" + n.Body : "") + (n.Click is null ? "" : "\n" + Tr("클릭하면 세션 창으로 이동합니다", "Click to go to the session window")),
         };
         card.MouseLeftButtonUp += (_, e) =>
         {
             e.Handled = true;
+            n.Click?.Invoke();
             Dismiss(card, true);
         };
         if (n.Key is null) // a keyed card stays until its wait ends
@@ -214,8 +247,10 @@ internal sealed class NoticeWindow : Window
             }
         void Gone()
         {
+            bool shown = stack.Children.Contains(card); // else cleared or replaced meanwhile, which told it already
             stack.Children.Remove(card);
             if (stack.Children.Count == 0) Hide();
+            if (shown) TellGone(card);
         }
         if (!fade || !Motion.Fades || !stack.Children.Contains(card))
         {

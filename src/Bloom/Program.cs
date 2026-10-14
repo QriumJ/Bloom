@@ -1,8 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using System.Windows;
 using Bloom.App;
@@ -26,18 +24,33 @@ internal static class Program
     ///       running Bloom; Codex's runs name their conversation, whose chat then asks the user for each action).
     ///       --mcp-proxy <pipe> <conversation> <source> <name> (started by Codex: another MCP server the user switched on,
     ///       started here and asked about in that conversation's chat before each tool call).
+    ///       --console-window <pid> (a notice card's click: the console window of that process as the exit code; nothing
+    ///       starts).
+    ///       --claude-approve [--data <dir>] (Claude Code's PermissionRequest hook: the request to the running Bloom's
+    ///       card, its answer as the hook's JSON; nothing starts).
     [STAThread]
     private static int Main(string[] args)
     {
         // Claude Code or Codex starting Bloom's MCP server: a relay to the running Bloom, before anything else
         if (args.Length is 2 or 3 && args[0] == "--mcp") return App.Mcp.McpBridge.Run(args[1], args.Length == 3 ? args[2] : null);
         if (args.Length == 5 && args[0] == "--mcp-proxy") return App.Mcp.McpProxy.Run(args[1], args[2], args[3], args[4]);
+        // a notice card's click asking which console window a CLI runs in (Native\SessionWindow.cs): this run attaches to
+        // that console instead of the running Bloom, answers in its exit code and ends
+        if (args.Length == 2 && args[0] == Native.SessionWindow.ProbeArg) return Native.SessionWindow.Probe(args[1]);
+        // Claude Code's PermissionRequest hook (설정 > 알림 > 알림 카드에서 승인): carries the request to the running Bloom's card
+        // and prints its answer; no answer (Bloom not running, 터미널에서 답하기) leaves the terminal's own question
+        if (args.Length >= 1 && args[0] == App.ClaudeApprovalHook.Arg) return App.ClaudeApprovalHook.Run(args);
         // the setup's install / update / uninstall steps start Bloom with their own arguments and end in Run. A downloaded
         // update never goes in at a start of Velopack's choosing (a second Bloom started only to signal the first would
         // close it): Updates.ApplyAtStart and Updates.ApplyOnQuit do that.
         VelopackApp.Build()
             .SetAutoApplyOnStartup(false)
-            .OnBeforeUninstallFastCallback(_ => Autostart.Set(false)) // the Run entry would point at a removed exe
+            .OnBeforeUninstallFastCallback(_ =>
+            {
+                // the Run entry and Claude Code's approval hook would point at a removed exe
+                Autostart.Set(false);
+                Ai.ClaudeHooks.Remove();
+            })
             .Run();
         var opt = new Options();
         bool quit = false;
@@ -87,6 +100,9 @@ internal static class Program
                     break;
                 case "--qa-summon" when i + 1 < args.Length:
                     opt.SummonRounds = int.TryParse(args[++i], out int rounds) ? Math.Clamp(rounds, 1, 50) : 10;
+                    break;
+                case "--qa-responsive" when i + 1 < args.Length:
+                    opt.ResponsiveRounds = int.TryParse(args[++i], out int responsive) ? Math.Clamp(responsive, 1, 10) : 3;
                     break;
                 case "--qa-space" when i + 1 < args.Length:
                     opt.SpaceDir = args[++i];
@@ -138,7 +154,8 @@ internal static class Program
                     break;
             }
         }
-        if ((opt.CaptureDir is not null || opt.GlassFile is not null || opt.ChatFile is not null || opt.MeasureSeconds is not null || opt.SummonRounds is not null || opt.Demo) && opt.Data is null) return 2; // QA and recording never touch the real data
+        if (opt.ResponsiveRounds is not null && string.IsNullOrEmpty(opt.Data)) return 2;
+        if ((opt.CaptureDir is not null || opt.GlassFile is not null || opt.ChatFile is not null || opt.MeasureSeconds is not null || opt.SummonRounds is not null || opt.ResponsiveRounds is not null || opt.Demo) && opt.Data is null) return 2; // QA and recording never touch the real data
         Paths.Init(opt.Data);
         if (uninstallFrom >= 0) return Uninstall(uninstallFrom, wipe);
         // the setup's Start-menu shortcut starts Bloom without arguments: that opens the launcher (the Run entry has --autostart)
@@ -146,7 +163,7 @@ internal static class Program
         if (resetFrom >= 0) Reset(resetFrom);
         else if (restartFrom >= 0) WaitFor(restartFrom);
 
-        string id = Paths.IsDev ? "Bloom.Dev." + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Paths.Data.ToLowerInvariant())))[..10] : "Bloom";
+        string id = Paths.InstanceId;
         using var mutex = new Mutex(true, @"Local\" + id, out bool first);
         if (!first && export is not null) return 3; // quit Bloom first: it may hold unsaved settings
         if (!first)

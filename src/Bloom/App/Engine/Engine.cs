@@ -44,7 +44,11 @@ internal sealed partial class Engine
     /// Everything's root query leaves out the usual noise folders.
     private const string RootNoise = " !\\AppData\\ !\\$Recycle.Bin\\ !\\Windows\\WinSxS\\ !\\node_modules\\ !\\.git\\ !\\Library\\PackageCache\\ !\\Temp\\";
 
-    public Engine(Host host) => this.host = host;
+    public Engine(Host host, PathLookup? pathLookup = null)
+    {
+        this.host = host;
+        this.pathLookup = pathLookup ?? new PathLookup();
+    }
 
     // ── other views ─────────────────────────────────────────────────────────────────────────────
     /// File search kinds (the ▾ chip in the search line, Ctrl+Tab): an Everything filter put before the words.

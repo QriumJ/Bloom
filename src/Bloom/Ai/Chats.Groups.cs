@@ -14,7 +14,7 @@ internal sealed partial class Chats
     /// UI thread; a group was made, renamed, folded or deleted, or a conversation moved in or out of one.
     public event Action? GroupsChanged;
 
-    private static string GroupsFile => Paths.In("chat-groups.json");
+    private string GroupsFile => System.IO.Path.Combine(System.IO.Path.GetDirectoryName(dir) ?? "", "chat-groups.json");
 
     private void LoadGroups()
     {
@@ -25,7 +25,7 @@ internal sealed partial class Chats
 
     private void SaveGroups()
     {
-        Json.Save(GroupsFile, Groups);
+        store.Save(GroupsFile, Groups);
         GroupsChanged?.Invoke();
     }
 

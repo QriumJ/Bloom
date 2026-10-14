@@ -7,7 +7,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Bloom.App;
-using Bloom.Core;
 using Bloom.Search;
 using Bloom.Ui;
 
@@ -32,6 +31,9 @@ internal sealed class DrawLayer
     private readonly InkCanvas ink;
     private readonly Size area; // the picked area in DIPs
     private readonly Action<string> done;
+    private DrawPreferences preferences;
+    private readonly Action<DrawPreferences> persist;
+    private readonly Brush accent, accentInk, accentSoft;
     private readonly List<Change> undo = new(), redo = new();
     private readonly Dictionary<string, SmoothBorder> tools = new();
     private readonly List<SmoothBorder> swatches = new(), sizes = new();
@@ -39,10 +41,17 @@ internal sealed class DrawLayer
 
     /// Ink over `sel` (DIPs on `canvas`), the bar below it (above, or inside, when the screen ends). `done` gets
     /// what to do with the picture: capture (copy) · pin · ask · save.
-    public DrawLayer(Canvas canvas, Rect sel, Size room, Action<string> done)
+    public DrawLayer(Canvas canvas, Rect sel, Size room, Action<string> done,
+        DrawPreferences? preferences = null, DrawTheme? theme = null, Action<DrawPreferences>? persist = null)
     {
         area = sel.Size;
         this.done = done;
+        this.preferences = preferences ?? DrawPreferences.Capture();
+        this.persist = persist ?? (p => p.Save());
+        var colors = theme ?? DrawTheme.Capture();
+        accent = DrawTheme.Brush(colors.Accent);
+        accentInk = DrawTheme.Brush(colors.AccentInk);
+        accentSoft = DrawTheme.Brush(colors.AccentSoft);
         ink = new InkCanvas { Width = sel.Width, Height = sel.Height, Background = Brushes.Transparent, ClipToBounds = true };
         ink.Strokes.StrokesChanged += (_, e) =>
         {
@@ -133,22 +142,22 @@ internal sealed class DrawLayer
     }
 
     /// The pen or the highlighter: the one in hand, or the last one before the eraser.
-    private static bool Marking => Settings.Current.DrawTool == "mark";
+    private bool Marking => preferences.Tool == "mark";
 
     private void Use(string tool)
     {
-        var s = Settings.Current;
+        var s = preferences;
         if (tool == "erase") ink.EditingMode = InkCanvasEditingMode.EraseByStroke;
         else
         {
             bool mark = tool == "mark";
-            if (s.DrawTool != tool)
+            if (s.Tool != tool)
             {
-                s.DrawTool = tool;
-                Settings.Save();
+                preferences = s = s with { Tool = tool };
+                persist(s);
             }
-            int c = Math.Clamp(mark ? s.DrawMarkColor : s.DrawPenColor, 0, Inks.Length - 1);
-            int z = Math.Clamp(mark ? s.DrawMarkSize : s.DrawPenSize, 0, 2);
+            int c = Math.Clamp(mark ? s.MarkColor : s.PenColor, 0, Inks.Length - 1);
+            int z = Math.Clamp(mark ? s.MarkSize : s.PenSize, 0, 2);
             double w = (mark ? MarkSizes : PenSizes)[z];
             ink.DefaultDrawingAttributes = new DrawingAttributes
             {
@@ -170,18 +179,16 @@ internal sealed class DrawLayer
     /// A colour (0–3) and/or a size (0–2) for the pen or highlighter in hand; from the eraser it goes back to that one.
     private void Pick(int? color, int? size)
     {
-        var s = Settings.Current;
+        var s = preferences;
         if (Marking)
         {
-            s.DrawMarkColor = color ?? s.DrawMarkColor;
-            s.DrawMarkSize = size ?? s.DrawMarkSize;
+            preferences = s with { MarkColor = color ?? s.MarkColor, MarkSize = size ?? s.MarkSize };
         }
         else
         {
-            s.DrawPenColor = color ?? s.DrawPenColor;
-            s.DrawPenSize = size ?? s.DrawPenSize;
+            preferences = s with { PenColor = color ?? s.PenColor, PenSize = size ?? s.PenSize };
         }
-        Settings.Save();
+        persist(preferences);
         Use(Marking ? "mark" : "pen");
     }
 
@@ -243,7 +250,7 @@ internal sealed class DrawLayer
         Button(row, G.Save, null, Tr("그림 저장…", "Save the picture…") + " (Ctrl+S)", () => done("save"));
         var copy = new SmoothBorder
         {
-            Background = Theme.P.Accent,
+            Background = accent,
             CornerRadius = new CornerRadius(8),
             Padding = new Thickness(12, 0, 12, 0),
             Height = 32,
@@ -251,8 +258,8 @@ internal sealed class DrawLayer
             Cursor = Cursors.Hand,
         };
         var label = new StackPanel { Orientation = Orientation.Horizontal };
-        label.Children.Add(Theme.T(Tr("복사", "Copy"), 13, Theme.P.AccentInk, Theme.Medium, false));
-        var key = Theme.T("Enter", 11.5, Theme.P.AccentInk, null, false);
+        label.Children.Add(Theme.T(Tr("복사", "Copy"), 13, accentInk, Theme.Medium, false));
+        var key = Theme.T("Enter", 11.5, accentInk, null, false);
         key.Opacity = 0.62;
         key.Margin = new Thickness(8, 1, 0, 0);
         label.Children.Add(key);
@@ -324,11 +331,11 @@ internal sealed class DrawLayer
     }
 
     /// A button shown as chosen: the accent for the tools, a lighter tile for the sizes.
-    private static void Mark(SmoothBorder b, bool on, bool accent = false)
+    private void Mark(SmoothBorder b, bool on, bool accented = false)
     {
         b.Tag = on;
-        b.Background = on ? (accent ? Theme.P.AccentSoft : On) : Brushes.Transparent;
-        var fg = on ? (accent ? Theme.P.Accent : Bright) : Dim;
+        b.Background = on ? (accented ? accentSoft : On) : Brushes.Transparent;
+        var fg = on ? (accented ? accent : Bright) : Dim;
         Tint(b.Child, fg);
     }
 

@@ -213,9 +213,9 @@ internal sealed class BloomTools : IToolPolicy
                 if (list is null) return "Everything isn't running; try do=find_recent.";
                 return list.Count == 0 ? "Nothing found." : string.Join("\n", list.Select(f => $"{f.FullPath}{(f.IsFolder ? "\\" : "")} {f.Modified:yyyy-MM-dd}"));
             case "recent":
-                return string.Join("\n", RecentFiles.List(60).Where(r => Hit(new MatchTarget(Path.GetFileName(r.Path)))).Take(20).Select(r => $"{r.Path} {r.Opened:yyyy-MM-dd}"));
+                return string.Join("\n", (await RecentFiles.Refresh()).Take(60).Where(r => Hit(new MatchTarget(Path.GetFileName(r.Path)))).Take(20).Select(r => $"{r.Path} {r.Opened:yyyy-MM-dd}"));
             case "windows":
-                return await OnUi(() => string.Join("\n", OpenWindows.List(true).Where(w => Hit(w.Match)).Take(20).Select(w => $"{w.Title} ({w.App})")));
+                return string.Join("\n", (await OpenWindows.Refresh()).Where(w => Hit(w.Match)).Take(20).Select(w => $"{w.Title} ({w.App})"));
             case "timers":
                 return await OnUi(() => Timers.Waiting.Any() ? string.Join("\n", Timers.Waiting.Select(t => $"{t.Label} {t.DueAt:MM-dd HH:mm}")) : "None.");
             case "commands":

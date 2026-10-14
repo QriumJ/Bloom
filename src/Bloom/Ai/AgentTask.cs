@@ -7,7 +7,8 @@ namespace Bloom.Ai;
 /// A Claude Code / Codex turn that is working or waiting for approval, as the notices see it: who (Tool), on what
 /// (Title: the session's name, else what was asked), what was asked last (Prompt), since when. Headless: run by a
 /// program (`claude -p`, `codex exec`) rather than typed in a session — often a few seconds' check by some tool.
-internal sealed record AgentTask(string Key, string Tool, string Title, string? Prompt, bool Waiting, DateTime Since, bool Headless = false);
+/// Pid: the CLI's process, when known — a click on its notice goes to the window it runs in (SessionWindow).
+internal sealed record AgentTask(string Key, string Tool, string Title, string? Prompt, bool Waiting, DateTime Since, bool Headless = false, int? Pid = null);
 
 /// What ClaudeWatch and CodexWatch share.
 internal static partial class AgentText

@@ -12,7 +12,7 @@ internal sealed partial class Engine
     private static partial Regex NoteLine();
 
     /// The notes section for a typed line; `first`: it starts with a new note to keep (it goes above everything).
-    private Section? RootNotes(string text, Query q, out bool first)
+    internal Section? RootNotes(string text, Query q, out bool first)
     {
         first = false;
         var s = new Section(Tr("메모", "Notes"));

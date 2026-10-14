@@ -36,7 +36,7 @@ internal sealed partial class Engine
     }
 
     /// The root search: a line starting with ":" (":하트", ":fire") lists emoji right there.
-    private Section? RootSymbols(string text)
+    internal Section? RootSymbols(string text)
     {
         string t = text.TrimStart();
         if (t.Length < 2 || t[0] != ':') return null;

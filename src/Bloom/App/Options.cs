@@ -21,6 +21,7 @@ internal sealed class Options
     public string? Lang; // --lang ko|en: this run's language whatever the settings say (dev, QA)
     public int? MeasureSeconds; // --qa-measure <s>: run as usual (notice cards off-screen, no sounds), write memory.txt, quit
     public int? SummonRounds; // --qa-summon <n>: n cold + warm openings timed (SummonBench), summon.txt, quit
+    public int? ResponsiveRounds; // --qa-responsive <n>: isolated synthetic search/render/dispatcher measurement, then quit
 }
 
 /// Owns the services and the window and carries out commands.

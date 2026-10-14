@@ -15,7 +15,7 @@ namespace Bloom.Ui;
 internal static class HomeViews
 {
     /// One card per account (Claude, ChatGPT; up to four in a row, more rows below — the user found two by two untidy):
-    /// each limit as a thin bar, its percent and how long until it resets. A card names its account in the user's own
+    /// each limit as a thin bar, its percent and how long until it resets (or runs out, when UsagePace expects that first). A card names its account in the user's own
     /// words, or by e-mail when one kind has two (AiUsage.Who). `edit` (홈 편집): ‹ › swap a card with its neighbour in
     /// 설정's account order, then Moved draws the home again; ✎ asks Rename for the account's words.
     public static FrameworkElement Usage(List<UsageAccount> accounts, (Action Moved, Action<string> Rename)? edit = null)
@@ -141,7 +141,9 @@ internal static class HomeViews
             right.Inlines.Add(new System.Windows.Documents.Run($"{Shown(l.Percent, left)}%") { FontFamily = Theme.Sans, FontSize = 11.5, FontWeight = Theme.Medium, Foreground = l.Percent >= 90 ? Theme.P.Danger : Theme.P.Text });
             if (left)
                 right.Inlines.Add(new System.Windows.Documents.Run(Tr(" 남음", " left")) { FontFamily = Theme.Sans, FontSize = 11, Foreground = Theme.P.TextDim });
-            if (l.Resets is { } r)
+            if (UsagePace.RunOut(l, DateTime.Now) is { } runOut) // 소진 예상 instead of the reset time, in the waiting tint
+                right.Inlines.Add(new System.Windows.Documents.Run("  " + OutIn(runOut - DateTime.Now)) { FontFamily = Theme.Sans, FontSize = 11, Foreground = new SolidColorBrush(NoticeWindow.Tint("waiting")) });
+            else if (l.Resets is { } r)
                 right.Inlines.Add(new System.Windows.Documents.Run("  " + Ago(r - DateTime.Now)) { FontFamily = Theme.Sans, FontSize = 11, Foreground = Theme.P.TextFaint });
             Typography.SetNumeralAlignment(right, FontNumeralAlignment.Tabular);
             Grid.SetColumn(right, 1);
@@ -169,9 +171,20 @@ internal static class HomeViews
             CornerRadius = new CornerRadius(10),
             Padding = new Thickness(12, 9, 12, 10),
             Child = body,
-            ToolTip = string.Join("\n", a.Limits.Select(l => $"{l.Title}: {Shown(l.Percent, left)}%" + (left ? Tr(" 남음", " left") : "") + (l.Resets is { } r ? Tr($" · {r:M/d HH:mm} 초기화", $" · resets {r:M/d HH:mm}") : ""))),
+            ToolTip = string.Join("\n", a.Limits.Select(l => Tip(l, left))),
         };
     }
+
+    /// A limit's tooltip line: the percent, the expected run-out when there is one, and the reset.
+    private static string Tip(UsageLimit l, bool left)
+    {
+        string line = $"{l.Title}: {Shown(l.Percent, left)}%" + (left ? Tr(" 남음", " left") : "");
+        if (UsagePace.RunOut(l, DateTime.Now) is { } runOut) line += Tr($" · 소진 예상 {runOut:M/d HH:mm}", $" · out ~{runOut:M/d HH:mm}");
+        return l.Resets is { } r ? line + Tr($" · {r:M/d HH:mm} 초기화", $" · resets {r:M/d HH:mm}") : line;
+    }
+
+    /// "3시간 뒤 소진" / "out in 3 h".
+    private static string OutIn(TimeSpan t) => t.TotalMinutes < 1 ? Tr("곧 소진", "out now") : Tr($"{Ago(t)} 뒤 소진", $"out in {Ago(t)}");
 
     /// The whole percent a card shows: used, or what's left (the two always add up to 100).
     private static double Shown(double used, bool left) => left ? Math.Max(0, 100 - Math.Round(used)) : Math.Round(used);

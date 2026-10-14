@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -122,6 +123,49 @@ internal static class Win32
 
     [DllImport("kernel32.dll", SetLastError = true)] private static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern bool QueryFullProcessImageName(IntPtr h, int flags, StringBuilder name, ref int size);
+
+    [DllImport("kernel32.dll")] private static extern bool AttachConsole(uint pid);
+    [DllImport("kernel32.dll")] private static extern IntPtr GetConsoleWindow();
+
+    /// The console window of another process (zero: it has none). Attaching hands the attached process that console's
+    /// control events — its Ctrl+C, Ctrl+Break or closing ends it — so only the short-lived helper run
+    /// (`Bloom.exe --console-window`, SessionWindow.Probe) calls this, never the running Bloom.
+    public static IntPtr ConsoleWindowOf(int pid) => AttachConsole((uint)pid) ? GetConsoleWindow() : IntPtr.Zero;
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct PROCESSENTRY32
+    {
+        public uint dwSize, cntUsage, th32ProcessID;
+        public UIntPtr th32DefaultHeapID;
+        public uint th32ModuleID, cntThreads, th32ParentProcessID;
+        public int pcPriClassBase;
+        public uint dwFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string szExeFile;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)] private static extern IntPtr CreateToolhelp32Snapshot(uint flags, uint pid);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, EntryPoint = "Process32FirstW")] private static extern bool Process32First(IntPtr snap, ref PROCESSENTRY32 entry);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, EntryPoint = "Process32NextW")] private static extern bool Process32Next(IntPtr snap, ref PROCESSENTRY32 entry);
+
+    /// Every running process: its id → its parent's id and program file name ("claude.exe"). The parent may be gone
+    /// (ids are reused), so a hop up the tree needs a check of its own.
+    public static Dictionary<int, (int parent, string exe)> ProcessTree()
+    {
+        var tree = new Dictionary<int, (int, string)>();
+        IntPtr snap = CreateToolhelp32Snapshot(0x2 /* TH32CS_SNAPPROCESS */, 0);
+        if (snap == new IntPtr(-1)) return tree;
+        try
+        {
+            var entry = new PROCESSENTRY32 { dwSize = (uint)Marshal.SizeOf<PROCESSENTRY32>() };
+            for (bool more = Process32First(snap, ref entry); more; more = Process32Next(snap, ref entry))
+                tree[(int)entry.th32ProcessID] = ((int)entry.th32ParentProcessID, entry.szExeFile);
+        }
+        finally
+        {
+            CloseHandle(snap);
+        }
+        return tree;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct POINT { public int X, Y; }
@@ -260,6 +304,7 @@ internal static class Win32
 
     // ── misc ────────────────────────────────────────────────────────────────────────────────────
     [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+    [DllImport("kernel32.dll")] public static extern bool QueryUnbiasedInterruptTime(out ulong unbiasedTime);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr GetModuleHandle(string? name);
     [DllImport("kernel32.dll")] public static extern bool SetProcessWorkingSetSize(IntPtr process, IntPtr min, IntPtr max);
     [DllImport("ole32.dll")] public static extern void CoTaskMemFree(IntPtr p);

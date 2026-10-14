@@ -96,8 +96,11 @@ internal sealed class ResultItem
     /// Extra actions for the action panel; the primary one is put first automatically.
     public Func<List<ActionItem>>? MoreActions;
 
-    /// The right-hand preview (file search, clipboard history), built when the row is selected.
+    /// The right-hand preview built on the UI thread; may use UI-owned brushes or other WPF objects.
     public Func<Detail>? Detail;
+
+    /// File-backed preview read on a worker. Capture value snapshots only; do not create/access WPF objects here.
+    public Func<Detail>? ReadDetail;
 
     /// For favorites: how to rebuild this item from a stored entry.
     public Core.Favorites.Entry? AsFavorite;

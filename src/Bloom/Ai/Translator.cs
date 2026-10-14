@@ -92,10 +92,16 @@ internal static class Translator
         "Output only the translation — no notes, quotes, or explanations. If the text is already in the target language, output it cleaned up.";
 
     /// → (translation, null) or (null, error).
-    public static Task<(string? text, string? error)> Run(string text, string provider, string target, CancellationToken ct)
+    public static async Task<(string? text, string? error)> Run(string text, string provider, string target, CancellationToken ct)
     {
         text = text.Trim();
         if (text.Length > 6000) text = text[..6000];
-        return OneShot.Ask(Prompt(target), text, provider, Model(provider), Effort(provider), "translate-" + target, ct);
+        if (provider == "chatgpt")
+        {
+            var answer = await GptCatalog.ResolveAsync(() => OneShot.Ask(Prompt(target), text, provider,
+                Model(provider), Effort(provider), "translate-" + target, ct), ct);
+            return await answer;
+        }
+        return await OneShot.Ask(Prompt(target), text, provider, Model(provider), Effort(provider), "translate-" + target, ct);
     }
 }

@@ -56,7 +56,7 @@ internal sealed partial class Engine
     }
 
     /// The root search: the switches whose name matches, scored like commands.
-    private IEnumerable<ResultItem> RootToggles(Query q)
+    internal IEnumerable<ResultItem> RootToggles(Query q)
     {
         foreach (var t in Toggles)
         {
@@ -88,7 +88,7 @@ internal sealed partial class Engine
     }
 
     /// The root's volume line ("볼륨 30") as its own section.
-    private Section? RootVolume(string text) => VolumeAsk(text) is { } item ? new Section(Tr("시스템", "System")) { Items = { item } } : null;
+    internal Section? RootVolume(string text) => VolumeAsk(text) is { } item ? new Section(Tr("시스템", "System")) { Items = { item } } : null;
 
     private ResultItem? SysItem(string id)
     {

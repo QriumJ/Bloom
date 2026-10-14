@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace Bloom.Core;
 
@@ -88,6 +89,7 @@ internal sealed class Settings
     public bool NoticeStart { get; set; } = true; // 진행 중: a turn started (what it works on)
     public bool NoticeDone { get; set; } = true; // 작업 완료
     public bool NoticeWaiting { get; set; } = true; // 승인 대기
+    public bool NoticeApprove { get; set; } // 알림 카드에서 승인 (App\ClaudeApprovals): Bloom's hook in Claude Code's settings.json while on
     public bool NoticeLimit { get; set; } = true; // 한도 임박 · 소진 (20 % left, used up)
     public bool NoticeRecover { get; set; } = true; // 한도 복구 (a low limit back after its reset)
     // 성능 (Ui\Theme\Motion.cs)
@@ -104,6 +106,7 @@ internal sealed class Settings
 
     public static void Load()
     {
+        saver?.Dispose();
         bool existed = File.Exists(Paths.In("settings.json"));
         Current = Json.Load<Settings>(Paths.In("settings.json"));
         Current.Onboarded ??= existed; // someone who already used Bloom doesn't get the first-run screens
@@ -123,10 +126,20 @@ internal sealed class Settings
             Current.AiProvider = "chatgpt";
             Current.AiModel = "sonnet";
         }
-        saver = new Saver(() => Json.Save(Paths.In("settings.json"), Current));
+        saver = Saver.ForJson(Paths.In("settings.json"), () => Current);
     }
 
-    public static void Save() => saver?.Touch();
+    private static int version;
+
+    /// How many times the settings were saved this run: a cache built from them (Ui\Settings\SettingsCatalog.cs) is
+    /// built again once it moves.
+    public static int Version => Volatile.Read(ref version);
+
+    public static void Save()
+    {
+        Interlocked.Increment(ref version);
+        saver?.Touch();
+    }
 
     public static void Flush() => saver?.Flush();
 }

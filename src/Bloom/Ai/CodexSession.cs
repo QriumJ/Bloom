@@ -25,14 +25,17 @@ internal sealed class CodexSession : IChatSession
     public static Func<(string command, string pipe, string hint)?>? PcTools;
 
     /// The other MCP servers the user switched on, and Bloom's relay to put in front of each (Host).
-    public static Func<List<McpServerDef>>? ExtraMcp;
+    public static Func<Func<List<McpServerDef>>?>? PrepareMcp;
     public static Func<(string command, string pipe)>? Relay;
 
     private Process? proc;
+    private QueuedSessionInput? stdin;
     private readonly object gate = new();
     private string? exe;
     private string cwd = "";
     private bool stopped;
+    private bool disposed;
+    private long turn;
 
     public string Model { get; }
     public string Effort { get; }
@@ -57,40 +60,29 @@ internal sealed class CodexSession : IChatSession
     public event Action<ToolAsk>? ToolAsked;
     public event Action<string>? ToolAskWithdrawn;
 
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, TaskCompletionSource<bool>> asks = new();
+    private PendingToolAsks? asks;
 
     /// An action Bloom's MCP server holds for the user: the chat shows the card, the task ends with their answer — or
     /// no, when the turn ends, it is stopped, or nobody answers within 9 minutes (Codex gives up on the call at 10).
     public Task<bool> Ask(string tool, string input)
     {
-        var ask = new ToolAsk(Guid.NewGuid().ToString("N"), tool, input, "");
-        var done = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        asks[ask.RequestId] = done;
-        _ = Task.Delay(TimeSpan.FromMinutes(9)).ContinueWith(_ => Withdraw(ask.RequestId), TaskScheduler.Default);
-        ToolAsked?.Invoke(ask);
-        return done.Task;
+        lock (gate)
+        {
+            if (!Alive || !Busy || asks is null) return Task.FromResult(false);
+            var ask = new ToolAsk(Guid.NewGuid().ToString("N"), tool, input, "");
+            var done = asks.Add(ask.RequestId);
+            if (!done.IsCompleted) ToolAsked?.Invoke(ask);
+            return done;
+        }
     }
 
     public void Answer(ToolAsk ask, bool allow)
     {
-        if (asks.TryRemove(ask.RequestId, out var done)) done.TrySetResult(allow);
-    }
-
-    private void Withdraw(string id)
-    {
-        if (!asks.TryRemove(id, out var done)) return;
-        done.TrySetResult(false);
-        ToolAskWithdrawn?.Invoke(id);
-    }
-
-    private void WithdrawAll()
-    {
-        foreach (string id in asks.Keys) Withdraw(id);
+        lock (gate) asks?.Answer(ask.RequestId, allow);
     }
 
     private readonly string files; // "files/<thread id>", relative to the working folder
     private readonly string conversation; // the relay's name for this chat, so Bloom's server knows where to ask
-    private string? pc; // this run has Bloom's tools: the line telling them
 
     public CodexSession(string model, string effort, string files, string conversation)
     {
@@ -139,26 +131,74 @@ internal sealed class CodexSession : IChatSession
 
     public bool Start(string? resume, out string? error)
     {
-        error = null;
-        exe = FindCli(Settings.Current.CodexPath);
-        if (exe is null)
-        {
-            error = AiErrors.CodexMissing;
-            return false;
-        }
-        cwd = Path.GetDirectoryName(Paths.InLocal(@"ai\.keep"))!;
-        SessionId = resume;
-        Alive = true;
-        return true;
+        var result = StartAsync(resume, CancellationToken.None).GetAwaiter().GetResult();
+        error = result.Error;
+        return result.Success;
     }
 
-    public bool Send(string text, IReadOnlyList<string> images)
+    public Task<SessionStart> StartAsync(string? resume, CancellationToken cancellation)
     {
+        string? custom = Settings.Current.CodexPath;
+        string directory = Path.Combine(Paths.Local, "ai");
+        return Task.Run(() =>
+        {
+            cancellation.ThrowIfCancellationRequested();
+            string? cli = FindCli(custom);
+            if (cli is null) return new SessionStart(false, AiErrors.CodexMissing);
+            Directory.CreateDirectory(directory);
+            lock (gate)
+            {
+                if (disposed || cancellation.IsCancellationRequested) return new SessionStart(false, AiErrors.Stopped);
+                exe = cli;
+                cwd = directory;
+                SessionId = resume;
+                Alive = true;
+            }
+            return new SessionStart(true);
+        }, cancellation);
+    }
+
+    private sealed record TurnPlan(string Exe, string Cwd, string? Slug, string Reasoning, string Instructions,
+        (string command, string pipe, string hint)? Tools, (string command, string pipe)? Relay,
+        Func<List<McpServerDef>>? ReadMcp, string? Resume, string[] Images, long Version, PendingToolAsks Pending);
+
+    public bool Send(string text, IReadOnlyList<string> images) => SendAsync(text, images, CancellationToken.None).GetAwaiter().GetResult();
+
+    public Task<bool> SendAsync(string text, IReadOnlyList<string> images, CancellationToken cancellation)
+    {
+        var tools = PcTools?.Invoke();
+        var reader = PrepareMcp?.Invoke();
+        var relay = reader is null ? null : Relay?.Invoke();
+        string instructions = Instructions(tools?.hint, Settings.Current.AiTitles);
+        string? slug = Slug;
+        string reasoning = Reasoning;
+        TurnPlan plan;
         lock (gate)
         {
-            if (!Alive || Busy || exe is null) return false;
+            if (!Alive || disposed || Busy || exe is null || cancellation.IsCancellationRequested) return Task.FromResult(false);
+            Busy = true;
+            stopped = false;
+            LastUsed = DateTime.UtcNow;
+            var pending = new PendingToolAsks(id => ToolAskWithdrawn?.Invoke(id));
+            asks = pending;
+            plan = new(exe, cwd, slug, reasoning, instructions, tools, relay, reader, SessionId, images.ToArray(), ++turn, pending);
+        }
+        return Task.Run(() => SendPrepared(text, plan, cancellation), cancellation);
+    }
+
+    private bool SendPrepared(string text, TurnPlan plan, CancellationToken cancellation)
+    {
+        string instructionFile = Path.Combine(plan.Cwd, $"chatgpt-{Guid.NewGuid():N}.md");
+        bool published = false;
+        bool handedOff = false;
+        Process? launched = null;
+        QueuedSessionInput? launchedInput = null;
+        try
+        {
+            cancellation.ThrowIfCancellationRequested();
+            File.WriteAllText(instructionFile, plan.Instructions);
             var utf8 = new UTF8Encoding(false);
-            var psi = new ProcessStartInfo(exe)
+            var psi = new ProcessStartInfo(plan.Exe)
             {
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -168,21 +208,19 @@ internal sealed class CodexSession : IChatSession
                 StandardOutputEncoding = utf8,
                 StandardErrorEncoding = utf8,
                 StandardInputEncoding = utf8,
-                WorkingDirectory = cwd,
+                WorkingDirectory = plan.Cwd,
             };
-            var tools = PcTools?.Invoke(); // before the instructions, which mention the tools
-            pc = tools?.hint;
-            var args = new List<string> { "exec", "--json", "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "read-only", "--cd", cwd, "--color", "never" };
-            if (Slug is { Length: > 0 } model)
+            var args = new List<string> { "exec", "--json", "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "read-only", "--cd", plan.Cwd, "--color", "never" };
+            if (plan.Slug is { Length: > 0 } model)
             {
                 args.Add("--model");
                 args.Add(model);
             }
             args.Add("-c");
-            args.Add($"model_reasoning_effort=\"{Reasoning}\"");
+            args.Add($"model_reasoning_effort=\"{plan.Reasoning}\"");
             foreach (string c in new[]
             {
-                $"model_instructions_file='{Instructions()}'", // a TOML literal string: the backslashes stay
+                $"model_instructions_file={Toml(instructionFile)}",
                 "web_search=\"live\"",
                 "include_environment_context=false",
                 "include_permissions_instructions=false",
@@ -191,7 +229,7 @@ internal sealed class CodexSession : IChatSession
                 args.Add("-c");
                 args.Add(c);
             }
-            if (tools is { } t)
+            if (plan.Tools is { } t)
                 foreach (string c in new[]
                 {
                     "mcp_servers.bloom.command=" + Toml(t.command),
@@ -206,7 +244,7 @@ internal sealed class CodexSession : IChatSession
                 }
             // the other servers switched on: each started through Bloom's proxy, which asks in the chat before a call
             // (web-address servers can't be put behind it, so ChatGPT goes without them)
-            if (ExtraMcp?.Invoke().Where(d => d.Stdio && d.Name != "bloom").ToList() is { Count: > 0 } extra && Relay?.Invoke() is { } relay)
+            if (plan.ReadMcp?.Invoke().Where(d => d.Stdio && d.Name != "bloom").ToList() is { Count: > 0 } extra && plan.Relay is { } relay)
                 foreach (var d in extra)
                 {
                     string key = "mcp_servers." + TomlKey(d.Name);
@@ -223,32 +261,29 @@ internal sealed class CodexSession : IChatSession
                         args.Add(c);
                     }
                 }
-            if (SessionId is { } id)
+            if (plan.Resume is { } id)
             {
                 args.Add("resume");
                 args.Add(id);
             }
-            foreach (string image in images)
+            foreach (string image in plan.Images)
                 if (File.Exists(image)) args.Add("--image=" + image); // one value each: "-" stays the prompt
             args.Add("-"); // the prompt comes on stdin
             foreach (string a in args) psi.ArgumentList.Add(a);
             Cli.CleanEnvironment(psi); // the ChatGPT login only
             AiAccounts.UseHome(psi, "chatgpt", AccountHome);
             _ = CodexAuth.Unsaved(AccountHome); // tokens the light way refreshed go in first (they were the folder's before it was picked)
+            cancellation.ThrowIfCancellationRequested();
             Process p;
             try
             {
-                p = Process.Start(psi)!;
+                p = launched = Process.Start(psi)!;
             }
             catch (Exception e)
             {
                 Log.Error("codex start", e);
                 return false;
             }
-            proc = p;
-            stopped = false;
-            Busy = true;
-            LastUsed = DateTime.UtcNow;
             var stderr = new StringBuilder();
             p.ErrorDataReceived += (_, e) =>
             {
@@ -259,22 +294,53 @@ internal sealed class CodexSession : IChatSession
                 }
             };
             p.BeginErrorReadLine();
-            new Thread(() => ReadLoop(p, stderr)) { IsBackground = true, Name = "codex-out" }.Start();
-            try
-            {
-                p.StandardInput.Write(text);
-                p.StandardInput.Close();
-            }
-            catch (Exception e)
+            var input = launchedInput = new QueuedSessionInput(p.StandardInput, lines: false, e =>
             {
                 Log.Error("codex stdin", e);
+                try { p.Kill(true); }
+                catch { /* the reader reports a process that already ended */ }
+            });
+            lock (gate)
+            {
+                published = !disposed && Alive && turn == plan.Version && !cancellation.IsCancellationRequested;
+                if (published)
+                {
+                    proc = p;
+                    stdin = input;
+                }
             }
-            Log.Write($"codex: started pid {p.Id} model {Slug ?? "-"} effort {Reasoning} resume {SessionId ?? "-"}");
+            if (!published)
+            {
+                return false;
+            }
+            int pid = p.Id;
+            new Thread(() => ReadLoop(p, stderr, plan.Pending, input, instructionFile)) { IsBackground = true, Name = "codex-out" }.Start();
+            handedOff = true;
+            input.Enqueue(_ => text, end: true);
+            Log.Write($"codex: started pid {pid} model {plan.Slug ?? "-"} effort {plan.Reasoning} resume {plan.Resume ?? "-"}");
             return true;
+        }
+        finally
+        {
+            if (!handedOff)
+            {
+                plan.Pending.Dispose();
+                lock (gate)
+                {
+                    if (turn == plan.Version) Busy = false;
+                    if (ReferenceEquals(proc, launched)) proc = null;
+                    if (ReferenceEquals(stdin, launchedInput)) stdin = null;
+                }
+                launchedInput?.Dispose();
+                try { launched?.Kill(true); }
+                catch { /* startup failed or was cancelled */ }
+                launched?.Dispose();
+                TryDeleteInstructions(instructionFile);
+            }
         }
     }
 
-    private void ReadLoop(Process p, StringBuilder stderr)
+    private void ReadLoop(Process p, StringBuilder stderr, PendingToolAsks pending, QueuedSessionInput input, string instructionFile)
     {
         bool ended = false;
         string? error = null;
@@ -286,7 +352,10 @@ internal sealed class CodexSession : IChatSession
                 if (line.Length == 0 || line[0] != '{') continue;
                 try
                 {
-                    Handle(line, ref ended, ref error);
+                    lock (gate)
+                    {
+                        if (ReferenceEquals(asks, pending)) Handle(line, pending, ref ended, ref error);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -302,16 +371,18 @@ internal sealed class CodexSession : IChatSession
         lock (gate)
         {
             if (ReferenceEquals(proc, p)) proc = null;
-        }
-        WithdrawAll(); // the run is over: nothing it asked can still be answered
-        if (!ended)
-        {
-            Busy = false;
-            string tail;
-            lock (stderr) tail = stderr.ToString().Trim();
-            TurnEnded?.Invoke(false, stopped ? AiErrors.Stopped : error is { Length: > 0 } ? error : tail.Length > 0 ? Trim(tail) : AiErrors.CodexNoAnswer);
+            input.Dispose();
+            pending.Dispose(); // only this run's requests; a new turn may already be running
+            if (!ended && ReferenceEquals(asks, pending))
+            {
+                Busy = false;
+                string tail;
+                lock (stderr) tail = stderr.ToString().Trim();
+                TurnEnded?.Invoke(false, stopped ? AiErrors.Stopped : error is { Length: > 0 } ? error : tail.Length > 0 ? Trim(tail) : AiErrors.CodexNoAnswer);
+            }
         }
         p.Dispose();
+        TryDeleteInstructions(instructionFile);
     }
 
     private static string Trim(string s) => s.Length > 600 ? s[^600..] : s;
@@ -324,24 +395,21 @@ internal sealed class CodexSession : IChatSession
 
     /// The base instructions Codex reads instead of its own coding-agent ones; written before every
     /// turn so the local time in them stays current.
-    private string Instructions()
+    private static string Instructions(string? pc, bool titles)
     {
-        string file = Path.Combine(cwd, $"chatgpt-{files.Replace('/', '-')}.md");
-        try
-        {
-            File.WriteAllText(file, ClaudeSession.SystemPrompt(null,
+        return ClaudeSession.SystemPrompt(null,
                 "You are ChatGPT, answering in a chat inside Bloom, a Windows launcher the user opens with the Win key. "
                 + "This is a conversation, not a coding task: do not run commands and do not read or change files"
                 + (pc is not null ? " (the bloom tool is the way to act on the PC). " + pc : ". ")
                 + "Files the user attached come in the message: text files inside <attachment name=\"…\"> blocks, pictures as images. "
                 + "When the user asks for a file, put its whole content in a fenced code block whose info string is file:<name> "
-                + "(for example ```file:summary.md), one block per file; Bloom saves each as a file the user can open or save. ", pc is not null, Settings.Current.AiTitles));
-        }
-        catch (Exception e)
-        {
-            Log.Error("codex instructions", e);
-        }
-        return file;
+                + "(for example ```file:summary.md), one block per file; Bloom saves each as a file the user can open or save. ", pc is not null, titles);
+    }
+
+    private static void TryDeleteInstructions(string file)
+    {
+        try { File.Delete(file); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Log.Error("codex instructions cleanup", e); }
     }
 
     /// Web-search citations arrive as private-use markers (U+E200 cite U+E202 turn0search0 U+E201)
@@ -354,7 +422,7 @@ internal sealed class CodexSession : IChatSession
 
     private static string Str(JsonElement e, string k) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
 
-    private void Handle(string line, ref bool ended, ref string? error)
+    private void Handle(string line, PendingToolAsks pending, ref bool ended, ref string? error)
     {
         using var doc = JsonDocument.Parse(line);
         var r = doc.RootElement;
@@ -389,7 +457,7 @@ internal sealed class CodexSession : IChatSession
             case "turn.completed":
                 ended = true;
                 Busy = false;
-                WithdrawAll();
+                pending.Dispose();
                 if (r.TryGetProperty("usage", out var u))
                     Log.Write($"codex turn: in {Num(u, "input_tokens")} · cached {Num(u, "cached_input_tokens")} · out {Num(u, "output_tokens")}");
                 LastUsed = DateTime.UtcNow;
@@ -398,7 +466,7 @@ internal sealed class CodexSession : IChatSession
             case "turn.failed":
                 ended = true;
                 Busy = false;
-                WithdrawAll();
+                pending.Dispose();
                 string msg = "";
                 if (r.TryGetProperty("error", out var err)) msg = Str(err, "message") is { Length: > 0 } m ? m : err.ToString();
                 TurnEnded?.Invoke(false, msg.Length > 0 ? msg : error ?? Tr("Codex 오류", "Codex error"));
@@ -413,23 +481,21 @@ internal sealed class CodexSession : IChatSession
     {
         lock (gate)
         {
-            WithdrawAll();
+            asks?.Dispose();
+            stdin?.Dispose();
             if (proc is not { HasExited: false } p) return;
             stopped = true;
-            try
+            _ = Task.Run(() =>
             {
-                p.Kill(true);
-            }
-            catch
-            {
-                /* already ending */
-            }
+                try { p.Kill(true); }
+                catch { /* already ending */ }
+            });
         }
     }
 
     public void Dispose()
     {
-        Alive = false;
+        lock (gate) { disposed = true; Alive = false; }
         Interrupt();
         Exited?.Invoke("");
     }

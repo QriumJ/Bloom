@@ -32,8 +32,8 @@ Working…	作業中…
 New chat	新しいチャット
 Session ended · answer stopped	セッション終了 · 回答停止
 Thinking…	考え中…
-Could not send the message. Send it again.	メッセージを送信できませんでした。再送してください。
 \n\n<attachment name="{0}">(This format can't be opened here — tell the user its contents didn't come through)</attachment>	\n\n<attachment name="{0}">(この形式はここでは開けません — 内容が届かなかったとユーザーに伝えてください)</attachment>
+Could not send the message. Send it again.	メッセージを送信できませんでした。再送してください。
 **{0}** — file saved	**{0}** — ファイルの保存完了
 Searching the web…	ウェブを検索中…
 Reading a page…	ページを読み込み中…
@@ -183,7 +183,7 @@ Current task	現在の作業
 Codex · Done	Codex · 完了
 Elapsed: 3 min	所要時間: 3 分
 Claude Code · Needs approval	Claude Code · 承認待ち
-Approval pending · click to close	承認待ち · クリックで閉じる
+Approval pending · click to go to session	承認待ち · クリックでセッションへ移動
 Claude · Limit near	Claude · 上限が近い
 18% of the weekly limit left	週間上限の残り 18%
 Resets in 2 d	2日後にリセット
@@ -194,23 +194,33 @@ Working	作業中
 Done	完了
 Limit reset	上限リセット
 {0} limit reset	{0} の上限リセット完了
-Resets in {0}	{0}後にリセット
 Limit used up	上限に到達
 {0} limit used up	{0} の上限到達
 Limit near	上限が近い
 {0} limit · {1}% left	{0}の上限 · 残り {1}%
+Run-out expected	使い切り予測
+{0} limit · out in {1} at this pace	{0}の上限 · このペースだと{1}後に使い切り
+Resets in {0}	{0}後にリセット
 Bloom · Update	Bloom · アップデート
 Version {0} downloaded	バージョン {0} のダウンロード完了
 Applies at next start	次回起動時に適用
 Update settings	更新設定
 Bloom AI · Approval pending	Bloom AI · 承認待ち
 Choose Allow or Decline	許可または拒否を選んでください
+Claude Code · Approval request	Claude Code · 承認リクエスト
+Answer in terminal	ターミナルで答える
+Approve on the card	通知カードで承認
+Allow or decline Claude Code's requests on the card · On adds Bloom's hook to Claude Code's settings.json, off takes it out	Claude Code の承認リクエストをカードで許可 · 拒否 · オンにすると Claude Code の設定（settings.json）に Bloom のフックを追加し、オフにすると削除します
+Bloom · Notifications	Bloom · 通知
+Couldn't change Claude Code's settings	Claude Code の設定を変更できませんでした
 Open AI chat	AI チャットを開く
 {0} s	{0}秒
 {0} h {1} min	{0}時間{1}分
 {0} h	{0}時間
 {0} d {1} h	{0}日{1}時間
 {0} d	{0}日
+Problem report · Bloom {0}	問題の報告 · Bloom {0}
+Describe what happened, then paste the copied report below (Ctrl+V).	何が起きたかを書き、コピーした診断情報を下に貼り付けてください (Ctrl+V)。
 Bloom — press Win to open	Bloom — Win キーで開く
 Open\tWin	開く\tWin
 Settings	設定
@@ -360,9 +370,6 @@ Empty	空
 Folder · {0}	フォルダー · {0}
 Open folder	フォルダーを開く
 Change icon…	アイコンを変更…
-Pick an icon picture…	アイコンの画像を選ぶ…
-Move left	左へ移動
-Move right	右へ移動
 Ungroup (the items go back to the favorites row)	グループを解除 (中の項目はお気に入りの列へ)
 Delete folder (its items leave the favorites too)	フォルダーを削除 (中の項目もお気に入りから外れます)
 Removes ‘{0}’ and its {1} items from favorites. Apps stay installed.	「{0}」とその {1} 件の項目をお気に入りから削除します。アプリは残ります。
@@ -392,6 +399,7 @@ Folder name — e.g. Video editing, Design	フォルダー名 — 例: 動画編
 Made the folder ‘{0}’	フォルダー「{0}」作成済み
 A folder to group apps by task	作業ごとにアプリをまとめるフォルダー
 Command	コマンド
+Put in the search line	検索欄に入れる
 AI account name	AI アカウントの表示名
 Shown on the card instead of the e-mail — empty: the e-mail ({0})	カードにメールの代わりに表示する文言 — 空欄ならメール ({0})
 Shown on the card	カードに表示する文言
@@ -434,7 +442,6 @@ Setting	設定
 Tool	ツール
 Folder	フォルダー
 File	ファイル
-Copy name	名前をコピー
 See this folder's size (Space Cleaner)	このフォルダーのサイズを見る (Space Cleaner)
 Add to custom commands…	カスタムコマンドに追加…
 Just now	たった今
@@ -577,6 +584,8 @@ No results · search elsewhere	結果なし · ほかの場所で検索
 Copy result	結果をコピー
 Copy as shown	表示どおりにコピー
 Copy with the expression	式と一緒にコピー
+Bloom settings	Bloom の設定
+Settings › {0}	設定 › {0}
 System	システム
 Nothing matches	該当項目なし
 Set volume to {0}%	音量を {0}% にする
@@ -752,6 +761,8 @@ To the Recycle Bin: {0}{1}	ごみ箱へ: {0}{1}
 Read the clipboard	クリップボードを読む
 Copy to the clipboard: {0}	クリップボードにコピー: {0}
 saved captures	保存したキャプチャ
+glass	ガラス効果
+shortcut	ショートカットキー
 Downloads	ダウンロード
 color picker	color picker
 left half	left half
@@ -910,6 +921,34 @@ Grape	ぶどう
 Sand dune	砂丘
 Charcoal and ash	炭と灰
 Aurora	オーロラ
+Maths · units · currency	計算 · 単位 · 為替
+Calculates a sum as you type	式を入力するとすぐに計算します
+Converts between units	単位を換算します
+Converts at the latest exchange rate	最新の為替レートで換算します
+Starts a timer	タイマーを開始します
+Shows a reminder after that time	指定した時間が経つとリマインダーを表示します
+Shows a reminder at that time	指定した時刻にリマインダーを表示します
+Dates · world clock	日付 · 世界時計
+Shows the date that far ahead	指定した日数後の日付を表示します
+Counts the days left	残りの日数を数えます
+Shows another city's clock	ほかの都市の時刻を表示します
+Converts that city's time to local time	その都市の時刻をこの PC の時刻に換算します
+Fits the window in front to the left half	手前のウィンドウを画面の左半分に合わせます
+Maximizes the window in front	手前のウィンドウを最大化します
+Moves the window in front to the next screen	手前のウィンドウを次の画面へ移動します
+Paths	パス
+Shows the folder and what is in it	フォルダーとその中身を表示します
+Reads paths with environment variables too	環境変数を含むパスも読み取ります
+Site shortcuts	サイトショートカット
+Searches YouTube	YouTube で検索します
+Searches the map	地図で検索します
+Finds an emoji to paste	絵文字を探して貼り付けます
+Finds symbols to paste too	記号も探して貼り付けます
+Finds the app in winget to install	winget でアプリを探してインストールします
+Sets the volume	音量を設定します
+Switches dark mode	ダークモードを切り替えます
+Saves it as a note	すぐにメモとして保存します
+Press Tab to ask AI what you typed	Tab を押すと入力した内容を AI に聞きます
 AI chat	AI チャット
 Tab, the chat window and ‘Ask AI’ at the end of a search	Tab、チャット ウィンドウ、検索の最後の「AI に聞く」
 Pick a screen area to ask AI, translate or copy text · its 5 shortcuts	画面の範囲を選んで AI に聞く・翻訳・テキストのコピー · 5 つのショートカット
@@ -917,7 +956,6 @@ AI actions	AI アクション
 Summarize, translate or polish selected text, and its shortcut	選択したテキストの要約・翻訳・推敲と、そのショートカット
 Calculator, units and currency	電卓・単位・為替
 Typing a sum answers at once (12*3, 5km to mi, 100 usd)	式を入力するとすぐに答えます (12*3, 5km to mi, 100 usd)
-Dates · world clock	日付 · 世界時計
 Answers ‘in 100 days’, ‘days until christmas’, ‘new york time’, ‘tokyo 3pm’ at once	「in 100 days」「days until christmas」「new york time」「tokyo 3pm」にすぐ答えます
 ‘10 min timer’, ‘3pm meeting’ · the home's timers block · ones already set still ring	「10 min timer」「3pm meeting」 · ホームのタイマー ブロック · セット済みのものはそのまま鳴ります
 Calendar	カレンダー
@@ -926,7 +964,6 @@ Pick screen colours, look up colour codes, gradient ideas, and its shortcut	画�
 Find ‘heart’ or ‘arrow’ and paste it, and its shortcut	「heart」「arrow」で探して貼り付け、そのショートカット
 Volume & system	音量とシステム
 ‘volume 30’, dark mode, Bluetooth and other switches	「volume 30」、ダークモード、Bluetooth などのスイッチ
-Site shortcuts	サイトショートカット
 Search a site by keyword, like ‘yt cats’	「yt cats」のようにキーワードでサイトを検索
 Your own scripts, snippets and chains	自作のスクリプト、スニペット、チェーン
 Notes & tool windows	メモとツール ウィンドウ
@@ -1063,7 +1100,6 @@ See the first-run setup and the guide again	最初の設定とガイドをもう
 Settings, favorites, app names and browser shortcuts in one file	設定、お気に入り、アプリ名、ブラウザーのショートカットを 1 つのファイルに
 Import settings	設定をインポート
 From an exported settings file	エクスポートした設定ファイルから
-Bloom settings	Bloom の設定
 Refresh the app list	アプリの一覧を更新
 Lock screen	画面をロック
 Lock Windows	Windows をロック
@@ -1244,7 +1280,10 @@ Rename	名前を変更
 {0} ago	{0}前
 Last fetched	最終取得
  left	 残り
+ · out ~{0:M/d HH:mm}	 · 使い切り予測 {0:M/d HH:mm}
  · resets {0:M/d HH:mm}	 · {0:M/d HH:mm} にリセット
+out now	まもなく使い切り
+out in {0}	{0}後に使い切り
 now	まもなく
 Su	日
 Mo	月
@@ -1272,6 +1311,7 @@ MMMM yyyy	yyyy年M月
 Last month (PgUp)	前の月 (PgUp)
 To today (Home)	今日へ (Home)
 Next month (PgDn)	次の月 (PgDn)
+Click to go to the session window	クリックするとセッションのウィンドウへ移動します
 Search in your browser · site shortcuts (e.g. yt cats)	ブラウザーで検索 · サイトのショートカット (例: yt cats)
 Find files on this PC by name (Everything)	この PC のファイルを名前で探す (Everything)
 Paste text, pictures and files you copied before	以前コピーしたテキスト、画像、ファイルを貼り付け
@@ -1310,9 +1350,9 @@ Applies immediately	すぐに適用
 Light	ライト
 Dark	ダーク
 Theme	テーマ
-Smooth motion	滑らかな動き
-Lower memory use	メモリ節約
-Smooth motion uses the GPU. Lower memory use saves about 30 MB, but may stutter on a slow CPU. Applies at next start.	滑らかな動きは GPU を使います。メモリ節約は約 30 MB 少なくなりますが、低速な CPU では動きが途切れる場合があります。次回起動時に適用します。
+CPU (default)	CPU (標準)
+GPU (experimental)	GPU (試験的)
+Bloom draws with the CPU by default. GPU drawing is experimental: some PCs may stutter or freeze for seconds. Applies at next start.	標準では CPU で描画します。GPU 描画は試験的な機能で、一部の PC では画面がかくついたり数秒止まったりすることがあります。次回起動時に適用します。
 Programs Bloom works with	Bloom と連携するプログラム
 Bloom works without them; each one turns its feature on. Install them from their official pages.	なくても Bloom は動きます。あるとそれぞれの機能がオンになります。公式ページからインストールしてください。
 Find any file on the PC by name	PC 内のあらゆるファイルを名前ですぐに探す
@@ -1411,16 +1451,14 @@ Result · Enter copies	結果 · Enter でコピー
 Refresh	更新
 Remove from favorites	お気に入りから外す
 Add to favorites	お気に入りに追加
-Draw an icon with AI…	AI でアイコンを描く…
-Back to the original icon	元のアイコンに戻す
 Add to a favorites folder…	お気に入りフォルダーに追加…
 Remove from home ({0})	ホームから外す ({0})
 Pin to home ({0})	ホームに固定 ({0})
 Removed ‘{0}’ from home	「{0}」をホームから削除済み
 Pinned ‘{0}’ to home	「{0}」をホームに固定済み
 Remove from recent	最近使ったものから削除
-Customize the home…	ホームをカスタマイズ…
 Draw with AI… (describe the picture)	AI で描く… (絵を言葉で説明)
+Back to the original icon	元のアイコンに戻す
 Picture icon for ‘{0}’	「{0}」の絵のアイコン
 Editing home · ▲ ▼ ✕ on blocks · ‹ › order and ✎ names the AI usage cards · Esc or ‘Done’ to finish	ホームを編集中 · ブロックは ▲ ▼ ✕ · AI 使用量カードは ‹ › で順序、✎ で名前 · Esc か「完了」で終了
 Creating icon for ‘{0}’… (1 use)	「{0}」のアイコン作成中… (利用 1 回)
@@ -1436,11 +1474,11 @@ Add to a favorites folder · {0}	お気に入りフォルダーに追加 · {0}
 Removed from favorites	お気に入りから削除済み
 Added to favorites	お気に入りに追加済み
 Open in the chat window	チャット ウィンドウで開く
+Model · thinking level	モデル · 思考レベル
 Bloom · Quick AI	Bloom · クイック AI
 Answer ready	回答完了
 No response. Send again.	応答なし。再送してください。
 Thinking · {0}	思考 · {0}
-Model · thinking level	モデル · 思考レベル
 Haiku has no thinking level setting.	Haiku には思考レベルの設定がありません。
 Screen · Bloom Lens	画面 · Bloom Lens
 {0} attached	{0} 件を添付
@@ -1460,6 +1498,7 @@ Done (Esc · Ctrl+E)	完了 (Esc · Ctrl+E)
 Order or hide the home blocks (Ctrl+E)	ホームのブロックの並べ替えや非表示 (Ctrl+E)
 Type to search	入力して検索
 Search, or ask AI	検索、または AI に聞く
+What you can type	入力できる表現
 Files	ファイル
 File name · Everything syntax (ext:pdf, dm:today)	ファイル名 · Everything の構文 (ext:pdf, dm:today)
 File search · Everything	ファイル検索 · Everything
@@ -1505,6 +1544,7 @@ Pick an action · or type your own and Enter	操作を選ぶ · または自分�
 AI actions · selected text, {0} chars	AI アクション · 選択テキスト {0} 文字
 AI actions · copied text, {0} chars	AI アクション · コピーテキスト {0} 文字
 File kind · Ctrl+Tab steps	ファイルの種類 · Ctrl+Tab で切り替え
+Pick an icon picture…	アイコンの画像を選ぶ…
 From a file… (image, icon or program)	ファイルから… (画像、アイコン、プログラム)
 Default (the icons inside)	既定 (中のアイコン)
 Icon for ‘{0}’	「{0}」のアイコン
@@ -1770,7 +1810,7 @@ Notification types	通知の種類
 What a turn works on once it runs past 4 s	ターンが 4 秒を超えたときに取り組んでいる内容
 When it ends, with how long it took (past 10 s)	終わったとき、かかった時間と一緒に (10 秒以上)
 Shown when approval or an answer is needed · stays until work resumes	承認や回答が必要なときに表示 · 作業再開まで維持
-At 20% left of the 5-hour or weekly limit, and when used up	5 時間または週間の上限の残りが 20% のときと、使い切ったとき
+5-hour · weekly limit at 20% left, when used up, or when a run-out is expected	5 時間 · 週間の上限の残りが 20% のとき、使い切ったとき、リセット前に使い切りそうなとき
 When a low limit is full again after its reset	少なくなった上限がリセット後にまた満タンになったとき
 Performance	パフォーマンス
 Motion and transparency	動きと透明効果
@@ -1783,9 +1823,9 @@ Lower uses less GPU and CPU	低いほど GPU と CPU の使用が少なくなり
 60	60
 Glass effect	ガラス効果
 Off: a solid background, lighter on the GPU	オフ: 単色の背景で GPU が軽くなります
-Restart Bloom to apply screen motion settings.	画面の動きの設定を適用するには Bloom を再起動してください。
-Smooth screen motion	滑らかな画面の動き
-Uses GPU for smooth motion. Turning it off saves about 30 MB; busy screens use more CPU.	GPU で動きを滑らかに表示します。オフでは約 30 MB 節約できますが、動きの多い画面では CPU 使用量が増えます。
+Restart Bloom to apply GPU drawing.	GPU 描画を適用するには Bloom を再起動してください。
+GPU drawing (experimental)	GPU 描画 (試験的)
+Draws the screen with the GPU. Some PCs may stutter or freeze for seconds. Off: the CPU draws, with about 30 MB less memory.	GPU で画面を描画します。一部の PC では画面がかくついたり数秒止まったりすることがあります。オフにすると CPU で描画し、メモリが約 30 MB 少なくなります。
 Changes when Bloom restarts	Bloom の再起動後に変わります
 Memory	メモリ
 Memory Bloom uses now	Bloom が今使っているメモリ
@@ -1802,6 +1842,10 @@ Version	バージョン
 Windows launcher	Windows ランチャー
 What's new in this version	このバージョンの新機能
 Also shown once at the first start after an update · Enter shows it	アップデート後の最初の起動時にも一度表示されます · Enter で表示
+Problem report	問題の報告
+Copies the version, Windows and recent log (user name and e-mail addresses hidden) and opens a GitHub issue · Bloom sends nothing itself	バージョン · Windows · 最近のログをコピーし、GitHub の Issue 作成ページを開きます (ユーザー名とメールアドレスは伏せます) · Bloom からは何も送信しません
+Report copied	診断情報をコピー済み
+Paste it into the page that opened (Ctrl+V)	開いたページに貼り付けてください (Ctrl+V)
 Never release · 150–300 MB per chat	解放しない · チャットごとに 150～300 MB
 Frees a chat's memory after {0} unused · history stays · the next first answer starts a few seconds later · 0 = never	{0} 使っていないチャットのメモリを解放 · 履歴は保持 · 次の最初の回答は数秒遅れる · 0 で解放しない
 Automatic updates require a setup installation · open releases	自動更新はセットアップでインストールした Bloom で利用可能 · リリースを開く
@@ -1817,9 +1861,9 @@ Checks once after launch · downloads new versions for the next start	起動後�
 Another app already uses it — press another combination	別のアプリがすでに使っています — 別の組み合わせを押してください
 Off — click to set a shortcut	オフ — クリックでショートカットを設定
 Bloom already uses it	Bloom がすでに使っています
+No settings found	設定の検索結果なし
 Basics	基本
 Launcher	ランチャー
-No settings found	設定の検索結果なし
 Find a setting	設定を探す
 Section	セクション
 Change	変更

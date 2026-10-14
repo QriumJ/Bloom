@@ -41,8 +41,9 @@ internal sealed class Notes
 
     public static void Load()
     {
+        saver?.Dispose();
         Current = Json.Load<Notes>(Paths.In("notes.json"));
-        saver = new Saver(() => Json.Save(Paths.In("notes.json"), Current));
+        saver = Saver.ForJson(Paths.In("notes.json"), () => Current);
     }
 
     public static void Flush() => saver?.Flush();

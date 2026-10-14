@@ -25,7 +25,7 @@ internal sealed partial class Engine
     }
 
     /// The root search: the layouts whose name matches, scored like commands.
-    private IEnumerable<ResultItem> RootLayouts(Query q)
+    internal IEnumerable<ResultItem> RootLayouts(Query q)
     {
         IntPtr? target = null;
         foreach (var l in WindowLayout.All)

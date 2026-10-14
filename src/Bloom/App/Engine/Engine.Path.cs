@@ -1,3 +1,4 @@
+using System;
 using Bloom.Search;
 
 namespace Bloom.App;
@@ -6,9 +7,20 @@ namespace Bloom.App;
 /// with the last part). Tab fills the selected folder into the line, to go one level down.
 internal sealed partial class Engine
 {
-    private Section? RootPath(string text)
+    private readonly PathLookup pathLookup;
+    public event Action<string>? PathReady { add => pathLookup.Updated += value; remove => pathLookup.Updated -= value; }
+    public void ClosePathLookup() => pathLookup.Dispose();
+
+    private Section RootPath(string full)
     {
-        if (PathInput.Read(text) is not { } p) return null;
+        // UNC is an open-as-typed action: never probe even an unavailable server.
+        if (PathInput.IsNetwork(full)) pathLookup.Clear();
+        var p = PathInput.IsNetwork(full) ? PathInput.ReadExpanded(full) : pathLookup.Read(full);
+        if (p is null)
+            return new Section(Tr("경로", "Path"))
+            {
+                Items = { new ResultItem { Id = "path:loading", Kind = ItemKind.Info, Title = Tr("불러오는 중…", "Loading…"), Subtitle = full, Icon = IconSpec.Of(G.Info) } },
+            };
         var s = new Section(Tr("경로", "Path"), PathInput.IsNetwork(p.Full) ? Tr("네트워크", "Network") : p.Children.Count > 0 ? Tr("Tab으로 들어가기", "Tab goes in") : null);
         if (p.Exists) s.Items.Add(OpenPathItem(p.Full, p.IsFolder));
         else if (PathInput.IsNetwork(p.Full)) s.Items.Add(OpenPathItem(p.Full, true));
@@ -26,7 +38,7 @@ internal sealed partial class Engine
         item.Subtitle = folder ? Tr("탐색기에서 열기", "Open in Explorer") : Tr("파일 열기", "Open the file");
         item.PrimaryLabel = folder ? Tr("폴더 열기", "Open folder") : Tr("열기", "Open");
         item.Score = int.MaxValue;
-        if (PathInput.IsNetwork(full)) item.Detail = null; // a server may not answer: no preview
+        if (PathInput.IsNetwork(full)) item.Detail = item.ReadDetail = null; // a server may not answer: no preview
         return item;
     }
 
