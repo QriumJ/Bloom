@@ -13,13 +13,13 @@
 <p align="center"><sub>WPF · .NET 10 · 无 WebView · 全部关闭时约 80 MB · 한국어 / English / 日本語 / 简体中文 · MIT</sub></p>
 
 - **搜索**：在搜索栏输入几个字母，即可使用应用、文件、计算、提醒、表情符号和网页搜索。
-- **AI**：无需 API 密钥。使用本机已登录的 Claude Code 或 Codex 提问、操作文件、记笔记、设计时器和日历日程。
+- **AI**：使用本机已登录的 Claude Code 或 Codex，或你自己的 API 密钥（OpenAI、Anthropic、Gemini、OpenRouter、DeepSeek、xAI、OpenCode Go）提问、操作文件、记笔记、设计时器和日历日程。
 - **功能**：不使用 WebView 的原生应用。关闭某项功能后，其菜单和快捷键随之移除，内存占用也会减少。
 
 ## 运行环境
 
 需要 Windows 10/11（64 位）。如果没有 .NET 10 桌面运行时，安装程序会自动安装。
-AI 功能需要已安装并登录的 Claude Code CLI 或 Codex CLI。全盘文件搜索需要 Everything。
+AI 功能需要已安装并登录的 Claude Code CLI 或 Codex CLI，或受支持服务的 API 密钥。全盘文件搜索需要 Everything。
 无论界面语言是什么，搜索词、时间表达和单位都需用韩语或英语输入。
 
 ## 下载
@@ -90,7 +90,7 @@ irm https://raw.githubusercontent.com/hyeon1035298/Bloom/main/install.ps1 | iex
 
 <img src="docs/media/zh/ai.webp" alt="在把报价单 PDF 移到“文档”之前，在聊天中询问 允许 · 始终允许 · 拒绝 的卡片，以及 Claude Code 和 Codex 的工作通知">
 
-无需 API 密钥。回答来自本机已安装并登录的 Claude Code CLI 或 Codex CLI。
+回答来自本机已安装并登录的 Claude Code CLI 或 Codex CLI，或你在 设置 › AI 账户 › API 密钥 中添加的服务。密钥由 Windows 加密，只保存在本机，每个密钥只发送给对应的服务。使用 API 模型时，文件、PowerShell 命令、Bloom 的电脑操作和其他 MCP 服务器都可作为工具使用；除非在 设置 › 电脑操作 · MCP › 权限 中更改，每次执行前都会先询问。
 
 - **快速 AI**：在搜索栏输入后按 **Tab**，就地打开 AI 聊天；Shift+Tab 开始新对话。可以选择模型和思考程度。
   - 按 Esc 回到主页，回答仍会继续，搜索栏会显示进度，按 Tab 返回。■ 停止（或 Ctrl+.）可停止回答。

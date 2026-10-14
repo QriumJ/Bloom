@@ -13,13 +13,13 @@
 <p align="center"><sub>WPF · .NET 10 · no WebView · about 80 MB with everything off · English / 한국어 / 日本語 / 简体中文 · MIT</sub></p>
 
 - **Search**: Find apps, files, calculations, reminders, emoji and web searches from a few letters in the search line.
-- **AI**: No API key: use Claude Code or Codex signed in on this PC for questions, file actions, notes, timers and calendar events.
+- **AI**: use Claude Code or Codex signed in on this PC, or your own API key (OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, xAI, OpenCode Go), for questions, file actions, notes, timers and calendar events.
 - **Features**: A native app with no WebView. Disabling a feature removes its menu entries and shortcuts and reduces memory use.
 
 ## Requirements
 
 Use Windows 10/11, 64-bit. Setup installs the .NET 10 Desktop Runtime if needed.
-AI features require an installed, signed-in Claude Code or Codex CLI. Everything enables full-PC file search.
+AI features need an installed, signed-in Claude Code or Codex CLI, or an API key from one of the supported providers. Everything enables full-PC file search.
 Search words, time expressions and units accept Korean or English in every interface language.
 
 ## Download
@@ -90,7 +90,7 @@ Search by part of a name. Calculations update as you type; timers accept time ex
 
 <img src="docs/media/en/ai.webp" alt="A chat asking Allow, Always or Decline before it moves a PDF into Documents, and Claude Code and Codex work notifications">
 
-No API key. Answers come from the Claude Code or Codex CLI you have installed and signed in to on this PC.
+Answers come from the Claude Code or Codex CLI you have installed and signed in to on this PC, or from a provider you add a key for in Settings › AI accounts › API keys. Keys are encrypted by Windows and stay on this PC; each goes only to its own provider. With an API model, files, PowerShell commands, Bloom's PC actions and your other MCP servers are offered as tools, and each asks first unless you change it in Settings › PC actions · MCP › Permissions.
 
 - **Quick AI**: type in the search line and press **Tab** to open AI chat there; Shift+Tab starts a new chat. Choose the model and thinking level.
   - Esc goes back home and the answer keeps going; the search line shows it and Tab takes you back. ■ Stop (or Ctrl+.) stops it.

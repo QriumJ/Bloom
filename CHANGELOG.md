@@ -12,6 +12,11 @@ Each release on GitHub shows its section from this file (the workflow looks for 
 - The Ctrl+K menu is shorter. The icon choices are one "Change icon…" line (AI drawing and the original icon are inside it); Move left/right, Customize the home and Copy name are gone (Ctrl+Shift+←/→, dragging and Ctrl+E still do those).
 - Fixed: a long Ctrl+K menu could run past the bottom of the launcher and get cut off. It now fits inside and scrolls.
 - Fixed: typing in the search line could freeze Bloom for a moment, sometimes for seconds, while it counted what was in the Recycle Bin for the "Empty recycle bin" row. The row no longer shows the count, and emptying runs in the background.
+- AI with your own API key: add a key for OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, xAI or OpenCode Go in Settings › AI accounts › API keys, then pick its models in AI chat, the launcher's quick chat, Lens and translation. Keys are encrypted by Windows, stay on this PC and go only to their own provider.
+- API models can use tools: reading and writing files, PowerShell commands, Bloom's PC actions and your other MCP servers. Writes, commands and anything outside the chat's folder ask first on a card that shows the whole command or content.
+- Settings › PC actions · MCP › Permissions: for each kind of action (reading outside the chat's folder, writing, editing, commands, PC actions, other MCP tools) choose Ask every time, Always allow or Off. Imported settings never change these.
+- OpenRouter and DeepSeek keys get a balance card on the home, and every API answer shows how many tokens it used.
+- File searches that use Everything's functions (anything with a colon, such as ext: or content:) now ask first in every chat, because some of them read inside files.
 - Captures (the capture shortcut, Capture in the Lens menu) are also saved in your Screenshots folder, where Windows' Snipping Tool saves them, as "Bloom <date> <time>.png". Bloom never deletes anything there.
 - Bloom draws with the CPU by default, and GPU drawing is marked experimental: on some PCs it made the screen stutter or freeze for seconds.
 - Approve on the card (Settings › Notifications, off by default): when Claude Code asks for permission, its card offers Allow, Decline and Answer in terminal. Turning it on adds Bloom's hook to Claude Code's settings.json; turning it off takes it out. While the session's window is in front, the terminal asks as before.
@@ -27,6 +32,11 @@ Each release on GitHub shows its section from this file (the workflow looks for 
 - Ctrl+K 메뉴를 줄였습니다. 아이콘 항목은 '아이콘 바꾸기…' 하나로 합쳤고(AI로 그리기와 원래 아이콘은 그 안에 있습니다), 앞으로 · 뒤로 옮기기, 홈 화면 꾸미기, 이름 복사는 뺐습니다(Ctrl+Shift+←/→, 끌어서 옮기기, Ctrl+E는 그대로입니다).
 - 수정: Ctrl+K 메뉴가 길면 런처 아래로 넘쳐 끝이 잘리던 문제를 고쳤습니다. 이제 런처 안에 맞춰지고 메뉴 안에서 스크롤됩니다.
 - 수정: 검색창에 입력할 때 '휴지통 비우기' 줄에 표시할 항목 수를 세느라 Bloom이 잠깐, 때로는 몇 초 동안 멈추던 문제를 고쳤습니다. 이제 이 줄에는 개수를 표시하지 않고, 휴지통 비우기는 백그라운드에서 처리합니다.
+- 내 API 키로 AI 사용: 설정 › AI 계정 › API 키에 OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, xAI, OpenCode Go 키를 넣으면 AI 채팅, 런처 빠른 채팅, 렌즈, 번역에서 해당 모델을 고를 수 있습니다. 키는 Windows가 암호화해 이 PC에만 저장하고, 해당 서비스로만 보냅니다.
+- API 모델도 도구를 씁니다. 파일 읽기·쓰기, PowerShell 명령, Bloom의 PC 작업, 다른 MCP 서버를 쓸 수 있고, 쓰기·명령·대화 폴더 밖의 작업은 명령이나 내용 전체를 보여주는 카드로 먼저 묻습니다.
+- 설정 › PC 작업 · MCP › 권한: 작업 종류(대화 폴더 밖 읽기, 쓰기, 고치기, 명령, PC 작업, 다른 MCP 도구)마다 매번 묻기 · 항상 허용 · 사용 안 함을 고릅니다. 설정을 가져와도 이 값은 바뀌지 않습니다.
+- OpenRouter·DeepSeek 키는 홈에 잔액 카드가 표시되고, API 답변마다 사용한 토큰 수가 표시됩니다.
+- Everything 기능을 쓰는 파일 검색(ext:, content:처럼 콜론이 들어간 검색)은 일부가 파일 내용을 읽기 때문에, 이제 모든 대화에서 먼저 묻습니다.
 - 캡처(캡처 단축키, 렌즈 메뉴의 캡처)는 Windows 캡처 도구와 같은 스크린샷 폴더에도 'Bloom 날짜 시각.png'로 저장합니다. 이 폴더의 파일은 Bloom이 지우지 않습니다.
 - 기본으로 CPU로 그리고, GPU로 그리기는 실험적 기능으로 표시합니다. 일부 PC에서 GPU로 그리면 화면이 끊기거나 몇 초 동안 멈췄습니다.
 - 알림 카드에서 승인(설정 › 알림, 기본은 꺼짐): Claude Code가 승인을 요청하면 카드에 허용 · 거절 · 터미널에서 답하기가 표시됩니다. 켜면 Claude Code 설정(settings.json)에 Bloom 훅을 추가하고, 끄면 뺍니다. 세션 창을 보고 있을 때는 지금처럼 터미널에서 묻습니다.

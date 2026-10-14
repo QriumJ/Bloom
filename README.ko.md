@@ -13,13 +13,13 @@
 <p align="center"><sub>WPF · .NET 10 · WebView 없음 · 모두 끈 상태 약 80 MB · 한국어 / English / 日本語 / 简体中文 · MIT</sub></p>
 
 - **검색**: 검색창에서 앱, 파일, 계산, 알림, 이모지, 웹 검색을 사용할 수 있습니다. 한/영 오타와 초성으로도 검색할 수 있습니다.
-- **AI**: API 키 없이 이 PC에서 로그인한 Claude Code 또는 Codex로 질문하고, 파일 정리, 메모, 타이머, 일정 작업을 실행할 수 있습니다.
+- **AI**: 이 PC에서 로그인한 Claude Code 또는 Codex, 또는 직접 넣은 API 키(OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, xAI, OpenCode Go)로 질문하고, 파일 정리, 메모, 타이머, 일정 작업을 실행할 수 있습니다.
 - **기능 선택**: WebView를 사용하지 않습니다. 기능을 끄면 해당 메뉴와 단축키가 해제되고 메모리 사용이 줄어듭니다.
 
 ## 실행 환경
 
 Windows 10/11 64비트에서 사용할 수 있습니다. .NET 10 Desktop Runtime이 없으면 설치 프로그램이 함께 설치합니다.
-AI 기능을 사용하려면 Claude Code 또는 Codex CLI를 설치하고 로그인해야 합니다. Everything을 설치하면 PC 전체에서 파일을 검색할 수 있습니다.
+AI 기능을 사용하려면 Claude Code 또는 Codex CLI를 설치하고 로그인하거나, 지원하는 서비스의 API 키가 있어야 합니다. Everything을 설치하면 PC 전체에서 파일을 검색할 수 있습니다.
 화면 언어와 관계없이 검색어, 시간, 단위는 한국어나 영어로 입력해야 합니다.
 
 ## 다운로드
@@ -89,7 +89,7 @@ irm https://raw.githubusercontent.com/hyeon1035298/Bloom/main/install.ps1 | iex
 
 <img src="docs/media/ko/ai.webp" alt="채팅에서 견적서 PDF를 문서 폴더로 옮기기 전에 허용 · 항상 허용 · 거절을 묻는 카드, 그리고 Claude Code · Codex의 작업 알림 카드들">
 
-API 키 없이 사용할 수 있습니다. 이 PC에 설치하고 로그인한 Claude Code 또는 Codex CLI로 답변을 생성합니다.
+이 PC에 설치하고 로그인한 Claude Code 또는 Codex CLI, 또는 설정 › AI 계정 › API 키에 넣은 서비스로 답변을 생성합니다. 키는 Windows가 암호화해 이 PC에만 저장하고, 각 키는 해당 서비스로만 보냅니다. API 모델에서는 파일, PowerShell 명령, Bloom의 PC 작업, 다른 MCP 서버를 도구로 쓸 수 있으며, 설정 › PC 작업 · MCP › 권한에서 바꾸지 않는 한 실행 전에 매번 묻습니다.
 
 - **빠른 AI**: 검색창에 입력한 뒤 **Tab**을 누르면 AI 채팅으로 전환됩니다. Shift+Tab은 새 대화를 엽니다. 모델과 생각 수준을 선택할 수 있습니다.
   - Esc로 홈에 돌아가도 답변은 계속 생성됩니다. 검색창에서 진행 상태를 확인하고 Tab으로 돌아갈 수 있습니다. ■ 중지 또는 Ctrl+.으로 답변을 중지하세요.

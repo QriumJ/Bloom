@@ -13,13 +13,13 @@
 <p align="center"><sub>WPF · .NET 10 · WebView なし · すべてオフで約 80 MB · 한국어 / English / 日本語 / 简体中文 · MIT</sub></p>
 
 - **検索**: 検索欄に数文字入力するだけで、アプリ、ファイル、計算、リマインダー、絵文字、ウェブ検索を使えます。
-- **AI**: API キーは不要です。この PC でサインイン済みの Claude Code または Codex を使って、質問、ファイル操作、メモ、タイマー、カレンダーの予定を扱えます。
+- **AI**: この PC でサインイン済みの Claude Code または Codex、または自分の API キー (OpenAI、Anthropic、Gemini、OpenRouter、DeepSeek、xAI、OpenCode Go) を使って、質問、ファイル操作、メモ、タイマー、カレンダーの予定を扱えます。
 - **機能**: WebView を使わないネイティブ アプリです。機能をオフにすると、その機能のメニューとショートカットが外れ、メモリの使用量が減ります。
 
 ## 動作環境
 
 Windows 10/11 (64 ビット) が必要です。.NET 10 デスクトップ ランタイムがない場合はセットアップがインストールします。
-AI 機能には、インストールしてサインイン済みの Claude Code CLI または Codex CLI が必要です。PC 全体のファイル検索には Everything が必要です。
+AI 機能には、インストールしてサインイン済みの Claude Code CLI または Codex CLI か、対応サービスの API キーが必要です。PC 全体のファイル検索には Everything が必要です。
 検索語、時刻の表現、単位は、表示言語にかかわらず韓国語か英語で入力します。
 
 ## ダウンロード
@@ -90,7 +90,7 @@ irm https://raw.githubusercontent.com/hyeon1035298/Bloom/main/install.ps1 | iex
 
 <img src="docs/media/ja/ai.webp" alt="見積書 PDF をドキュメントに移動する前に、許可 · 常に許可 · 拒否 をチャットの中で確認するカードと、Claude Code と Codex の作業の通知">
 
-API キーは不要です。回答は、この PC にインストールしてサインイン済みの Claude Code CLI または Codex CLI から返ります。
+回答は、この PC にインストールしてサインイン済みの Claude Code CLI または Codex CLI、または設定 › AI アカウント › API キーに追加したサービスから返ります。キーは Windows で暗号化してこの PC にだけ保存し、それぞれのサービスにだけ送ります。API モデルでは、ファイル、PowerShell コマンド、Bloom の PC の操作、ほかの MCP サーバーをツールとして使え、設定 › PC の操作 · MCP › 権限で変えない限り、実行の前に毎回確認します。
 
 - **クイック AI**: 検索欄に入力して **Tab** を押すと、その場で AI チャットが開きます。Shift+Tab で新しいチャットを始めます。モデルと思考レベルを選べます。
   - Esc でホームに戻っても回答は続き、検索欄に進行状況が表示されます。Tab で戻れます。■ 停止 (または Ctrl+.) で止めます。
