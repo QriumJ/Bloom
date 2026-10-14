@@ -129,6 +129,16 @@ internal static class ApiPathTests
         Check.True(Run(box, ApiToolbox.EditFile, new { path = "missing.txt", old_text = "a", new_text = "b" }).Error, "an edit of a file that isn't there");
     }
 
+    public static void FencedFileNamesKeepTheirFoldersApartAndTheClosingFenceStaysAnchored()
+    {
+        string names(string text) => string.Join(",", ChatOutput.FencedFiles(text).Select(x => x.Name));
+        Check.Eq(names("```file:out\\a.txt\nx\n```\n```file:out/b.txt\nx\n```\n```file: c.txt\nx\n```"), "a.txt,b.txt,c.txt", "a leading out folder is dropped, a space after file: is fine");
+        Check.Eq(names("```file:src/index.js\nx\n```\n```file:tests/index.js\nx\n```"), "srcindex.js,testsindex.js", "other folders stay in the name, so two files do not collide");
+        const string code = "```file:fence.js\nconst fence = \"```\";\nmore\n```";
+        Check.Eq(ChatOutput.FencedFiles(code)[0].Content, "const fence = \"```\";\nmore", "a fence inside a line does not end the content");
+        Check.Eq(ChatOutput.FencedFiles("```file:x.txt\nprose with ```inline``` fences\n```")[0].Content, "prose with ```inline``` fences", "nor does one in prose");
+    }
+
     public static void FencedFilesStayInsideTheOutputFolder()
     {
         string root = Path.Combine(Path.GetTempPath(), "bloom-fenced-" + Guid.NewGuid().ToString("N")[..8]), outside = Path.Combine(Path.GetTempPath(), "bloom-fenced-out-" + Guid.NewGuid().ToString("N")[..8]);

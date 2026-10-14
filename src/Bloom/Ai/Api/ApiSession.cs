@@ -238,12 +238,14 @@ internal sealed class ApiSession : IChatSession
         _ = Task.Run(mcp.Dispose);
     }
 
-    private const string Intro = "You are the assistant in a chat inside Bloom, a Windows launcher the user opens with the Win key. ";
+    private const string Intro = "You are the assistant in a chat inside Bloom, a Windows launcher the user opens with the Win key. "
+        + "You change nothing by saying so: never claim you created, wrote, changed or ran something unless a tool call (or a file block, when you have no file tools) in this very answer did it; "
+        + "call the tool first, then report what it returned, and say plainly when you could not. ";
 
     /// The instructions: the chats' own (no web search here). Without write_file (no file tools, or 파일 쓰기 사용 안 함),
     /// files go inline as with ChatGPT; with it, the working folder and its out\ for the files the user asks for (Chats
     /// shows what lands there).
-    private static string Instructions(bool titles, ApiToolbox? tools, bool pc, bool saveFenced)
+    internal static string Instructions(bool titles, ApiToolbox? tools, bool pc, bool saveFenced)
     {
         string folder = tools is not null && tools.Offers(ApiToolbox.ReadFile)
             ? "You have file tools on the user's Windows PC; your working folder is this chat's own, relative paths start there, and the user's attached files have copies in in\\ there. "
@@ -254,7 +256,7 @@ internal sealed class ApiSession : IChatSession
         if (tools is null || !tools.Offers(ApiToolbox.WriteFile))
             return ClaudeSession.SystemPrompt(null, Intro + (saveFenced ? CodexSession.InlineFiles : "Files can't be saved from this chat: give what the user asks for in your message. ") + folder, pc: pc, titles: titles, web: false);
         string files = "Files the user attached come in the message: text files inside <attachment name=\"…\"> blocks, pictures as images. "
-            + "When the user asks for a file (a document, code, a table, an SVG picture...), write it with write_file into out\\ (as out\\<a fitting name>) and say its name in one line; "
+            + "When the user asks for a file (a document, code, a table, an SVG picture...), make it by calling the write_file tool with the path out\\<a fitting name> (a file you only describe does not exist) and say its name in one line; "
             + "it appears in the chat as a file the user can open or save. ";
         return ClaudeSession.SystemPrompt(null, Intro + files + folder, pc: pc, titles: titles, web: false);
     }

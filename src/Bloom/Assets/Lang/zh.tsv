@@ -1755,15 +1755,15 @@ Permissions	权限
 Ask each time	每次询问
 Always allow	始终允许
 Read files (outside the chat's folder)	读取文件（对话文件夹以外）
-API chats · files in the chat's own folder are read without asking · searching inside files follows this in every chat	API 对话 · 对话文件夹内的文件无需询问即可读取 · 在所有对话中，文件内容搜索也遵循此设置
+API chats · asks only outside the chat's folder · also covers content search	API 对话 · 仅在对话文件夹之外询问 · 内容搜索同样适用
 Write files	写入文件
 API chats · make a file or replace one	API 聊天 · 新建文件、覆盖文件
 Edit files	编辑文件
 API chats · change part of a file	API 聊天 · 修改文件的一部分
 Run commands	运行命令
-API chats · PowerShell in the chat's folder · what it starts ends with it	API 聊天 · 在对话文件夹中运行 PowerShell · 启动的程序会随命令一起结束
+API chats · PowerShell in the chat's folder	API 聊天 · 在对话文件夹中运行 PowerShell
 Other MCP tools	其他 MCP 工具
-API chats · tools of the MCP servers switched on below · Off starts none of them	API 聊天 · 下方已开启的本机 MCP 服务器工具 · 关闭后不会启动服务器
+API chats · tools of the MCP servers switched on below · Off starts none	API 聊天 · 下方已开启的 MCP 服务器工具 · 关闭后不启动服务器
 PC actions (Bloom's tool)	电脑操作（Bloom 功能）
 Every chat · open, notes, timers, files, clipboard · look-ups never ask	所有对话 · 打开 · 便笺 · 计时器 · 文件整理 · 剪贴板 · 查询操作无需询问
 What it may do	可以做的事

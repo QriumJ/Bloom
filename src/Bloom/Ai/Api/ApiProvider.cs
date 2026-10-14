@@ -25,6 +25,10 @@ internal sealed record ApiProvider(string Id, string Name, string BaseUrl, ApiWi
     /// Its /models entries may name each model's endpoint (OpenCode Go): such a name decides before the Routes.
     public bool MixedEndpoints { get; init; }
 
+    /// Model ids known to work for a new key, best first: the default API model is the first of these the provider lists
+    /// (AiModels.ApiDefault), not the first in the list (older models an account can't use come first by name).
+    public string[] Preferred { get; init; } = Array.Empty<string>();
+
     /// A header carrying a stable id per conversation (OpenCode Go routes and caches by it).
     public string? SessionHeader { get; init; }
 

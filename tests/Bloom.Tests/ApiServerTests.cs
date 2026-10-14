@@ -130,6 +130,100 @@ internal static class ApiServerTests
         Check.True(!reply.Error.Contains(Key, StringComparison.Ordinal), "the key taken out of it");
     }
 
+    public static void TheDefaultModelIsAKnownGoodOneAndAGoneModelIsHidden()
+    {
+        using var data = new SettingsTransferTests.DataFolder();
+        using var server = new FakeApiServer(r => r.Path.EndsWith("/models", StringComparison.Ordinal)
+            ? FakeApiServer.Status(200, "OK", "", "{\"data\":[{\"id\":\"models/gemini-2.5-flash\"},{\"id\":\"models/gemini-flash-latest\"},{\"id\":\"models/gemini-flash-lite-latest\"}]}")
+            : FakeApiServer.Status(404, "Not Found", "", "[{\"error\":{\"message\":\"This model models/gemini-flash-lite-latest is no longer available to new users.\"}}]"));
+        var provider = ApiProviders.Find("gemini")! with { BaseUrl = server.BaseUrl };
+        try
+        {
+            ApiKeys.Set("gemini", Key);
+            Check.True(ApiCatalog.RefreshAsync(provider).GetAwaiter().GetResult().Error is null, "the list is read");
+            Check.Eq(ApiCatalog.DefaultModel(), AiModels.Api("gemini", "gemini-flash-lite-latest"), "the alias, not the first in the list (Gemini 2.5 Flash)");
+            var request = Request(server, ApiWire.ChatCompletions, "gemini") with { Model = "gemini-flash-lite-latest" };
+            Check.True(Stream(request, out _).Error is not null, "the refused model answers with the error");
+            Check.True(ApiCatalog.Models("gemini").All(m => m.Id != "gemini-flash-lite-latest"), "and is hidden from the pickers");
+            Check.Eq(ApiCatalog.DefaultModel(), AiModels.Api("gemini", "gemini-flash-latest"), "the next known-good model becomes the default");
+        }
+        finally
+        {
+            ApiKeys.Remove("gemini");
+            ApiCatalog.Forget("gemini");
+            ApiCatalog.Saving().GetAwaiter().GetResult();
+        }
+    }
+
+    public static void ARefusalToAnOldKeyDoesNotHideModelsOfItsReplacement()
+    {
+        using var data = new SettingsTransferTests.DataFolder();
+        using var server = new FakeApiServer(_ => FakeApiServer.Status(404, "Not Found", "", "{\"error\":{\"message\":\"This model is no longer available to new users.\"}}"));
+        var request = Request(server, ApiWire.ChatCompletions, "gemini") with { Model = "gemini-flash-latest" };
+        try
+        {
+            ApiKeys.Set("gemini", "replacement-key");
+            Check.True(Stream(request, out _).Error is not null, "the late reply is an error for the caller");
+            Check.True(!ApiCatalog.IsUnusable("gemini", "gemini-flash-latest"), "but marks nothing: the key it was for is gone");
+            ApiKeys.Set("gemini", Key);
+            Stream(request, out _);
+            Check.True(ApiCatalog.IsUnusable("gemini", "gemini-flash-latest"), "the current key's refusal does");
+            ApiCatalog.ClearUnusable("gemini");
+            Check.True(!ApiCatalog.IsUnusable("gemini", "gemini-flash-latest"), "replacing the key clears the marks");
+        }
+        finally
+        {
+            ApiKeys.Remove("gemini");
+            ApiCatalog.Forget("gemini");
+            ApiCatalog.Saving().GetAwaiter().GetResult();
+        }
+    }
+
+    public static void MarksSavedBeforeAForgetDoNotComeBackWhenTheFileIsRead()
+    {
+        using var data = new SettingsTransferTests.DataFolder();
+        string gone = "forgot-" + Guid.NewGuid().ToString("N")[..6], kept = "kept-" + Guid.NewGuid().ToString("N")[..6];
+        var loading = typeof(ApiCatalog).GetField("loading", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+        try
+        {
+            System.IO.File.WriteAllText(Paths.In("api-unusable.json"), $"[\"{gone}/m\",\"{kept}/m\"]");
+            loading.SetValue(null, null); // the file not read yet
+            ApiCatalog.Forget(gone); // before it is
+            ApiCatalog.Loaded().GetAwaiter().GetResult();
+            Check.True(!ApiCatalog.IsUnusable(gone, "m"), "the forgotten provider's saved mark is not merged back");
+            Check.True(ApiCatalog.IsUnusable(kept, "m"), "another provider's is");
+        }
+        finally
+        {
+            ApiCatalog.Forget(kept);
+            ApiCatalog.Saving().GetAwaiter().GetResult();
+        }
+    }
+
+    public static void ADefaultModelNeverFallsBackToOneThatIsMarkedUnusable()
+    {
+        using var data = new SettingsTransferTests.DataFolder();
+        using var server = new FakeApiServer(_ => FakeApiServer.Status(200, "OK", "", "{\"data\":[{\"id\":\"models/gemini-2.5-flash\"}]}"));
+        var provider = ApiProviders.Find("gemini")! with { BaseUrl = server.BaseUrl };
+        string? prior = Settings.Current.ApiModel;
+        try
+        {
+            ApiKeys.Set("gemini", Key);
+            ApiCatalog.RefreshAsync(provider).GetAwaiter().GetResult();
+            Settings.Current.ApiModel = AiModels.Api("gemini", "gemini-2.5-flash");
+            Check.Eq(AiModels.ApiDefault(), Settings.Current.ApiModel, "a usable model that is set stays");
+            ApiCatalog.MarkUnusable("gemini", "gemini-2.5-flash");
+            Check.Eq(AiModels.ApiDefault(), AiModels.ApiUnset, "refused, and nothing else listed: unset, not the refused one");
+        }
+        finally
+        {
+            Settings.Current.ApiModel = prior;
+            ApiKeys.Remove("gemini");
+            ApiCatalog.Forget("gemini");
+            ApiCatalog.Saving().GetAwaiter().GetResult();
+        }
+    }
+
     public static void RefreshOvertakenByAKeyChangePublishesNothing()
     {
         using var data = new SettingsTransferTests.DataFolder();

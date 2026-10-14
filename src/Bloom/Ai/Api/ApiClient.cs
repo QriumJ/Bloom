@@ -129,6 +129,11 @@ internal static class ApiClient
                 {
                     error = ""; // a message is short: the status alone tells
                 }
+                // "no longer available to new users": this key can't use the model, so the pickers drop it (not for a key
+                // since replaced: a late reply to the old one says nothing about the new)
+                if (response.StatusCode == HttpStatusCode.NotFound && error.Contains("no longer available", StringComparison.OrdinalIgnoreCase)
+                    && ApiKeys.Get(request.Provider.Id) == request.Key)
+                    ApiCatalog.MarkUnusable(request.Provider.Id, request.Model);
                 return new ApiReply(false, "", Status(request.Provider, (int)response.StatusCode, error, request.Key));
             }
             using var stream = await response.Content.ReadAsStreamAsync(idle.Token).ConfigureAwait(false);

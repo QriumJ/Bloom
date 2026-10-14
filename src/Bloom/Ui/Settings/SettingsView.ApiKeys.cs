@@ -73,6 +73,7 @@ internal sealed partial class SettingsView
     private async Task StoreApiKey(ApiProvider p, string key)
     {
         await ApiKeys.SetAsync(p.Id, key); // stored before the look, which reads it
+        ApiCatalog.ClearUnusable(p.Id); // models the old key was refused may open to this one
         Build(lastFilter);
         if (p.Balance != ApiBalanceWay.None)
         {

@@ -157,6 +157,15 @@ internal static class ApiToolTests
         Check.True(input[2] is JsonObject output && (string?)output["type"] == "function_call_output" && (string?)output["output"] == "done on the PC", "its output");
     }
 
+    public static void DefaultPermissionsOfferTheFileAndCommandToolsAndTellTheModelToUseThem()
+    {
+        using var f = new Folder();
+        var box = Box(f, _ => true); // no rule set: every action 매번 묻기
+        Check.True(new[] { ApiToolbox.ReadFile, ApiToolbox.ListFolder, ApiToolbox.WriteFile, ApiToolbox.EditFile, ApiToolbox.RunCommand }.All(box.Offers), "all five tools are offered");
+        string text = ApiSession.Instructions(false, box, false, true);
+        Check.True(text.Contains("calling the write_file tool", StringComparison.Ordinal) && text.Contains("never claim you created", StringComparison.Ordinal), "the model is told to call the tool, not to claim");
+    }
+
     public static void WritesAndCommandsWaitForTheUser()
     {
         using var f = new Folder();

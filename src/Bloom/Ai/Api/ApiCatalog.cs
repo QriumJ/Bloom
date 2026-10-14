@@ -18,7 +18,7 @@ namespace Bloom.Ai;
 /// nothing (its list may be the old key's).
 internal static class ApiCatalog
 {
-    private const string FileName = "api-models.json";
+    private const string FileName = "api-models.json", UnusableFile = "api-unusable.json";
 
     private static readonly object Gate = new();
     private static Dictionary<string, ApiModelInfo[]> lists = new(); // the published snapshot
@@ -28,6 +28,7 @@ internal static class ApiCatalog
     private static readonly Dictionary<string, string> failures = new(); // the last refresh's error per provider (this run)
     private static readonly Dictionary<string, CancellationTokenSource> running = new(); // the refresh under way per provider
     private static readonly Dictionary<string, long> generations = new();
+    private static readonly HashSet<string> unusable = new(); // "provider/model" the provider refused (MarkUnusable)
 
     /// Raised (on any thread) when a provider's list or state changed.
     public static event Action? Updated;
@@ -41,14 +42,80 @@ internal static class ApiCatalog
     private static void Load()
     {
         var saved = Json.Load<Dictionary<string, List<ApiModelInfo>>>(Paths.In(FileName));
+        var gone = Json.Load<List<string>>(Paths.In(UnusableFile));
         lock (Gate)
         {
             var next = new Dictionary<string, ApiModelInfo[]>(lists);
             foreach (var (provider, models) in saved)
                 if (!changed.Contains(provider)) next[provider] = models.ToArray();
             lists = next;
+            unusable.UnionWith(gone.Where(k => !changed.Any(p => k.StartsWith(UnusableKey(p, ""), StringComparison.Ordinal))));
         }
         Updated?.Invoke();
+    }
+
+    /// A model its provider answered "no longer available" (a 404 for this key): hidden from the pickers and never the
+    /// default, until the provider's key changes (Forget). Kept in api-unusable.json.
+    public static void MarkUnusable(string provider, string model)
+    {
+        lock (Gate)
+        {
+            if (!unusable.Add(UnusableKey(provider, model))) return;
+            SaveUnusable();
+        }
+        Updated?.Invoke();
+    }
+
+    private static string UnusableKey(string provider, string model) => provider + "/" + model;
+
+    /// Whether MarkUnusable hid the model.
+    public static bool IsUnusable(string provider, string model)
+    {
+        _ = Loaded();
+        lock (Gate) return unusable.Contains(UnusableKey(provider, model));
+    }
+
+    /// A replaced key's marks go: the models its predecessor was refused may be open to this one.
+    public static void ClearUnusable(string provider)
+    {
+        lock (Gate)
+        {
+            changed.Add(provider); // the file's older marks are the old key's
+            DropUnusable(provider);
+        }
+        Updated?.Invoke();
+    }
+
+    /// Takes the provider's marks out and queues the write when there were any (under Gate).
+    private static void DropUnusable(string provider)
+    {
+        if (unusable.RemoveWhere(k => k.StartsWith(UnusableKey(provider, ""), StringComparison.Ordinal)) > 0) SaveUnusable();
+    }
+
+    /// The unusable set written after the earlier writes, once the file has been read (under Gate).
+    private static void SaveUnusable()
+    {
+        string file = Paths.In(UnusableFile);
+        saving = Task.WhenAll(saving, Loaded()).ContinueWith(_ =>
+        {
+            List<string> now;
+            lock (Gate) now = unusable.Order().ToList();
+            Json.Save(file, now);
+        }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+    }
+
+    /// The model new chats use when none is set: the first provider with models gives the first of its Preferred ones it
+    /// lists, else its first model; null when no provider has any.
+    public static string? DefaultModel()
+    {
+        foreach (var p in ApiProviders.All.Where(p => ApiKeys.Has(p.Id)))
+        {
+            var models = Models(p.Id);
+            if (models.Count == 0) continue;
+            var pick = p.Preferred.Select(id => models.FirstOrDefault(m => m.Id == id)).FirstOrDefault(m => m is not null) ?? models[0];
+            return AiModels.Api(p.Id, pick.Id);
+        }
+        return null;
     }
 
     /// The writes so far, done (tests wait on it before their data folder goes).
@@ -61,7 +128,11 @@ internal static class ApiCatalog
     {
         if (Demo.On) return Array.Empty<ApiModelInfo>();
         _ = Loaded();
-        lock (Gate) return lists.TryGetValue(provider, out var list) ? list : Array.Empty<ApiModelInfo>();
+        lock (Gate)
+        {
+            if (!lists.TryGetValue(provider, out var list)) return Array.Empty<ApiModelInfo>();
+            return unusable.Count == 0 ? list : list.Where(m => !unusable.Contains(UnusableKey(provider, m.Id))).ToArray();
+        }
     }
 
     public static ApiModelInfo? Find(string provider, string model) => Models(provider).FirstOrDefault(m => m.Id == model);
@@ -138,6 +209,7 @@ internal static class ApiCatalog
             Advance(provider);
             failures.Remove(provider);
             Publish(provider, null);
+            DropUnusable(provider); // another key may use them
         }
         Updated?.Invoke();
     }

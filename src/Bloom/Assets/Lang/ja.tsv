@@ -1755,15 +1755,15 @@ Permissions	権限
 Ask each time	毎回確認
 Always allow	常に許可
 Read files (outside the chat's folder)	ファイルの読み込み (チャットフォルダーの外)
-API chats · files in the chat's own folder are read without asking · searching inside files follows this in every chat	API会話 · 会話フォルダー内のファイルは確認なしで読み取ります · ファイル内容の検索は、すべての会話でこの設定に従います
+API chats · asks only outside the chat's folder · also covers content search	API会話 · 会話フォルダーの外だけ確認します · 内容検索にも適用
 Write files	ファイルの書き込み
 API chats · make a file or replace one	API チャット · 新しいファイルの作成、ファイルの上書き
 Edit files	ファイルの編集
 API chats · change part of a file	API チャット · ファイルの一部の変更
 Run commands	コマンドの実行
-API chats · PowerShell in the chat's folder · what it starts ends with it	API チャット · チャットフォルダーで PowerShell を実行 · 起動したプログラムはコマンドと一緒に終了します
+API chats · PowerShell in the chat's folder	API チャット · チャットフォルダーで PowerShell を実行
 Other MCP tools	その他の MCP ツール
-API chats · tools of the MCP servers switched on below · Off starts none of them	API チャット · 下でオンにしたこの PC の MCP サーバーのツール · オフにするとサーバーを起動しません
+API chats · tools of the MCP servers switched on below · Off starts none	API チャット · 下でオンにした MCP サーバーのツール · オフでサーバーを起動しない
 PC actions (Bloom's tool)	PC の操作 (Bloom の機能)
 Every chat · open, notes, timers, files, clipboard · look-ups never ask	すべてのチャット · 開く · メモ · タイマー · ファイル整理 · クリップボード · 調べる操作は確認しません
 What it may do	できること

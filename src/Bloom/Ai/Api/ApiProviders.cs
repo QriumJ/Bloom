@@ -18,6 +18,7 @@ internal static class ApiProviders
             // OpenAI's model pages: the Codex and Pro models answer only on /responses; deep research and computer use
             // need tools Bloom doesn't give yet
             Routes = new ApiRoute[] { new("codex", ApiWire.Responses), new("-pro", ApiWire.Responses), new("deep-research", null), new("computer-use", null) },
+            Preferred = new[] { "gpt-5-mini", "gpt-4.1-mini" },
             // most specific first: GPT-5.1 dropped "minimal" for "none", GPT-5.2 added "xhigh", the chat aliases and the
             // models before the o-series take no level
             EffortRules = new ApiEffortRule[]
@@ -45,6 +46,8 @@ internal static class ApiProviders
         {
             // its Gemma models answer a request with tools "Function calling is not enabled"
             NoToolModels = new[] { "gemma" },
+            // the aliases follow Google's current models; 2.5 Flash "is no longer available to new users"
+            Preferred = new[] { "gemini-flash-lite-latest", "gemini-flash-latest" },
             // only the thinking models take reasoning_effort: 2.5 Pro can't turn thinking off, 3 knows low and high
             EffortRules = new ApiEffortRule[]
             {
@@ -65,6 +68,7 @@ internal static class ApiProviders
             // its thinking mode (api-docs.deepseek.com/guides/thinking_mode): with tools, every earlier turn's reasoning goes back
             ReplaysReasoning = true,
             Balance = ApiBalanceWay.DeepSeek,
+            Preferred = new[] { "deepseek-chat" },
         },
         new("xai", "xAI", "https://api.x.ai/v1", ApiWire.ChatCompletions, "https://console.x.ai")
         {

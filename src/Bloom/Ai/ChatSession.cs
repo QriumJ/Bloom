@@ -139,13 +139,15 @@ internal static class AiModels
     public const string ApiUnset = ApiPrefix;
 
     /// The API model new conversations use, for the settings page and the chats alike: the one set when it can be
-    /// used, else the first listed, else the one set (its list not read yet, or its key gone: the send says so), else
-    /// ApiUnset.
+    /// used, else a known-good one (ApiCatalog.DefaultModel: the provider's Preferred model it lists, else its first),
+    /// else the one set (its list not read yet, or its key gone: the send says so) unless its provider refused it
+    /// (ApiCatalog.IsUnusable), else ApiUnset.
     public static string ApiDefault()
     {
         string? set = Settings.Current.ApiModel;
         if (set is not null && ApiReady(set)) return set;
-        return ApiCatalog.Ids().FirstOrDefault() ?? set ?? ApiUnset;
+        if (ApiCatalog.DefaultModel() is { } known) return known;
+        return set is not null && !(ApiParts(set) is { } p && ApiCatalog.IsUnusable(p.provider, p.id)) ? set : ApiUnset;
     }
 
     /// New conversations: the model of the side chosen in the settings.

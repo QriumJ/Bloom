@@ -15,14 +15,17 @@ internal sealed record ChatOutputResult(string Text, string[]? Files);
 /// callers serialize a later turn or explicit deletion behind this operation's completion.
 internal static partial class ChatOutput
 {
-    [System.Text.RegularExpressions.GeneratedRegex(@"```file:([^\r\n`]+)\r?\n(.*?)\r?\n```", System.Text.RegularExpressions.RegexOptions.Singleline)]
+    [System.Text.RegularExpressions.GeneratedRegex(@"```file:[ \t]*([^\r\n`]+)\r?\n(.*?)\r?\n```", System.Text.RegularExpressions.RegexOptions.Singleline)]
     private static partial System.Text.RegularExpressions.Regex FencedFile();
 
-    /// The name a ```file:<name> block is saved under: the characters a file name can't have taken out; null for one with
+    /// The name a ```file:<name> block is saved under: a leading `out\` or `out/` (as the chat's instructions word the path)
+    /// dropped, the characters a file name can't have taken out (any other folder separator with them); null for one with
     /// no name left, a hidden one (.name) or one Windows takes for a device (NUL, COM1…) or a stream (a:b).
     private static string? SafeName(string raw)
     {
-        string name = string.Concat(raw.Trim().Split(Path.GetInvalidFileNameChars()));
+        string name = raw.Trim();
+        if (name.StartsWith("out/", StringComparison.OrdinalIgnoreCase) || name.StartsWith("out\\", StringComparison.OrdinalIgnoreCase)) name = name[4..];
+        name = string.Concat(name.Split(Path.GetInvalidFileNameChars()));
         return name.Length == 0 || name.StartsWith('.') || RealPath.Kind(Path.Combine("C:\\", name)) == PathKind.Device ? null : name;
     }
 

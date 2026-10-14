@@ -211,6 +211,33 @@ internal static class ChatCompletionTests
         else f.Sessions[^1].Fail(reply);
     }
 
+    /// The launcher's quick chat and the chat window share Chats: a new API chat under the default permissions (none set)
+    /// whose model answers with a file block as small models write it (the `out\` folder in the name) reaches the save
+    /// card, and a yes saves the file under its plain name.
+    public static void QuickChatFileBlockReachesTheSaveCardUnderDefaultPermissions()
+    {
+        Bloom.Core.Lang.Force(true);
+        var prior = new Dictionary<string, string>(Settings.Current.Permissions);
+        try
+        {
+            Settings.Current.Permissions.Clear();
+            using var f = new Fixture();
+            f.Thread.Model = "api:gemini:gemini-3.5-flash-lite";
+            Say(f, "hello.txt 파일을 만들고 안에 BLOOM TEST라고 써줘", "콰당!\n```file:out\\hello.txt\nBLOOM TEST\n```", ok: true);
+            PumpUntil(() => f.Thread.Messages[^1].Asks.Count == 1);
+            var ask = f.Thread.Messages[^1].Asks[0];
+            Check.True(ask.Key == ToolPermissions.Write && ask.Detail.Contains("hello.txt · a new file", StringComparison.Ordinal) && ask.Detail.Contains("BLOOM TEST", StringComparison.Ordinal), "the card names the file and shows its content");
+            f.Chats.Answer(f.Thread, ask, true);
+            PumpUntil(() => !f.Thread.Busy);
+            Check.Eq(File.ReadAllText(Path.Combine(f.Out, "hello.txt")), "BLOOM TEST", "saved under its plain name");
+        }
+        finally
+        {
+            Settings.Current.Permissions.Clear();
+            foreach (var (key, value) in prior) Settings.Current.Permissions[key] = value;
+        }
+    }
+
     public static void FencedFilesFollowTheWritePermissionAndNeverSaveAFailedAnswer()
     {
         Bloom.Core.Lang.Force(true);
