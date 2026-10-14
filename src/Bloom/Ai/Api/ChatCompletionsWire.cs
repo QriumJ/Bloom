@@ -70,7 +70,8 @@ internal sealed class ChatCompletionsWire : IApiWire
             parts.Add(new JsonObject { ["type"] = "text", ["text"] = m.Text });
             messages.Add(new JsonObject { ["role"] = m.Role, ["content"] = parts });
         }
-        var body = new JsonObject { ["model"] = request.Model, ["stream"] = true, ["messages"] = messages };
+        // the token counts come in a last chunk only when asked for (OpenAI, Gemini, DeepSeek, xAI take this)
+        var body = new JsonObject { ["model"] = request.Model, ["stream"] = true, ["stream_options"] = new JsonObject { ["include_usage"] = true }, ["messages"] = messages };
         if (request.Tools.Count > 0)
         {
             var tools = new JsonArray();
@@ -94,6 +95,8 @@ internal sealed class ChatCompletionsWire : IApiWire
             using var doc = JsonDocument.Parse(e.Data);
             var root = doc.RootElement;
             if (root.TryGetProperty("error", out _) && ApiJson.ErrorOf(root) is { } error) return new ApiChunk(Error: error);
+            // the counts: in the last chunk (its choices empty), or beside the finish reason (Gemini)
+            var tokens = root.TryGetProperty("usage", out var usage) ? ApiTokens.Of(usage, "prompt_tokens", "completion_tokens") : null;
             if (root.TryGetProperty("choices", out var choices) && choices.ValueKind == JsonValueKind.Array && choices.GetArrayLength() > 0)
             {
                 var choice = choices[0];
@@ -102,8 +105,9 @@ internal sealed class ChatCompletionsWire : IApiWire
                 // [DONE] after it (Gemini) has still ended whole
                 var end = ApiJson.Str(choice, "finish_reason") switch { "" => ApiEnd.None, "length" => ApiEnd.Cut, _ => ApiEnd.Complete };
                 string reasoning = ApiJson.Str(delta, "reasoning_content");
-                return new ApiChunk(ApiJson.Str(delta, "content"), End: end, Calls: CallPieces(delta), Reasoning: reasoning.Length > 0 ? reasoning : null);
+                return new ApiChunk(ApiJson.Str(delta, "content"), End: end, Calls: CallPieces(delta), Reasoning: reasoning.Length > 0 ? reasoning : null, Tokens: tokens);
             }
+            if (tokens is not null) return new ApiChunk(Tokens: tokens);
         }
         catch (JsonException)
         {

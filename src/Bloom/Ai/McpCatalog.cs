@@ -149,13 +149,23 @@ internal static class McpCatalog
         }
     }
 
-    /// The servers in a config.toml's text.
+    /// A Codex server's table as it is read: what the CLI chats take (command, args, env, url) and what only the API
+    /// chats' MCP client uses (the headers a web-address server is sent).
+    private sealed class TomlServer
+    {
+        public string? Command, Url, BearerEnv;
+        public List<string> Args = new();
+        public readonly Dictionary<string, string> Env = new(), Headers = new(), EnvHeaders = new(); // EnvHeaders: header → the variable holding its value
+    }
+
+    /// The servers in a config.toml's text. A web-address server's `http_headers`, `env_http_headers` (header → the
+    /// environment variable that holds its value) and `bearer_token_env_var` become its Headers, resolved now from this
+    /// PC's environment (a variable not set sends no header); the other fields of a definition are read as before.
     public static List<McpServerDef> ParseToml(string text)
     {
         var list = new List<McpServerDef>();
-        var tables = new Dictionary<string, (string? command, List<string> args, Dictionary<string, string> env, string? url)>();
-        string? name = null;
-        bool inEnv = false;
+        var tables = new Dictionary<string, TomlServer>();
+        string? name = null, section = null; // section: the sub-table being read (env, http_headers, env_http_headers)
         foreach (string raw in text.Split('\n'))
         {
             string line = raw.Trim();
@@ -164,14 +174,17 @@ internal static class McpCatalog
             {
                 string head = line.Trim('[', ']').Trim();
                 name = null;
-                inEnv = false;
+                section = null;
                 if (!head.StartsWith("mcp_servers.", StringComparison.Ordinal)) continue;
                 var parts = SplitKey(head["mcp_servers.".Length..]);
-                if (parts.Count == 0) continue;
+                if (parts.Count == 0 || parts.Count > 2) continue;
+                if (parts.Count == 2)
+                {
+                    if (parts[1] is not ("env" or "http_headers" or "env_http_headers")) continue;
+                    section = parts[1];
+                }
                 name = parts[0];
-                inEnv = parts.Count == 2 && parts[1] == "env";
-                if (parts.Count > 2 || (parts.Count == 2 && !inEnv)) name = null;
-                else if (!tables.ContainsKey(name)) tables[name] = (null, new(), new(), null);
+                if (!tables.ContainsKey(name)) tables[name] = new TomlServer();
                 continue;
             }
             if (name is null) continue;
@@ -179,17 +192,32 @@ internal static class McpCatalog
             if (eq <= 0) continue;
             string key = Unquote(line[..eq].Trim()), value = line[(eq + 1)..].Trim();
             var t = tables[name];
-            if (inEnv) t.env[key] = Value(value);
-            else if (key == "command") t.command = Value(value);
-            else if (key == "url") t.url = Value(value);
-            else if (key == "args") t.args = Strings(value);
-            else if (key == "env") foreach (var (k, v) in Inline(value)) t.env[k] = v;
-            tables[name] = t;
+            if (section == "env") t.Env[key] = Value(value);
+            else if (section == "http_headers") t.Headers[key] = Value(value);
+            else if (section == "env_http_headers") t.EnvHeaders[key] = Value(value);
+            else if (key == "command") t.Command = Value(value);
+            else if (key == "url") t.Url = Value(value);
+            else if (key == "args") t.Args = Strings(value);
+            else if (key == "bearer_token_env_var") t.BearerEnv = Value(value);
+            else if (key == "env") foreach (var (k, v) in Inline(value)) t.Env[k] = v;
+            else if (key == "http_headers") foreach (var (k, v) in Inline(value)) t.Headers[k] = v;
+            else if (key == "env_http_headers") foreach (var (k, v) in Inline(value)) t.EnvHeaders[k] = v;
         }
         foreach (var (n, t) in tables)
-            if (t.command is not null || t.url is not null)
-                list.Add(new McpServerDef(n, "codex", t.command, t.args, t.env, t.command is null ? t.url : null, null));
+            if (t.Command is not null || t.Url is not null)
+                list.Add(new McpServerDef(n, "codex", t.Command, t.Args, t.Env, t.Command is null ? t.Url : null, null) { Headers = t.Command is null ? ResolvedHeaders(t) : new Dictionary<string, string>() });
         return list;
+    }
+
+    /// A web-address server's headers: the plain ones, those whose value is in an environment variable, and a Bearer token
+    /// from one.
+    private static Dictionary<string, string> ResolvedHeaders(TomlServer t)
+    {
+        var headers = new Dictionary<string, string>(t.Headers);
+        foreach (var (header, variable) in t.EnvHeaders)
+            if (Environment.GetEnvironmentVariable(variable) is { Length: > 0 } value) headers[header] = value;
+        if (t.BearerEnv is { Length: > 0 } bearer && Environment.GetEnvironmentVariable(bearer) is { Length: > 0 } token) headers["Authorization"] = "Bearer " + token;
+        return headers;
     }
 
     /// "a.\"b c\".env" → [a, b c, env].

@@ -12,4 +12,9 @@ internal interface IToolPolicy
 
     /// What 이 대화에서 항상 허용 remembers: one action ("pc:move"), else the tool's name.
     string Key(string tool, string input);
+
+    /// What the approval card shows whole under the short line: every argument of the call, complete and made visible
+    /// (ToolText), the paths a file action will work on resolved; a file's content or an edit's before and after.
+    /// Empty: the short line is all of it.
+    string Detail(string tool, string input) => "";
 }

@@ -150,7 +150,7 @@ internal static class OneShot
         Process? p = null;
         try
         {
-            p = Process.Start(psi);
+            p = ChildProcess.Spawn(psi);
             if (p is null) return (-1, "", AiErrors.StartFailed);
             var outTask = p.StandardOutput.ReadToEndAsync(ct);
             var errTask = p.StandardError.ReadToEndAsync(ct);

@@ -58,11 +58,13 @@ internal static class ApiProviders
             // OpenRouter turns the level into each model's own setting and drops it for a model without reasoning
             EffortRules = new ApiEffortRule[] { new("", "low", "medium", "high") },
             NestedEffort = true,
+            Balance = ApiBalanceWay.OpenRouter,
         },
         new("deepseek", "DeepSeek", "https://api.deepseek.com", ApiWire.ChatCompletions, "https://platform.deepseek.com/api_keys")
         {
             // its thinking mode (api-docs.deepseek.com/guides/thinking_mode): with tools, every earlier turn's reasoning goes back
             ReplaysReasoning = true,
+            Balance = ApiBalanceWay.DeepSeek,
         },
         new("xai", "xAI", "https://api.x.ai/v1", ApiWire.ChatCompletions, "https://console.x.ai")
         {

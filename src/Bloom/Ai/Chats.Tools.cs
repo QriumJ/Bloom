@@ -34,10 +34,20 @@ internal sealed partial class Chats
         {
             Says = raw.Says.Length > 0 ? raw.Says : Tools?.Says(raw.Tool, raw.Input) ?? raw.Tool,
             Key = raw.Key.Length > 0 ? raw.Key : Tools?.Key(raw.Tool, raw.Input) ?? raw.Tool,
+            // the card shows the call whole; the ✓ / ✕ line under the answer keeps the short Says
+            Detail = raw.Detail.Length > 0 ? raw.Detail : Tools?.Detail(raw.Tool, raw.Input) ?? "",
         };
+        // the card shows a call whole or the call is not asked about: one too big for it is declined
+        if (ask.Detail.Length > ToolText.MaxPayload * 2)
+        {
+            (m.Done ??= new()).Add("✕ " + Tr("승인 카드에 다 보여 줄 수 없을 만큼 커서 거절했습니다", "Declined: too big to show in full on the approval card"));
+            s.Answer(ask, false);
+            Updated?.Invoke(t);
+            return;
+        }
         // 설정's 권한 first (사용 안 함 says no, 항상 허용 yes), then this chat's 항상 허용; either way the answer shows the line
         string rule = ToolPermissions.Of(ask.Key);
-        if (rule != ToolPermissions.Ask || t.AlwaysAllowed.Contains(ask.Key))
+        if (rule == ToolPermissions.Off || (!ask.MustAsk && (rule != ToolPermissions.Ask || t.AlwaysAllowed.Contains(ask.Key))))
         {
             bool allow = rule != ToolPermissions.Off;
             (m.Done ??= new()).Add((allow ? "✓ " : "✕ ") + ask.Says);
@@ -65,7 +75,9 @@ internal sealed partial class Chats
         if (allow && always) t.AlwaysAllowed.Add(ask.Key);
         (m.Done ??= new()).Add((allow ? "✓ " : "✕ ") + ask.Says);
         m.Status = m.Asks.Count > 0 ? m.Status : allow ? Tr("작업하는 중…", "Working…") : null;
-        if (sessions.TryGetValue(t.Id, out var s)) s.Answer(ask, allow);
+        // a question about saving the answer's file: blocks (AskToSave) goes on with the finish, not to a session
+        if (saveAsks.Remove(ask.RequestId, out var save)) save(allow);
+        else if (sessions.TryGetValue(t.Id, out var s)) s.Answer(ask, allow);
         Updated?.Invoke(t);
     }
 }

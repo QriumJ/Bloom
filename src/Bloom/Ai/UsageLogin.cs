@@ -58,7 +58,7 @@ internal static class UsageLogin
         Process? p = null;
         try
         {
-            p = Process.Start(psi);
+            p = ChildProcess.Spawn(psi);
             if (p is null) return AiErrors.StartFailed;
             LoginMarker.Mark(account.Home, p);
             var started = DateTime.Now;

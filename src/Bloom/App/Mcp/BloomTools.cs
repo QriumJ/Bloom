@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Threading;
@@ -104,11 +105,83 @@ internal sealed class BloomTools : IPcTools
 
     private PcAction? ActionOf(JsonElement a) => actions.FirstOrDefault(x => x.Do == S(a, "do"));
 
-    /// A look-up: Bloom answers the CLI's question itself, nothing shows in the chat.
-    public bool Quiet(string tool, string input) => IsPc(tool) && Parse(input, a => ActionOf(a) is { Asks: false });
+    /// A look-up: Bloom answers the CLI's question itself, nothing shows in the chat. A file search that can read into
+    /// files (Everything's content: and the like, EverythingQuery) is not one: it waits for the same approval as reading
+    /// a file outside the chat's folder, in every chat.
+    public bool Quiet(string tool, string input) => IsPc(tool) && Parse(input, a => ActionOf(a) is { Asks: false } x && !ReadsContents(x, a));
 
-    /// What 이 대화에서 항상 허용 covers: one action of the pc tool ("pc:move"), or another tool by name.
-    public string Key(string tool, string input) => IsPc(tool) ? "pc:" + Parse(input, a => S(a, "do"), "") : tool;
+    /// A find_files whose query is more than plain text for names (EverythingQuery).
+    private static bool ReadsContents(PcAction action, JsonElement a) => action.Do == "find_files" && !EverythingQuery.IsPlainName(S(a, "q"));
+
+    /// What 이 대화에서 항상 허용 covers: one action of the pc tool ("pc:move"), or another tool by name; a content search
+    /// is the file-read permission's (ToolPermissions.ReadOutside).
+    public string Key(string tool, string input) => IsPc(tool)
+        ? Parse(input, a => ActionOf(a) is { } x && ReadsContents(x, a) ? ToolPermissions.ReadOutside : "pc:" + S(a, "do"), "pc:")
+        : tool;
+
+    /// What the approval card shows whole (ToolText.Visible throughout): a pc action's every argument, the paths a file
+    /// action works on resolved as it will resolve them (variables expanded); Claude's own file tools' paths and texts;
+    /// any other tool's input.
+    public string Detail(string tool, string input) => Parse(input, a => IsPc(tool) ? PcDetail(a) : OtherDetail(tool, a), "");
+
+    private string PcDetail(JsonElement a)
+    {
+        string action = S(a, "do"), q = S(a, "q"), to = S(a, "to");
+        var sb = new StringBuilder();
+        sb.Append("do: ").Append(ToolText.Visible(action));
+        if (q.Length > 0) sb.Append("\nq: ").Append(ToolText.Visible(q));
+        if (to.Length > 0) sb.Append("\nto: ").Append(ToolText.Visible(to));
+        switch (action)
+        {
+            case "rename" or "move" or "copy" or "recycle":
+                string source = Resolved(q);
+                sb.Append('\n').Append(Tr("원본", "Source")).Append(": ").Append(ToolText.Visible(source));
+                if (action == "rename") sb.Append('\n').Append(Tr("바뀐 이름", "New name")).Append(": ").Append(ToolText.Visible(Path.Combine(Path.GetDirectoryName(source) ?? "", to.Trim())));
+                else if (action != "recycle") sb.Append('\n').Append(Tr("대상", "Destination")).Append(": ").Append(ToolText.Visible(Path.Combine(Resolved(to), FileName(source))));
+                break;
+            case "open":
+                string target = q.Trim().Trim('"');
+                // lexically only: whether the path exists (a file or folder, or else an app by that name) is not looked at
+                // before the user has said yes, as a network path would be reached by it
+                string where = Web.AsUrl(target) ?? Tr($"{Resolved(target)} (그 위치에 없으면 앱 ‘{target}’)", $"{Resolved(target)} (or, if nothing is there, the app ‘{target}’)");
+                sb.Append('\n').Append(Tr("열 대상", "Opens")).Append(": ").Append(ToolText.Visible(where));
+                break;
+        }
+        // a path that is not on a local drive is said so (RealPath.Kind classes it from its text alone)
+        foreach (string path in action is "rename" or "move" or "copy" or "recycle" ? new[] { Resolved(q), Resolved(to) } : action == "open" && Web.AsUrl(q.Trim().Trim('"')) is null ? new[] { Resolved(q) } : [])
+            if (path.Length > 0 && RealPath.Kind(path) != PathKind.Local) { sb.Append('\n').Append(Tr("로컬 드라이브가 아닌 경로가 있습니다.", "A path is not on a local drive.")); break; }
+        return sb.ToString();
+    }
+
+    private static string OtherDetail(string tool, JsonElement a)
+    {
+        string path = S(a, "file_path");
+        return tool switch
+        {
+            "Write" => ToolText.Visible(path) + "\n" + ToolText.Block(Tr("쓸 내용", "Content"), S(a, "content")),
+            "Edit" => ToolText.Visible(path) + "\n" + ToolText.Block(Tr("바꾸기 전", "Before"), S(a, "old_string")) + "\n" + ToolText.Block(Tr("바꾼 후", "After"), S(a, "new_string")),
+            "Read" => ToolText.Visible(path),
+            "Bash" => ToolText.Visible(S(a, "command")),
+            _ => ToolText.Visible(JsonSerializer.Serialize(a, Pretty)),
+        };
+    }
+
+    /// An unknown tool's input on the card: indented, non-ASCII text as it is.
+    private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
+    /// A path as the file actions read it: variables expanded, quotes trimmed, made a full path.
+    private static string Resolved(string path)
+    {
+        string expanded = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"'));
+        try
+        {
+            return Path.GetFullPath(expanded);
+        }
+        catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return expanded;
+        }
+    }
 
     /// The chat's status line while a Bloom call runs; null for other tools.
     public static string? Doing(string tool) => IsPc(tool) ? Tr("PC에서 작업하는 중…", "Working on the PC…") : null;
@@ -119,8 +192,9 @@ internal sealed class BloomTools : IPcTools
         IsPc(tool) ? ActionOf(a) is { } x ? x.Says(S(a, "q"), S(a, "to")) : S(a, "do")
         : tool switch
         {
-            "Read" => Tr($"파일 읽기: {S(a, "file_path")}", $"Read a file: {S(a, "file_path")}"),
-            "Write" or "Edit" => Tr($"파일 쓰기: {S(a, "file_path")}", $"Write a file: {S(a, "file_path")}"),
+            // the ✓ line is short; the card's Detail has the whole path
+            "Read" => Tr($"파일 읽기: {ToolText.Line(S(a, "file_path"))}", $"Read a file: {ToolText.Line(S(a, "file_path"))}"),
+            "Write" or "Edit" => Tr($"파일 쓰기: {ToolText.Line(S(a, "file_path"))}", $"Write a file: {ToolText.Line(S(a, "file_path"))}"),
             "WebFetch" => Tr($"페이지 열기: {Clip(S(a, "url"))}", $"Open a page: {Clip(S(a, "url"))}"),
             // another MCP server's tool: "github · create_issue: {…}"
             _ when tool.StartsWith("mcp__", StringComparison.Ordinal) && tool.Split("__") is { Length: >= 3 } p =>
@@ -136,7 +210,7 @@ internal sealed class BloomTools : IPcTools
         if (ActionOf(args) is not { } action) return ($"Unknown do: {S(args, "do")}.", true);
         // a session started before PC 조작 went to 사용 안 함 still has the tool: it does nothing now
         if (!GroupOn(action.Group) || ToolPermissions.Of(ToolPermissions.Pc) == ToolPermissions.Off) return ("The user switched this off in Bloom's settings.", true);
-        if (conversation is not null && action.Asks && !(Approve is { } approve && await approve(conversation, Name, args.GetRawText())))
+        if (conversation is not null && (action.Asks || ReadsContents(action, args)) && !(Approve is { } approve && await approve(conversation, Name, args.GetRawText())))
             return ("The user declined this. Don't try it again unless they ask.", true);
         try
         {
@@ -176,7 +250,7 @@ internal sealed class BloomTools : IPcTools
     private List<PcAction> Build() => new()
     {
         new("find_apps", "look", (q, _) => Look("apps", q), (q, _) => Tr($"앱 찾기: {q}", $"Find apps: {q}")),
-        new("find_files", "look", (q, _) => Look("files", q), (q, _) => Tr($"파일 찾기: {q}", $"Find files: {q}")),
+        new("find_files", "look", (q, _) => Look("files", q), (q, _) => EverythingQuery.IsPlainName(q) ? Tr($"파일 찾기: {Clip(q, 80)}", $"Find files: {Clip(q, 80)}") : Tr($"파일 내용 검색: {Clip(q, 80)}", $"Search file contents: {Clip(q, 80)}")),
         new("find_recent", "look", (q, _) => Look("recent", q), (_, _) => Tr("최근 파일 보기", "Recent files")),
         new("find_windows", "look", (q, _) => Look("windows", q), (_, _) => Tr("열린 창 보기", "Open windows")),
         new("find_timers", "look", (q, _) => Look("timers", q), (_, _) => Tr("타이머 보기", "Timers")),
@@ -190,9 +264,9 @@ internal sealed class BloomTools : IPcTools
             : Tr($"새 메모: {Clip(Line(q), 50)}", $"New note: {Clip(Line(q), 50)}")),
         new("timer", "bloom", (q, to) => OnUi(() => StartTimer(q, to)), (q, to) => Tr($"타이머: {q} {Clip(to, 30)}", $"Timer: {q} {Clip(to, 30)}").Trim()),
         new("event", "bloom", (q, to) => OnUi(() => AddEvent(q, to)), (q, to) => Tr($"일정: {to} {Clip(q, 40)}", $"Event: {to} {Clip(q, 40)}")),
-        new("rename", "files", (q, to) => OnUi(() => FileAct("rename", q, to)), (q, to) => Tr($"이름 바꾸기: {FileName(q)} → {to}", $"Rename: {FileName(q)} → {to}")),
-        new("move", "files", (q, to) => OnUi(() => FileAct("move", q, to)), (q, to) => Tr($"옮기기: {FileName(q)} → {to}", $"Move: {FileName(q)} → {to}")),
-        new("copy", "files", (q, to) => OnUi(() => FileAct("copy", q, to)), (q, to) => Tr($"복사: {FileName(q)} → {to}", $"Copy: {FileName(q)} → {to}")),
+        new("rename", "files", (q, to) => OnUi(() => FileAct("rename", q, to)), (q, to) => Tr($"이름 바꾸기: {FileName(q)} → {Clip(to)}", $"Rename: {FileName(q)} → {Clip(to)}")),
+        new("move", "files", (q, to) => OnUi(() => FileAct("move", q, to)), (q, to) => Tr($"옮기기: {FileName(q)} → {Clip(to)}", $"Move: {FileName(q)} → {Clip(to)}")),
+        new("copy", "files", (q, to) => OnUi(() => FileAct("copy", q, to)), (q, to) => Tr($"복사: {FileName(q)} → {Clip(to)}", $"Copy: {FileName(q)} → {Clip(to)}")),
         new("recycle", "files", (q, _) => OnUi(() => FileAct("recycle", q, "")), (q, _) => Tr($"휴지통으로: {FileName(q)}{InFolder(q)}", $"To the Recycle Bin: {FileName(q)}{InFolder(q)}")),
         new("clip_read", "clip", (_, _) => OnUi(() => host.ClipText() is { Length: > 0 } t ? t : "No text on the clipboard."), (_, _) => Tr("클립보드 읽기", "Read the clipboard")),
         new("clip_write", "clip", (q, _) => OnUi(() =>

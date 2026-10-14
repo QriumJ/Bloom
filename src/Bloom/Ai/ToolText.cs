@@ -29,6 +29,13 @@ internal static class ToolText
         return sb.ToString();
     }
 
+    /// The most characters of a call's arguments an approval card is made for: a call with more is refused (ApiToolbox) or
+    /// declined (Chats.Asked) rather than asked about with part of it hidden. The card scrolls what it shows.
+    public const int MaxPayload = 200_000;
+
+    /// A labelled block for a card — `── label ──` then `text` made visible, whole: what is approved is all shown.
+    public static string Block(string label, string text) => $"── {label} ──\n{Visible(text)}";
+
     /// The same on one line, cut at `max` (the chat's ✓ line under the answer; the card shows all of it).
     public static string Line(string text, int max = 80)
     {

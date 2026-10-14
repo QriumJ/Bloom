@@ -18,6 +18,24 @@ internal static partial class ChatOutput
     [System.Text.RegularExpressions.GeneratedRegex(@"```file:([^\r\n`]+)\r?\n(.*?)\r?\n```", System.Text.RegularExpressions.RegexOptions.Singleline)]
     private static partial System.Text.RegularExpressions.Regex FencedFile();
 
+    /// The name a ```file:<name> block is saved under: the characters a file name can't have taken out; null for one with
+    /// no name left, a hidden one (.name) or one Windows takes for a device (NUL, COM1…) or a stream (a:b).
+    private static string? SafeName(string raw)
+    {
+        string name = string.Concat(raw.Trim().Split(Path.GetInvalidFileNameChars()));
+        return name.Length == 0 || name.StartsWith('.') || RealPath.Kind(Path.Combine("C:\\", name)) == PathKind.Device ? null : name;
+    }
+
+    /// The files an answer's ```file: blocks would save, in order: (name, content) of each with a name SafeName takes.
+    public static List<(string Name, string Content)> FencedFiles(string text)
+    {
+        var files = new List<(string, string)>();
+        if (!text.Contains("```file:", StringComparison.Ordinal)) return files;
+        foreach (System.Text.RegularExpressions.Match match in FencedFile().Matches(text))
+            if (SafeName(match.Groups[1].Value) is { } name) files.Add((name, match.Groups[2].Value));
+        return files;
+    }
+
     public static ChatOutputResult Process(ChatOutputRequest request, CancellationToken cancellation)
     {
         cancellation.ThrowIfCancellationRequested();
@@ -26,12 +44,12 @@ internal static partial class ChatOutput
             text = FencedFile().Replace(text, match =>
             {
                 cancellation.ThrowIfCancellationRequested();
-                string name = string.Concat(match.Groups[1].Value.Trim().Split(Path.GetInvalidFileNameChars()));
-                if (name.Length == 0 || name.StartsWith('.')) return match.Value;
+                if (SafeName(match.Groups[1].Value) is not { } name) return match.Value;
                 try
                 {
                     System.IO.Directory.CreateDirectory(request.Directory);
-                    File.WriteAllText(Path.Combine(request.Directory, name), match.Groups[2].Value, new UTF8Encoding(false));
+                    // through a handle checked to be inside the output folder (a link made there could lead out of it)
+                    if (!RealPath.WriteInside(request.Directory, Path.Combine(request.Directory, name), new UTF8Encoding(false).GetBytes(match.Groups[2].Value))) return match.Value;
                     return request.SavedTemplate.Replace("{0}", name, StringComparison.Ordinal);
                 }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException)

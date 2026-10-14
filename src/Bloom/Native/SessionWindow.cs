@@ -63,7 +63,7 @@ internal static class SessionWindow
             var start = new ProcessStartInfo(exe) { UseShellExecute = false, CreateNoWindow = true };
             start.ArgumentList.Add(ProbeArg);
             start.ArgumentList.Add(pid.ToString(CultureInfo.InvariantCulture));
-            using var p = Process.Start(start);
+            using var p = Bloom.Ai.ChildProcess.Spawn(start);
             if (p is null) return IntPtr.Zero;
             if (!p.WaitForExit(ProbeWait))
             {

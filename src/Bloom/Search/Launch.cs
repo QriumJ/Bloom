@@ -49,7 +49,9 @@ internal static class Launch
         };
         try
         {
-            if (Win32.ShellExecuteEx(ref info)) return true;
+            // not while another program is being started with inheritable handles (ChildProcess.Launching); an elevation prompt
+            // can wait for a person, so it is left out of the gate
+            if (verb == "runas" ? Win32.ShellExecuteEx(ref info) : Ai.ChildProcess.Launching(() => Win32.ShellExecuteEx(ref info))) return true;
             Log.Write($"ShellExecute failed {Marshal.GetLastWin32Error()} {verb} {target}");
         }
         catch (Exception e)

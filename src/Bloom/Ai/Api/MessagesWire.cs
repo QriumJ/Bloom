@@ -82,9 +82,13 @@ internal sealed class MessagesWire : IApiWire
                     return new ApiChunk(Calls: [new ApiCallPiece(Index(root), ApiJson.Str(block, "id"), ApiJson.Str(block, "name"))]);
                 case "content_block_delta" when root.TryGetProperty("delta", out var json) && ApiJson.Str(json, "type") == "input_json_delta":
                     return new ApiChunk(Calls: [new ApiCallPiece(Index(root), Arguments: ApiJson.Str(json, "partial_json"))]);
+                // the input's count at the start (cached parts counted apart), the output's at the end
+                case "message_start" when root.TryGetProperty("message", out var message) && message.TryGetProperty("usage", out var start):
+                    return new ApiChunk(Tokens: Tokens(start));
                 // the stop reason comes before the end: "max_tokens" = MaxTokens cut the answer
-                case "message_delta" when root.TryGetProperty("delta", out var stop) && ApiJson.Str(stop, "stop_reason") == "max_tokens":
-                    return new ApiChunk(End: ApiEnd.Cut);
+                case "message_delta":
+                    bool cut = root.TryGetProperty("delta", out var stop) && ApiJson.Str(stop, "stop_reason") == "max_tokens";
+                    return new ApiChunk(End: cut ? ApiEnd.Cut : ApiEnd.None, Tokens: root.TryGetProperty("usage", out var end) ? Tokens(end) : null);
                 case "message_stop":
                     return ApiChunk.Finished;
                 case "error":
@@ -97,6 +101,8 @@ internal sealed class MessagesWire : IApiWire
         }
         return ApiChunk.None;
     }
+
+    private static ApiTokens? Tokens(JsonElement usage) => ApiTokens.Of(usage, "input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens");
 
     private static int Index(JsonElement root) => root.TryGetProperty("index", out var i) && i.TryGetInt32(out int n) ? n : 0;
 }

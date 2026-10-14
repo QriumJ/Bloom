@@ -13,6 +13,10 @@ Could not connect to {0}. Check your connection and send again.	{0} に接続で
 No answer from {0}. Send again.	{0} から回答がありません。送り直してください。
 Stopped after {0} tool steps. Send again to go on.	ツールを {0} 回使ったところで止めました。続けるには送り直してください。
 The answer from {0} was cut off. Send again.	{0} の回答が途中で途切れました。送り直してください。
+The answer from {0} was too large, so the connection was closed. Split the request and send again.	{0}の回答が大きすぎるため、接続を閉じました。依頼を分けてもう一度送ってください。
+The answer from {0} ran too long, so the connection was closed. Send again.	{0}の回答が長引いたため、接続を閉じました。もう一度送ってください。
+One answer took too long and was stopped. Send again to go on.	1つの回答に時間がかかりすぎたため停止しました。続けるにはもう一度送ってください。
+Stopped after more than {0} tool calls. Send again to go on.	ツールの呼び出しが{0}回を超えたため停止しました。続けるにはもう一度送ってください。
 {0} redirected the request elsewhere. Bloom did not follow it, to keep the key safe.	{0} がリクエストを別のアドレスに転送しました。キーを守るため、Bloom は転送先に送りませんでした。
 {0} rejected the API key. Check it in Settings > AI accounts.	{0} が API キーを拒否しました。設定 > AI アカウントでキーを確認してください。
 {0} rate limit or credit reached. Send again later or check your plan.	{0} のリクエスト上限またはクレジットに達しました。しばらくしてから送り直すか、プランを確認してください。
@@ -41,6 +45,7 @@ Ultra	ウルトラ
 Fast	高速
 New group	新しいグループ
 New group {0}	新しいグループ {0}
+Declined: too big to show in full on the approval card	拒否しました: 承認カードに全文を表示しきれない大きさです
 Approval pending	承認待ち
 Working…	作業中…
 New chat	新しいチャット
@@ -49,6 +54,9 @@ Thinking…	考え中…
 \n\n<attachment name="{0}">(This format can't be opened here — tell the user its contents didn't come through)</attachment>	\n\n<attachment name="{0}">(この形式はここでは開けません — 内容が届かなかったとユーザーに伝えてください)</attachment>
 Could not send the message. Send it again.	メッセージを送信できませんでした。再送してください。
 **{0}** — file saved	**{0}** — ファイルの保存完了
+{0} · replaces the file that is there	{0} · 既存のファイルを上書きします
+{0} · a new file	{0} · 新しいファイル
+Save files: {0}	ファイルを保存: {0}
 Searching the web…	ウェブを検索中…
 Reading a page…	ページを読み込み中…
 Reading the attachments…	添付ファイルを読み込み中…
@@ -103,15 +111,37 @@ Another sign-in is running	別のアカウントのサインイン中
 Sign the default account in from Claude Code or Codex itself	既定のアカウントは Claude Code または Codex で直接サインインしてください
 This account's sign-in terminal is still open. Close it first.	このアカウントのサインイン用ターミナルがまだ開いています。先に閉じてください。
 Not signed in · Try again	サインインされていません · もう一度お試しください
+Balance	残高
+The credits left on the OpenRouter account.	OpenRouter アカウントの残りクレジットです。
+What is left of this API key's spending limit.	この API キーの利用上限の残り金額です。
+Used	使用済み
+What this API key has spent so far. The account's balance needs a management key.	この API キーでこれまでに使った金額です。アカウントの残高は管理キーでのみ確認できます。
+The DeepSeek account's balance (topped up and granted).	DeepSeek アカウントの残高です (チャージ分と付与分を含む)。
+The MCP server {0} has an unsafe setup (an unencrypted http address, or a header Bloom doesn't send); this chat goes on without it.	MCPサーバー{0}は安全でない設定（暗号化されていないhttpアドレス、または送信できないヘッダー）のため、今回の会話では使わずに回答します。
+The MCP server {0} did not start; this chat goes on without it.	MCP サーバー {0} を起動できなかったため、このチャットでは除いて回答します。
+The MCP servers have {0} tools; {1} are offered and {2} left out. Switch off a server you need less to offer them all.	MCP ツールが {0} 個と多いため {1} 個だけを提供し、{2} 個を除きました。あまり使わないサーバーをオフにするとすべて提供します。
+Starting MCP servers…	MCP サーバーを準備中…
 Reading a file…	ファイルを読み込み中…
 Looking in a folder…	フォルダーを確認中…
 Writing a file…	ファイルを書き込み中…
 Running a command…	コマンドを実行中…
+Using an MCP tool…	MCP ツールを使用中…
+MCP tool {0} · {1}	MCP ツール {0} · {1}
 List a folder: {0}	フォルダーを表示: {0}
 Read a file: {0}	ファイルを読む: {0}
 Write a file: {0}	ファイルに書く: {0}
+Content	書き込む内容
+Before	変更前
+After	変更後
 Edit a file: {0}	ファイルを編集: {0}
 Run a command: {0}	コマンドを実行: {0}
+somewhere unknown	不明な場所
+Goes through a link: {0} → {1}	リンクを経由します: {0} → {1}
+The link leads to a network path or a device.	リンクはネットワークパスまたはデバイスにつながっています。
+Really at: {0}	実際の場所: {0}
+A network path.	ネットワークパスです。
+The file exists already.	すでにあるファイルです。
+It has {0} other names, so it changes there too.	他に名前が{0}個あるため、そちらの場所でも変更されます。
 Claude Code · Approval request	Claude Code · 承認リクエスト
 Allow	許可
 Decline	拒否
@@ -173,7 +203,7 @@ Settings export failed	設定のエクスポート失敗
 Could not save the file. Check the destination and permissions, then retry.	ファイルを保存できませんでした。保存先と権限を確認して再試行してください。
 Import Bloom settings	Bloom の設定をインポート
 Settings imported	設定のインポート完了
-Previous settings backed up in the data folder.	以前の設定をデータフォルダーにバックアップ済みです。
+Previous settings backed up in the data folder. AI permissions and the MCP servers switched on were kept as they are on this PC.	以前の設定をデータフォルダーにバックアップ済みです。AIの権限と有効にしたMCPサーバーは、このPCの設定のまま維持されました。
 Restart Bloom	Bloom を再起動
 Restart Bloom to apply the imported language.	読み込んだ言語を適用するには Bloom を再起動してください。
 Later	後で
@@ -762,9 +792,15 @@ Recently changed	最近変更したもの
 Everything's syntax works too: ext:pdf, size:>10mb, dm:today	Everything の構文も使えます: ext:pdf, size:>10mb, dm:today
 AI chats	AI チャット
 Delete chat	チャットを削除
+Source	元
+Destination	先
+{0} (or, if nothing is there, the app ‘{1}’)	{0}（そこになければアプリ「{1}」）
+Opens	開く対象
+A path is not on a local drive.	ローカルドライブにないパスがあります。
 Open a page: {0}	ページを開く: {0}
 Find apps: {0}	アプリを探す: {0}
 Find files: {0}	ファイルを探す: {0}
+Search file contents: {0}	ファイル内容を検索: {0}
 Timers	タイマー
 Find notes: {0}	メモを探す: {0}
 Open: {0}	開く: {0}
@@ -1264,6 +1300,8 @@ Remove	外す
 File not found. Create it again or check its location.	ファイルがありません。再作成するか場所を確認してください。
 Save…	保存…
 Save file	ファイルを保存
+Tokens in {0} · out {1}	トークン 入力 {0} · 出力 {1}
+This whole chat: {0:N0} in · {1:N0} out tokens	このチャット全体: 入力 {0:N0} · 出力 {1:N0} トークン
 Ask about this screen	この画面について聞く
 Empty + Enter explains the screen · each question is 1 use	空のまま Enter で画面を説明 · 質問ごとに 1 回使用
 Ask anything	何でも聞いてください
@@ -1271,6 +1309,8 @@ Looks up recent things on the web · drop files or press Ctrl+O	最新の情報�
 Bloom Lens picture	Bloom Lens の画像
 Page · {0}	ページ · {0}
 Writing…	書いています…
+Approve MCP tool	MCP ツールの承認
+Approve file or command	ファイル · コマンドの承認
 Approve PC action	PC 操作の承認
 Always allow ‘{0}’ in this chat	このチャットでは「{0}」を常に許可
 Always in this chat	このチャットでは常に許可
@@ -1657,7 +1697,6 @@ Hidden, only while asked: Claude ~470 MB for 4 s · Codex ~110 MB for 1 s	問い
 5 min	5 分
 10 min	10 分
 What's used (32%) or what's left (68% left) · the bars follow	使った量 (32%) か残りの量 (68% 残り) · バーもそれに合わせます
-Used	使用済み
 Left	残り
 What else to search besides apps as you type	入力したとき、アプリ以外に何を一緒に探すか
 Also search	一緒に探す
@@ -1716,17 +1755,17 @@ Permissions	権限
 Ask each time	毎回確認
 Always allow	常に許可
 Read files (outside the chat's folder)	ファイルの読み込み (チャットフォルダーの外)
-API chats · files in the chat's own folder are read without asking	API チャット · チャットフォルダー内のファイルは確認なしで読み込みます
+API chats · files in the chat's own folder are read without asking · searching inside files follows this in every chat	API会話 · 会話フォルダー内のファイルは確認なしで読み取ります · ファイル内容の検索は、すべての会話でこの設定に従います
 Write files	ファイルの書き込み
 API chats · make a file or replace one	API チャット · 新しいファイルの作成、ファイルの上書き
 Edit files	ファイルの編集
 API chats · change part of a file	API チャット · ファイルの一部の変更
 Run commands	コマンドの実行
 API chats · PowerShell in the chat's folder · what it starts ends with it	API チャット · チャットフォルダーで PowerShell を実行 · 起動したプログラムはコマンドと一緒に終了します
+Other MCP tools	その他の MCP ツール
+API chats · tools of the MCP servers switched on below · Off starts none of them	API チャット · 下でオンにしたこの PC の MCP サーバーのツール · オフにするとサーバーを起動しません
 PC actions (Bloom's tool)	PC の操作 (Bloom の機能)
 Every chat · open, notes, timers, files, clipboard · look-ups never ask	すべてのチャット · 開く · メモ · タイマー · ファイル整理 · クリップボード · 調べる操作は確認しません
-Approve file or command	ファイル · コマンドの承認
-Really at: {0}	実際の場所: {0}
 What it may do	できること
 Look up	調べる
 Apps, files, recent files, open windows, timers, your commands — looked up without asking	アプリ、ファイル、最近のファイル、開いているウィンドウ、タイマー、マイコマンド — 確認なしで調べます

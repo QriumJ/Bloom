@@ -23,6 +23,7 @@ internal sealed class ChatMessage
 
     public List<string>? Done { get; set; } // what the AI did on the PC with the user's yes ("✓ 옮기기: …", "✕ …")
     public List<ApiStep>? Steps { get; set; } // assistant, API chats: the model calls of an answer that used tools, sent again when the chat resumes
+    public ApiTokens? Tokens { get; set; } // assistant, API chats: the tokens the provider counted for the answer (all its calls), shown under it
     [System.Text.Json.Serialization.JsonIgnore] public bool Streaming;
     [System.Text.Json.Serialization.JsonIgnore] public string? Status;
     [System.Text.Json.Serialization.JsonIgnore] public readonly List<ToolAsk> Asks = new(); // waiting for the user
@@ -85,6 +86,7 @@ internal sealed partial class Chats
         public readonly bool Immediate = immediate;
         public readonly CancellationTokenSource Cancellation = new();
         public readonly TaskCompletionSource Completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public string? SaveAsk; // the request id of the card asking whether to save the answer's file: blocks (AskToSave), while it waits
     }
     private readonly Dictionary<string, Finishing> finishing = new();
     private readonly Dictionary<string, Task> outputWork = new();
@@ -496,10 +498,23 @@ internal sealed partial class Chats
         });
         // an API answer's tool calls, kept with it before it finishes (TurnEnded comes after) so the chat's file has them
         if (s is ApiSession apiSession)
+        {
             apiSession.StepsDone += steps => events.Post(() =>
             {
                 if (Current() is { } m) m.Steps = steps;
             });
+            apiSession.Counted += tokens => events.Post(() =>
+            {
+                if (Current() is { } m) m.Tokens = tokens;
+            });
+            // a note about its tools (an MCP server left out) as a line under the answer, kept with it
+            apiSession.Noted += note => events.Post(() =>
+            {
+                if (Current() is not { } m) return;
+                (m.Done ??= new()).Add("ℹ " + note);
+                Updated?.Invoke(t);
+            });
+        }
         s.Exited += _ => events.Post(() =>
         {
             if (sessions.TryGetValue(t.Id, out var cur) && ReferenceEquals(cur, s) && sessions.Remove(t.Id)) SessionsChanged?.Invoke();
@@ -517,7 +532,10 @@ internal sealed partial class Chats
         m.Asks.Clear();
         if (leads.Remove(t.Id, out var lead)) m.Text += lead.Flush();
         DateTime? since = turnStarted.Remove(t.Id, out var started) ? started : null;
-        bool fenced = AiModels.Inline(t.Model) && m.Text.Contains("```file:", StringComparison.Ordinal);
+        // ```file: blocks are saved only for an answer that finished, and as 파일 쓰기 (the 권한) says: 사용 안 함 saves none,
+        // 매번 묻기 asks first (below) — replacing a file included — and 항상 허용 saves
+        string write = ToolPermissions.Of(ToolPermissions.Write);
+        bool fenced = ok && write != ToolPermissions.Off && AiModels.Inline(t.Model) && m.Text.Contains("```file:", StringComparison.Ordinal);
         if (!collectFiles || (since is null && !fenced))
         {
             Complete(t, m, ok, error);
@@ -531,9 +549,56 @@ internal sealed partial class Chats
         string nameSlot = "{0}";
         string saved = Tr($"**{nameSlot}** — 파일 저장 완료", $"**{nameSlot}** — file saved");
         var snapshot = new ChatOutputRequest(m.Text, Path.Combine(ThreadFiles(t), "out"), since, fenced, saved);
+        if (fenced && write == ToolPermissions.Ask && !t.AlwaysAllowed.Contains(ToolPermissions.Write))
+        {
+            AskToSave(t, pending, snapshot, ok, error);
+            return;
+        }
         _ = FinishOutput(t, pending, snapshot, ok, error);
         Updated?.Invoke(t);
     }
+
+    /// What an answer's file: blocks wait on when 파일 쓰기 is 매번 묻기: a card listing the files (and which replace one),
+    /// whose answer carries on with the finish — yes saves them, no leaves the blocks in the text. The finish stays open
+    /// meanwhile (a stop ends it, CancelFinish).
+    private void AskToSave(ChatThread t, Finishing pending, ChatOutputRequest request, bool ok, string? error)
+    {
+        var files = ChatOutput.FencedFiles(request.Text);
+        // the card shows the files whole or they are not asked about (the same budget as a tool call's card, Asked): files
+        // too big for it are not saved, and the blocks stay in the text
+        var detail = new StringBuilder();
+        bool fits = files.Sum(f => (long)f.Name.Length + f.Content.Length) <= ToolText.MaxPayload;
+        if (fits)
+            foreach (var (name, content) in files)
+            {
+                bool replaces = File.Exists(Path.Combine(request.Directory, name));
+                detail.Append(detail.Length > 0 ? "\n" : "").Append(ToolText.Block(replaces ? Tr($"{name} · 이미 있는 파일을 덮어씁니다", $"{name} · replaces the file that is there") : Tr($"{name} · 새 파일", $"{name} · a new file"), content));
+            }
+        if (!fits || detail.Length > ToolText.MaxPayload * 2)
+        {
+            (pending.Answer.Done ??= new()).Add("✕ " + Tr("승인 카드에 다 보여 줄 수 없을 만큼 커서 거절했습니다", "Declined: too big to show in full on the approval card"));
+            _ = FinishOutput(t, pending, request with { Fenced = false }, ok, error);
+            return;
+        }
+        string names = ToolText.Line(string.Join(", ", files.Select(f => f.Name)));
+        var ask = new ToolAsk(Guid.NewGuid().ToString("N"), "file", "{}", Tr($"파일 저장: {names}", $"Save files: {names}"), ToolPermissions.Write) { Detail = detail.ToString() };
+        pending.SaveAsk = ask.RequestId;
+        saveAsks[ask.RequestId] = allow =>
+        {
+            if (!finishing.TryGetValue(t.Id, out var current) || !ReferenceEquals(current, pending)) return; // stopped or ended meanwhile
+            pending.SaveAsk = null;
+            _ = FinishOutput(t, pending, allow ? request : request with { Fenced = false }, ok, error);
+        };
+        // a finish that ends here (a stop, the session's end, the chat deleted) completes at once: whatever waits for it goes on
+        pending.Cancellation.Token.Register(() => pending.Completion.TrySetResult());
+        pending.Answer.Asks.Add(ask);
+        pending.Answer.Status = Tr("승인 대기", "Approval pending");
+        Updated?.Invoke(t);
+        AskWaiting?.Invoke(t, ask);
+    }
+
+    /// The answers to the save questions (AskToSave) still waiting, by request id.
+    private readonly Dictionary<string, Action<bool>> saveAsks = new();
 
     private async Task FinishOutput(ChatThread t, Finishing pending, ChatOutputRequest snapshot, bool ok, string? error)
     {
@@ -581,6 +646,15 @@ internal sealed partial class Chats
     private bool CancelFinish(ChatThread t)
     {
         if (!finishing.Remove(t.Id, out var pending)) return false;
+        // a save question still waiting goes with the finish it belongs to — its card too — on every way out (a stop, the
+        // session's end, the chat deleted): a late click then finds nothing and saves nothing
+        if (pending.SaveAsk is { } id)
+        {
+            saveAsks.Remove(id);
+            pending.Answer.Asks.RemoveAll(a => a.RequestId == id);
+            if (pending.Answer.Asks.Count == 0 && pending.Answer.Streaming) pending.Answer.Status = null;
+            pending.SaveAsk = null;
+        }
         _ = pending.Cancellation.CancelAsync();
         return true;
     }

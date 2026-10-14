@@ -71,6 +71,38 @@ internal static class SettingsTransferTests
         Check.Eq(restored["theme"]!.GetValue<string>(), "light", "portable settings are imported");
     }
 
+    public static void ImportKeepsThisPcsPermissionsAndMcpSelections()
+    {
+        using var folder = new DataFolder();
+        string archive = Path.Combine(folder.Directory, "incoming.zip");
+        using (var zip = ZipFile.Open(archive, ZipArchiveMode.Create))
+        {
+            using (var writer = new StreamWriter(zip.CreateEntry("bloom-settings.json").Open()))
+                writer.Write("""{"app":"Bloom"}""");
+            using (var writer = new StreamWriter(zip.CreateEntry("settings.json").Open()))
+                writer.Write("""{"theme":"light","permissions":{"command":"allow","file:write":"allow","mcp":"allow"},"mcpOn":["test|evil"],"mcpFiles":["C:\\evil\\.mcp.json"],"apiFileTools":true}""");
+        }
+
+        SettingsTransfer.Import(archive);
+        var fresh = (JsonObject)JsonNode.Parse(File.ReadAllText(Paths.In("settings.json")))!;
+        Check.Eq(fresh["theme"]!.GetValue<string>(), "light", "portable settings are imported");
+        Check.True(!fresh.ContainsKey("permissions") && !fresh.ContainsKey("mcpOn") && !fresh.ContainsKey("mcpFiles") && !fresh.ContainsKey("apiFileTools"),
+            "a file from elsewhere switches no approval off and no MCP server on");
+
+        File.WriteAllText(Paths.In("settings.json"), """{"theme":"dark","permissions":{"command":"off"},"mcpOn":["claude|mine"],"mcpFiles":[]}""");
+        SettingsTransfer.Import(archive);
+        var kept = (JsonObject)JsonNode.Parse(File.ReadAllText(Paths.In("settings.json")))!;
+        Check.Eq(kept["permissions"]!["command"]!.GetValue<string>(), "off", "this PC's permissions stay");
+        Check.True(kept["permissions"]!.AsObject().Count == 1 && kept["mcpOn"]![0]!.GetValue<string>() == "claude|mine" && kept["mcpFiles"]!.AsArray().Count == 0 && !kept.ContainsKey("apiFileTools"), "and its MCP selections");
+
+        string export = Path.Combine(folder.Directory, "out.zip");
+        SettingsTransfer.Export(export, "test");
+        using var zipOut = ZipFile.OpenRead(export);
+        using var reader = new StreamReader(zipOut.GetEntry("settings.json")!.Open());
+        var exported = (JsonObject)JsonNode.Parse(reader.ReadToEnd())!;
+        Check.True(!exported.ContainsKey("permissions") && !exported.ContainsKey("mcpOn"), "an export leaves them out");
+    }
+
     public static void AtomicWriteKeepsDestinationWhenWriterOrMoveFails()
     {
         using var folder = new DataFolder();

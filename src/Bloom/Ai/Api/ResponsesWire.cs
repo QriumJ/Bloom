@@ -91,9 +91,9 @@ internal sealed class ResponsesWire : IApiWire
                 case "response.function_call_arguments.delta":
                     return new ApiChunk(Calls: [new ApiCallPiece(Index(root), Arguments: ApiJson.Str(root, "delta"))]);
                 case "response.completed":
-                    return ApiChunk.Finished;
+                    return ApiChunk.Finished with { Tokens = Tokens(root) };
                 case "response.incomplete": // the length ceiling or a filter ended it early: what came is kept, as cut off
-                    return new ApiChunk(Done: true, End: ApiEnd.Cut);
+                    return new ApiChunk(Done: true, End: ApiEnd.Cut, Tokens: Tokens(root));
                 case "response.failed":
                     return new ApiChunk(Error: root.TryGetProperty("response", out var r) ? ApiJson.ErrorOf(r) ?? e.Data : e.Data);
                 case "error":
@@ -106,6 +106,10 @@ internal sealed class ResponsesWire : IApiWire
         }
         return ApiChunk.None;
     }
+
+    /// The whole response's counts, in the event that ends it.
+    private static ApiTokens? Tokens(JsonElement root) =>
+        root.TryGetProperty("response", out var r) && r.ValueKind == JsonValueKind.Object && r.TryGetProperty("usage", out var u) ? ApiTokens.Of(u, "input_tokens", "output_tokens") : null;
 
     private static int Index(JsonElement root) => root.TryGetProperty("output_index", out var i) && i.TryGetInt32(out int n) ? n : 0;
 }

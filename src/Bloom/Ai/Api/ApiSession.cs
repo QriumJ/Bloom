@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,7 +11,8 @@ namespace Bloom.Ai;
 
 /// A conversation with an API model (ApiProviders): Bloom keeps the conversation itself and sends all of it each turn,
 /// streaming the answer back as TextDelta. A turn is ApiTurn's loop: the model may call tools (ApiToolbox: Bloom's pc
-/// tool, files and commands in the chat's folder), each action asked in the chat first (ToolAsked → Chats → Answer), and
+/// tool, files and commands in the chat's folder, the other MCP servers switched on: ApiMcp, which the session's end and
+/// a stop close), each action asked in the chat first (ToolAsked → Chats → Answer), and
 /// its steps are kept with the answer (StepsDone → ChatMessage.Steps). A session started again (another model, after
 /// the idle close) begins from the saved chat, tool calls and all (Past, HistoryOf). Nothing runs between turns;
 /// Interrupt cancels the HTTP stream, a running command and the questions waiting. Attached files come inline; files it
@@ -22,7 +24,39 @@ internal sealed class ApiSession : IChatSession
     private IReadOnlyList<ApiPastTurn>? past; // the saved chat's turns, built into `history` by the first turn
     private readonly string conversation, unavailable, folder;
     private CancellationTokenSource? turn;
+    private CancellationTokenSource? mcpLife; // the running turn's MCP lifetime: CloseMcpAll ends it, at once
     private PendingToolAsks? asks; // the running turn's questions to the user
+    private readonly ApiMcp mcp = new(); // the other MCP servers, started by the first turn that offers tools
+    private static readonly ConcurrentDictionary<ApiSession, byte> live = new(); // every session not yet disposed (CloseMcpAll)
+
+    /// 권한's 다른 MCP 도구 set to 사용 안 함: every chat's MCP servers end now and a start under way is cancelled, on a
+    /// worker thread (each server may take a moment). Their turns go on without MCP tools: each turn's MCP lifetime (taken
+    /// at Send, before the settings are read) ends right here, on the calling thread, so a turn that has not started its
+    /// servers yet never will, and one that has stops calling them.
+    public static void CloseMcpAll()
+    {
+        foreach (var s in live.Keys)
+        {
+            s.EndMcpLifetime();
+            _ = Task.Run(s.mcp.Close);
+        }
+    }
+
+    private void EndMcpLifetime()
+    {
+        CancellationTokenSource? life;
+        lock (gate) life = mcpLife;
+        life?.Cancel();
+    }
+
+    /// The running (or last) turn's MCP lifetime token (tests).
+    internal CancellationToken McpLifetime
+    {
+        get
+        {
+            lock (gate) return mcpLife?.Token ?? default;
+        }
+    }
 
     /// `past`: Past(the chat's messages); `unavailable`: the note for a file that can't be read (Chats.UnavailableNote);
     /// `folder`: the chat's own (its attachments' in\, the out\ its files go to; commands run there).
@@ -34,6 +68,7 @@ internal sealed class ApiSession : IChatSession
         this.past = past;
         this.unavailable = unavailable;
         this.folder = folder;
+        live[this] = 0;
     }
 
     public string Model { get; }
@@ -52,6 +87,12 @@ internal sealed class ApiSession : IChatSession
 
     /// Raised before TurnEnded with the steps the answer took (results cut to ApiStep.MaxSaved), for the chat's file.
     public event Action<List<ApiStep>>? StepsDone;
+
+    /// Raised before TurnEnded with the tokens the provider counted for the answer.
+    public event Action<ApiTokens>? Counted;
+
+    /// A note for the chat about the turn's tools (an MCP server that did not start, tools left out).
+    public event Action<string>? Noted;
 
     // never raised: whole answers come as deltas, no process ends
     public event Action<string>? AssistantText { add { } remove { } }
@@ -83,26 +124,29 @@ internal sealed class ApiSession : IChatSession
     public bool Send(string text, IReadOnlyList<string> images)
     {
         var asked = new ApiMessage(ApiMessage.User, text, images.ToArray());
-        CancellationTokenSource stop;
+        CancellationTokenSource stop, life;
         lock (gate)
         {
             if (!Alive || Busy) return false;
             Busy = true;
             LastUsed = DateTime.UtcNow;
             stop = turn = new CancellationTokenSource();
+            life = mcpLife = new CancellationTokenSource(); // before the settings below: a switch to 사용 안 함 after this ends it
         }
         // the settings as they are now: 설정 > PC 작업's switches and 권한 apply from the next message, as in the CLI chats
         var s = Settings.Current;
         var pc = App.Mcp.BloomTools.OfferedTo("api") ? Chats.Tools as IPcTools : null;
         var rules = new Dictionary<string, string>(s.Permissions);
-        _ = Task.Run(() => RunTurn(asked, stop, pc, rules, s.AiTitles));
+        // the servers switched on (read from their programs' files on the worker); 다른 MCP 도구 사용 안 함: none at all
+        var servers = ToolPermissions.Of(rules, ToolPermissions.Mcp) == ToolPermissions.Off ? null : McpCatalog.PreparePicked();
+        _ = Task.Run(() => RunTurn(asked, stop, pc, rules, servers, s.AiTitles, life.Token));
         return true;
     }
 
     /// One turn, on a worker thread: the history built from the saved chat (the first turn: its files are read again),
-    /// the answer's steps (ApiTurn), and they into the conversation (also a partial answer, so the next turn knows what
-    /// was said).
-    private async Task RunTurn(ApiMessage asked, CancellationTokenSource stop, IPcTools? pc, Dictionary<string, string> rules, bool titles)
+    /// the other MCP servers started or closed as now switched on, the answer's steps (ApiTurn), and they into the
+    /// conversation (also a partial answer, so the next turn knows what was said).
+    private async Task RunTurn(ApiMessage asked, CancellationTokenSource stop, IPcTools? pc, Dictionary<string, string> rules, Func<List<McpServerDef>>? servers, bool titles, CancellationToken life)
     {
         ApiReply reply;
         var steps = new List<ApiStep>();
@@ -124,10 +168,23 @@ internal sealed class ApiSession : IChatSession
             if (request is null) reply = new ApiReply(false, "", error);
             else
             {
-                var tools = request.TakesTools ? new ApiToolbox(folder, pc, rules, ask => Ask(pending, ask), ApiToolbox.Secrets()) : null;
-                request = request with { System = Instructions(titles, tools, pc is not null && tools is not null) };
+                ApiToolbox? tools = null;
+                if (request.TakesTools)
+                {
+                    var defs = servers?.Invoke() ?? [];
+                    if (defs.Count > 0) Status?.Invoke(Tr("MCP 서버 준비 중…", "Starting MCP servers…"));
+                    foreach (string note in await mcp.PrepareAsync(defs, ApiToolbox.Reserved, stop.Token, life).ConfigureAwait(false)) Noted?.Invoke(note);
+                    if (defs.Count > 0) Status?.Invoke(null);
+                    tools = new ApiToolbox(folder, pc, rules, ask => Ask(pending, ask), ApiToolbox.Secrets(), life.IsCancellationRequested ? null : mcp);
+                }
+                // fenced ```file: blocks are saved only under 파일 쓰기 (Chats.Finish), so the model is only told of them then
+                request = request with { System = Instructions(titles, tools, pc is not null && tools is not null, ToolPermissions.Of(rules, ToolPermissions.Write) != ToolPermissions.Off) };
                 (reply, steps) = await ApiTurn.RunAsync(request, tools, d => TextDelta?.Invoke(d), st => Status?.Invoke(st), stop.Token).ConfigureAwait(false);
             }
+        }
+        catch (OperationCanceledException) when (stop.IsCancellationRequested)
+        {
+            reply = new ApiReply(false, "", AiErrors.Stopped); // stopped while the MCP servers started
         }
         catch (Exception e)
         {
@@ -153,6 +210,7 @@ internal sealed class ApiSession : IChatSession
             stop.Dispose();
         }
         if (steps.Any(step => step.Keeps)) StepsDone?.Invoke(steps.Select(Saved).ToList());
+        if (reply.Tokens is { } used) Counted?.Invoke(used);
         TurnEnded?.Invoke(reply.Ok, reply.Ok ? null : reply.Error ?? AiErrors.Failed);
     }
 
@@ -162,9 +220,11 @@ internal sealed class ApiSession : IChatSession
         Calls = step.Calls.Select(c => c.Result.Length > ApiStep.MaxSaved ? c with { Result = c.Result[..ApiStep.MaxSaved] + "\n… (cut in the saved chat)" } : c).ToList(),
     };
 
+    /// The turn stops, and the MCP servers end with it (on a worker: each may take a moment); the next turn starts them.
     public void Interrupt()
     {
         lock (gate) turn?.Cancel();
+        _ = Task.Run(mcp.Close);
     }
 
     public void Dispose()
@@ -174,6 +234,8 @@ internal sealed class ApiSession : IChatSession
             Alive = false;
             turn?.Cancel();
         }
+        live.TryRemove(this, out _);
+        _ = Task.Run(mcp.Dispose);
     }
 
     private const string Intro = "You are the assistant in a chat inside Bloom, a Windows launcher the user opens with the Win key. ";
@@ -181,14 +243,16 @@ internal sealed class ApiSession : IChatSession
     /// The instructions: the chats' own (no web search here). Without write_file (no file tools, or 파일 쓰기 사용 안 함),
     /// files go inline as with ChatGPT; with it, the working folder and its out\ for the files the user asks for (Chats
     /// shows what lands there).
-    private static string Instructions(bool titles, ApiToolbox? tools, bool pc)
+    private static string Instructions(bool titles, ApiToolbox? tools, bool pc, bool saveFenced)
     {
         string folder = tools is not null && tools.Offers(ApiToolbox.ReadFile)
             ? "You have file tools on the user's Windows PC; your working folder is this chat's own, relative paths start there, and the user's attached files have copies in in\\ there. "
                 + (tools.Offers(ApiToolbox.RunCommand) ? "run_command runs Windows PowerShell. " : "")
                 + "Write, edit or run a command only when the request needs it: each may wait for the user's OK, and if declined, don't retry. "
             : "";
-        if (tools is null || !tools.Offers(ApiToolbox.WriteFile)) return ClaudeSession.SystemPrompt(null, Intro + CodexSession.InlineFiles + folder, pc: pc, titles: titles, web: false);
+        if (tools?.OffersMcp == true) folder += "Tools named <server>__<tool> are other MCP servers' on the user's PC; each call may wait for the user's OK. ";
+        if (tools is null || !tools.Offers(ApiToolbox.WriteFile))
+            return ClaudeSession.SystemPrompt(null, Intro + (saveFenced ? CodexSession.InlineFiles : "Files can't be saved from this chat: give what the user asks for in your message. ") + folder, pc: pc, titles: titles, web: false);
         string files = "Files the user attached come in the message: text files inside <attachment name=\"…\"> blocks, pictures as images. "
             + "When the user asks for a file (a document, code, a table, an SVG picture...), write it with write_file into out\\ (as out\\<a fitting name>) and say its name in one line; "
             + "it appears in the chat as a file the user can open or save. ";

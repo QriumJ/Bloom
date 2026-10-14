@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,21 +24,55 @@ internal static class ApiClient
 
     private static readonly HttpClient Http = MakeClient();
 
-    private static HttpClient MakeClient()
+    /// The same client for the API chats' other HTTP (an MCP server's web address): no redirect followed there either,
+    /// so its headers go to its own address only.
+    internal static HttpClient Shared => Http;
+
+    private static readonly HttpClient Local = MakeClient(loopbackOnly: true);
+
+    /// For an MCP server on this PC over plain http: no proxy is used (a proxy would be handed the traffic of a server
+    /// that is "here"), and the connection is made only to a loopback address — a name is resolved by Bloom and the
+    /// answers that are not loopback dropped, so a name that resolves elsewhere is never connected to.
+    internal static HttpClient Loopback => Local;
+
+    private static HttpClient MakeClient(bool loopbackOnly = false)
     {
-        var http = new HttpClient(new SocketsHttpHandler
+        var handler = new SocketsHttpHandler
         {
             PooledConnectionLifetime = TimeSpan.FromMinutes(5), // DNS changes are followed
             ConnectTimeout = TimeSpan.FromSeconds(20),
             // a key goes to its provider's address only: a redirect is not followed but answered as a refusal (AiErrors)
             AllowAutoRedirect = false,
-        })
+        };
+        if (loopbackOnly)
+        {
+            handler.UseProxy = false;
+            handler.ConnectCallback = ConnectLoopback;
+        }
+        var http = new HttpClient(handler)
         {
             Timeout = Timeout.InfiniteTimeSpan, // a stream may last minutes; IdleLimit ends a silent one
         };
         // its own name, as OpenCode Go asks of clients rather than a generic library's
         http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Bloom", typeof(ApiClient).Assembly.GetName().Version?.ToString(3) ?? "1.0"));
         return http;
+    }
+
+    private static async ValueTask<Stream> ConnectLoopback(SocketsHttpConnectionContext context, CancellationToken ct)
+    {
+        var addresses = (await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, ct).ConfigureAwait(false)).Where(IPAddress.IsLoopback).ToArray();
+        if (addresses.Length == 0) throw new HttpRequestException("The address is not on this PC.");
+        var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+        try
+        {
+            await socket.ConnectAsync(addresses, context.DnsEndPoint.Port, ct).ConfigureAwait(false);
+            return new NetworkStream(socket, ownsSocket: true);
+        }
+        catch
+        {
+            socket.Dispose();
+            throw;
+        }
     }
 
     /// The call for an API model id (AiModels.Api), on a worker thread (it reads the key and the cached model list):
@@ -64,6 +102,9 @@ internal static class ApiClient
         // the reasoning to send back later: DeepSeek's text (only for a provider that wants it back), Responses' items
         var reasoning = request.Provider.ReplaysReasoning ? new StringBuilder() : null;
         var thoughts = new List<ApiThought>();
+        ApiTokens? tokens = null; // what the provider counted, as its usage events come
+        int thoughtSize = 0;
+        var clock = Stopwatch.StartNew();
         using var idle = CancellationTokenSource.CreateLinkedTokenSource(stop);
         idle.CancelAfter(IdleLimit);
         try
@@ -79,21 +120,33 @@ internal static class ApiClient
             using var response = await Http.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, idle.Token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                string error = await response.Content.ReadAsStringAsync(idle.Token).ConfigureAwait(false);
+                string error;
+                try
+                {
+                    error = await BoundedBody.ReadAsync(response.Content, ApiLimits.MaxErrorBody, idle.Token).ConfigureAwait(false);
+                }
+                catch (ResponseTooLargeException)
+                {
+                    error = ""; // a message is short: the status alone tells
+                }
                 return new ApiReply(false, "", Status(request.Provider, (int)response.StatusCode, error, request.Key));
             }
             using var stream = await response.Content.ReadAsStreamAsync(idle.Token).ConfigureAwait(false);
-            using var reader = new StreamReader(stream, Encoding.UTF8);
+            var reader = new BoundedLineReader(stream, ApiLimits.MaxLine, ApiLimits.MaxStreamBytes);
             var sse = new SseParser();
             while (true)
             {
-                idle.CancelAfter(IdleLimit);
+                // the idle timer restarts with every line, so the whole response has its own bound
+                var left = ApiLimits.MaxResponseTime - clock.Elapsed;
+                if (left <= TimeSpan.Zero) throw new TimeoutException();
+                idle.CancelAfter(left < IdleLimit ? left : IdleLimit);
                 string? line = await reader.ReadLineAsync(idle.Token).ConfigureAwait(false);
                 if ((line is null ? sse.End() : sse.Line(line)) is { } e)
                 {
                     var chunk = wire.Read(e);
                     if (chunk.Text is { Length: > 0 } piece)
                     {
+                        if (text.Length + piece.Length > ApiLimits.MaxAnswerText) throw new ResponseTooLargeException();
                         text.Append(piece);
                         delta(piece);
                     }
@@ -103,9 +156,16 @@ internal static class ApiClient
                         return new ApiReply(false, text.ToString(), AiErrors.ApiFailed(name, Redact(failure, request.Key)));
                     }
                     foreach (var part in chunk.Calls ?? []) calls.Add(part);
+                    if (reasoning is not null && reasoning.Length + (chunk.Reasoning?.Length ?? 0) > ApiLimits.MaxReasoning) throw new ResponseTooLargeException();
                     reasoning?.Append(chunk.Reasoning);
                     // items stream in order: a reasoning item stands before the text (if none came yet) or the next call
-                    if (chunk.Thought is { } item) thoughts.Add(new ApiThought(item, (text.Length > 0 ? 1 : 0) + calls.Count));
+                    if (chunk.Thought is { } item)
+                    {
+                        thoughtSize += item.Length;
+                        if (thoughtSize > ApiLimits.MaxReasoning || thoughts.Count >= ApiLimits.MaxServerTools) throw new ResponseTooLargeException();
+                        thoughts.Add(new ApiThought(item, (text.Length > 0 ? 1 : 0) + calls.Count));
+                    }
+                    if (chunk.Tokens is { } counted) tokens = tokens is { } before ? counted.Over(before) : counted;
                     complete |= chunk.End == ApiEnd.Complete;
                     cut |= chunk.End == ApiEnd.Cut;
                     if (chunk.Done) break;
@@ -115,19 +175,26 @@ internal static class ApiClient
             if (cut || !complete)
             {
                 Log.Write($"api {request.Provider.Id}: answer cut off ({(cut ? "the provider said so" : "the stream ended early")})");
-                return new ApiReply(false, text.ToString(), AiErrors.ApiCutOff(name));
+                return new ApiReply(false, text.ToString(), AiErrors.ApiCutOff(name)) { Tokens = tokens };
             }
             var made = calls.Calls();
-            if (made.Count == 0 && text.Length == 0) return new ApiReply(false, "", AiErrors.ApiNoAnswer(name));
-            return new ApiReply(true, text.ToString(), null) { Calls = made, Reasoning = reasoning is { Length: > 0 } ? reasoning.ToString() : null, Thoughts = thoughts };
+            if (made.Count == 0 && text.Length == 0) return new ApiReply(false, "", AiErrors.ApiNoAnswer(name)) { Tokens = tokens };
+            return new ApiReply(true, text.ToString(), null) { Calls = made, Reasoning = reasoning is { Length: > 0 } ? reasoning.ToString() : null, Thoughts = thoughts, Tokens = tokens };
         }
         catch (OperationCanceledException) when (stop.IsCancellationRequested)
         {
             return new ApiReply(false, text.ToString(), AiErrors.Stopped);
         }
-        catch (OperationCanceledException)
+        catch (Exception e) when (e is OperationCanceledException or TimeoutException)
         {
-            return new ApiReply(false, text.ToString(), AiErrors.TimedOut);
+            if (clock.Elapsed < ApiLimits.MaxResponseTime) return new ApiReply(false, text.ToString(), AiErrors.TimedOut);
+            Log.Write($"api {request.Provider.Id}: the response ran past its time limit");
+            return new ApiReply(false, text.ToString(), AiErrors.ApiTooLong(name)) { Tokens = tokens };
+        }
+        catch (ResponseTooLargeException)
+        {
+            Log.Write($"api {request.Provider.Id}: the response went past a size limit");
+            return new ApiReply(false, text.ToString(), AiErrors.ApiTooLarge(name)) { Tokens = tokens };
         }
         catch (Exception e) when (e is HttpRequestException or IOException)
         {
@@ -158,8 +225,8 @@ internal static class ApiClient
             string path = provider.Wire == ApiWire.Messages ? "models?limit=1000" : "models";
             using var message = new HttpRequestMessage(HttpMethod.Get, provider.Url(path));
             IApiWire.Of(provider.Wire).Authorize(message, provider, key);
-            using var response = await Http.SendAsync(message, limit.Token).ConfigureAwait(false);
-            string body = await response.Content.ReadAsStringAsync(limit.Token).ConfigureAwait(false);
+            using var response = await Http.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, limit.Token).ConfigureAwait(false);
+            string body = await BoundedBody.ReadAsync(response.Content, ApiLimits.MaxBody, limit.Token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode) return (null, Status(provider, (int)response.StatusCode, body, key));
             return (ApiCatalog.Parse(provider, body), null);
         }
@@ -176,6 +243,32 @@ internal static class ApiClient
         {
             Log.Write($"api {provider.Id} models: not a model list");
             return (null, AiErrors.ApiFailed(provider.Name, ""));
+        }
+    }
+
+    /// A plain GET to the provider with its key (ApiBalances): → (status, body); status 0 when it could not be asked (the
+    /// network, IdleLimit). The log gets the provider and the status only.
+    public static async Task<(int Status, string Body)> GetAsync(ApiProvider provider, string path, string key, CancellationToken ct)
+    {
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        limit.CancelAfter(IdleLimit);
+        try
+        {
+            using var message = new HttpRequestMessage(HttpMethod.Get, provider.Url(path));
+            IApiWire.Of(provider.Wire).Authorize(message, provider, key);
+            using var response = await Http.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, limit.Token).ConfigureAwait(false);
+            string body = await BoundedBody.ReadAsync(response.Content, ApiLimits.MaxBody, limit.Token).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode) Log.Write($"api {provider.Id} {path}: HTTP {(int)response.StatusCode}");
+            return ((int)response.StatusCode, body);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return (0, "");
+        }
+        catch (Exception e) when (e is HttpRequestException or IOException)
+        {
+            Log.Write($"api {provider.Id} {path}: {e.GetType().Name}");
+            return (0, "");
         }
     }
 

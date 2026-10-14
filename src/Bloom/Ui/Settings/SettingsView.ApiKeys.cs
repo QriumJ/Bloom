@@ -59,6 +59,8 @@ internal sealed partial class SettingsView
     private async Task RemoveApiKey(ApiProvider p)
     {
         await ApiKeys.RemoveAsync(p.Id); // DPAPI and the file off the UI thread
+        ApiBalances.Forget(p.Id); // its card on the home goes with it
+        if (p.Balance != ApiBalanceWay.None) _ = AiUsage.RefreshBalances();
         Build(lastFilter);
     }
 
@@ -72,6 +74,11 @@ internal sealed partial class SettingsView
     {
         await ApiKeys.SetAsync(p.Id, key); // stored before the look, which reads it
         Build(lastFilter);
+        if (p.Balance != ApiBalanceWay.None)
+        {
+            ApiBalances.Forget(p.Id); // another key's balance is not this one's
+            _ = AiUsage.RefreshBalances(); // its card on the home, from the new key (no CLI is asked for it)
+        }
         await RefreshApiModels(p);
     }
 

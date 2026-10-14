@@ -277,7 +277,7 @@ internal sealed class CodexSession : IChatSession
             Process p;
             try
             {
-                p = launched = Process.Start(psi)!;
+                p = launched = ChildProcess.Spawn(psi)!;
             }
             catch (Exception e)
             {

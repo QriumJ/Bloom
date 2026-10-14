@@ -34,6 +34,7 @@ internal sealed class ApiCallBuilder
             bool newName = piece.Name is { Length: > 0 } && call is { Name.Length: > 0 };
             if (call is null || newId || newName)
             {
+                if (calls.Count >= ApiLimits.MaxCallsPerResponse) throw new ResponseTooLargeException();
                 call = new Call();
                 calls.Add(call);
             }
@@ -43,6 +44,7 @@ internal sealed class ApiCallBuilder
         if (piece.Name is { Length: > 0 } name) call.Name = name;
         if (piece.Extra is { Length: > 0 } extra) call.Extra = extra;
         if (piece.Whole) call.Arguments.Clear();
+        if (call.Arguments.Length + (piece.Arguments?.Length ?? 0) > ApiLimits.MaxCallArguments) throw new ResponseTooLargeException();
         call.Arguments.Append(piece.Arguments);
     }
 

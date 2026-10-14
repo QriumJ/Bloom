@@ -47,7 +47,7 @@ internal static class McpProxy
         Process server;
         try
         {
-            server = Process.Start(psi)!;
+            server = ChildProcess.Spawn(psi)!;
         }
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
         {

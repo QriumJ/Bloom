@@ -27,6 +27,10 @@ internal static class AiErrors
     public static string ApiNoAnswer(string provider) => Tr($"{provider} 답변이 없습니다. 다시 보내세요.", $"No answer from {provider}. Send again.");
     public static string ApiTooManySteps(int steps) => Tr($"도구를 {steps}번 사용한 뒤 멈췄습니다. 이어서 하려면 다시 보내세요.", $"Stopped after {steps} tool steps. Send again to go on.");
     public static string ApiCutOff(string provider) => Tr($"{provider} 답변이 중간에 끊겼습니다. 다시 보내세요.", $"The answer from {provider} was cut off. Send again.");
+    public static string ApiTooLarge(string provider) => Tr($"{provider} 답변이 너무 커서 연결을 닫았습니다. 요청을 나눠 다시 보내세요.", $"The answer from {provider} was too large, so the connection was closed. Split the request and send again.");
+    public static string ApiTooLong(string provider) => Tr($"{provider} 답변이 너무 오래 이어져 연결을 닫았습니다. 다시 보내세요.", $"The answer from {provider} ran too long, so the connection was closed. Send again.");
+    public static string ApiTurnTooLong => Tr("한 답변이 너무 오래 걸려 멈췄습니다. 이어서 하려면 다시 보내세요.", "One answer took too long and was stopped. Send again to go on.");
+    public static string ApiTooManyCalls(int calls) => Tr($"도구 호출이 {calls}번을 넘어 멈췄습니다. 이어서 하려면 다시 보내세요.", $"Stopped after more than {calls} tool calls. Send again to go on.");
 
     /// A request the provider refused: 3xx a redirect (not followed, so the key goes nowhere else), 401/403 the key,
     /// 402/429 the rate or the credit, 404 the model, 5xx the provider itself; anything else with what it said

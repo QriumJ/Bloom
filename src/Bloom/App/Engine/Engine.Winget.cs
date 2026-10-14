@@ -109,7 +109,7 @@ internal sealed partial class Engine
         {
             var list = new List<ActionItem>
             {
-                new() { Title = Tr("터미널에서 설치 (진행 보기)", "Install in a terminal (watch it)"), Glyph = G.Code, Run = () => Process.Start(UserCommands.StartInfo(Winget.CommandLine(p), true))?.Dispose() },
+                new() { Title = Tr("터미널에서 설치 (진행 보기)", "Install in a terminal (watch it)"), Glyph = G.Code, Run = () => Bloom.Ai.ChildProcess.Spawn(UserCommands.StartInfo(Winget.CommandLine(p), true))?.Dispose() },
                 new() { Title = Tr("ID 복사", "Copy the ID"), Keys = "Ctrl+Shift+C", Glyph = G.Copy, Run = () => Launch.Copy(p.Id) },
                 new() { Title = Tr("설치 명령 복사", "Copy the install command"), Glyph = G.Copy, Run = () => Launch.Copy(Winget.CommandLine(p)) },
             };

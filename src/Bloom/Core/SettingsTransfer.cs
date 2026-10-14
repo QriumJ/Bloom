@@ -17,7 +17,11 @@ internal static class SettingsTransfer
     public static readonly string[] Files = { "settings.json", "favorites.json", "names.json", "quicklinks.json", "usercommands.json", "colors.json" };
 
     /// Settings that belong to this PC, not to the person: they keep their local value on import.
-    private static readonly string[] Local = { "claudePath", "codexPath", "onboarded", "aiAccounts", "claudeChatAccount", "gptChatAccount" }; // AI accounts: sign-in folders on this PC
+    // AI accounts: sign-in folders on this PC. permissions (and the old apiFileTools switch they replaced) and the MCP
+    // servers and files switched on (mcpOn, mcpFiles) decide what the AI may do on THIS PC and which programs of it run: a
+    // file from elsewhere keeps none of them (a settings file must not be able to turn an approval off or a server on), and
+    // an export leaves them out
+    private static readonly string[] Local = { "claudePath", "codexPath", "onboarded", "aiAccounts", "claudeChatAccount", "gptChatAccount", "permissions", "apiFileTools", "mcpOn", "mcpFiles" };
 
     private const string Manifest = "bloom-settings.json";
 

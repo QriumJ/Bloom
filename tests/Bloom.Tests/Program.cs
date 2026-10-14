@@ -11,6 +11,7 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if (args.Length == 2 && args[0] == FakeMcpServer.Flag) return FakeMcpServer.Run(args[1]); // a test's MCP server, not the tests
         string? filter = args.Length > 0 ? args[0] : null;
         var tests = typeof(Program).Assembly.GetTypes()
             .Where(t => t.Name.EndsWith("Tests", StringComparison.Ordinal) && t.IsClass)

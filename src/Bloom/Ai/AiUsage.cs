@@ -34,9 +34,9 @@ internal static class AiUsage
 
     public static DateTime? Fetched { get; private set; }
 
-    /// Claude Code or Codex is installed: the block shows only then. Looked up once, again on each refresh
-    /// (the lookups scan folders, and the home asks on every draw).
-    public static bool Available => available ??= Find() is not (null, null);
+    /// Claude Code or Codex is installed, or an API key has a balance card (ApiBalances): the block shows only then. The
+    /// CLIs are looked up once, again on each refresh (the lookups scan folders, and the home asks on every draw).
+    public static bool Available => (available ??= Find() is not (null, null)) || (madeUp is null && ApiBalances.Wanted);
 
     /// The last look at this account gave nothing (signed out, or the CLI failed); its card keeps the old numbers.
     public static bool Failed(string id) => failed.Contains(id);
@@ -53,7 +53,8 @@ internal static class AiUsage
         get
         {
             var now = DateTime.Now;
-            var source = madeUp ?? AiAccounts.All.Where(a => !a.Hidden).Select(a => known.GetValueOrDefault(a.Id)).OfType<UsageAccount>();
+            // the API keys' balance cards after the accounts' (the recording mode's made-up cards have none)
+            var source = madeUp ?? AiAccounts.All.Where(a => !a.Hidden).Select(a => known.GetValueOrDefault(a.Id)).OfType<UsageAccount>().Concat(ApiBalances.Cards);
             return source.Select(a => a with { Limits = a.Limits.ConvertAll(l => l.Resets is { } r && r <= now ? l with { Percent = 0, Resets = null } : l) }).ToList();
         }
     }
@@ -150,7 +151,30 @@ internal static class AiUsage
         Func<AiAccount, Task<UsageAccount?>>? chatgpt = !light && codexCli is null ? null : a => AskChatGpt(a, codexCli, light);
         var c = Task.Run(() => Each(due.Where(a => a.Kind == "claude").ToList(), claude));
         var g = Task.Run(() => Each(due.Where(a => a.Kind == "chatgpt").ToList(), chatgpt));
-        if (await c | await g) Fetched = DateTime.Now;
+        var b = Task.Run(() => Balances()); // the API keys' balances beside them: one HTTPS request each, no CLI
+        if (await c | await g | await b) Fetched = DateTime.Now;
+    }
+
+    /// The API balance cards asked again; one provider's failure keeps its old card and the others'.
+    private static async Task<bool> Balances()
+    {
+        try
+        {
+            return await ApiBalances.RefreshAsync().ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            Log.Error("api balances", e);
+            return false;
+        }
+    }
+
+    /// An API key was added, replaced or removed: only the balance cards are asked again (no CLI runs for that).
+    public static async Task RefreshBalances()
+    {
+        if (madeUp is not null) return;
+        if (await Task.Run(() => Balances())) Fetched = DateTime.Now;
+        Updated?.Invoke();
     }
 
     /// If picked, the light way first; when it gives nothing (a token Bloom may not refresh ran out, the endpoint changed) Codex's

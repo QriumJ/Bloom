@@ -28,5 +28,8 @@ internal sealed record ApiProvider(string Id, string Name, string BaseUrl, ApiWi
     /// A header carrying a stable id per conversation (OpenCode Go routes and caches by it).
     public string? SessionHeader { get; init; }
 
+    /// Its endpoint for the key's balance, shown on the home's AI 사용량 (ApiBalances); None: no card.
+    public ApiBalanceWay Balance { get; init; }
+
     public string Url(string path) => BaseUrl.TrimEnd('/') + "/" + path;
 }

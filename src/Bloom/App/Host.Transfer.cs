@@ -56,7 +56,7 @@ internal sealed partial class Host
             var files = SettingsTransfer.Import(dlg.FileName);
             Reload();
             Log.Write($"settings imported ({files.Count} files)");
-            Tell(owner, Tr("설정 불러오기 완료", "Settings imported"), Tr("기존 설정은 데이터 폴더에 백업되었습니다.", "Previous settings backed up in the data folder."));
+            Tell(owner, Tr("설정 불러오기 완료", "Settings imported"), Tr("기존 설정은 데이터 폴더에 백업되었습니다. AI 권한과 MCP 서버 선택은 이 PC의 설정을 그대로 유지했습니다.", "Previous settings backed up in the data folder. AI permissions and the MCP servers switched on were kept as they are on this PC."));
             if (Lang.Pending(Settings.Current.Language)
                 && ConfirmWindow.Ask(owner, Tr("Bloom 다시 시작", "Restart Bloom"), Tr("불러온 언어를 적용하려면 Bloom을 다시 시작해야 합니다.", "Restart Bloom to apply the imported language."),
                     (Tr("다시 시작", "Restart"), MessageBoxResult.Yes), (Tr("나중에", "Later"), MessageBoxResult.No)) == MessageBoxResult.Yes)
@@ -143,7 +143,7 @@ internal sealed partial class Host
             if (Opt.NoHook) psi.ArgumentList.Add("--no-hook");
             if (Opt.NoTray) psi.ArgumentList.Add("--no-tray");
             foreach (string a in extra) psi.ArgumentList.Add(a);
-            System.Diagnostics.Process.Start(psi);
+            Bloom.Ai.ChildProcess.Spawn(psi);
             return true;
         }
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)

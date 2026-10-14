@@ -84,7 +84,7 @@ internal sealed partial class Host
         Process? p;
         try
         {
-            p = Process.Start(psi);
+            p = Bloom.Ai.ChildProcess.Spawn(psi);
         }
         catch (System.ComponentModel.Win32Exception e) when (e.NativeErrorCode == 1223)
         {

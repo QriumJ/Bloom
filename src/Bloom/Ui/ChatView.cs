@@ -238,7 +238,18 @@ internal sealed class ChatView : Grid, IComposerHost
         el.BeginAnimation(OpacityProperty, Motion.Paced(new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(170)) { EasingFunction = ease, BeginTime = begin }));
     }
 
-    private static string Key(ChatMessage m) => $"{m.Text.Length}|{m.Status}|{m.Streaming}|{m.Error}|{m.Files?.Count}|{m.Asks.Count}|{m.Done?.Count}";
+    private static string Key(ChatMessage m) => $"{m.Text.Length}|{m.Status}|{m.Streaming}|{m.Error}|{m.Files?.Count}|{m.Asks.Count}|{m.Done?.Count}|{m.Tokens}";
+
+    /// An API answer's tokens, quietly under it; the whole chat's so far in its tooltip.
+    private static FrameworkElement TokensLine(ApiTokens used, ChatThread t)
+    {
+        var all = t.Messages.Aggregate(default(ApiTokens), (sum, x) => x.Tokens is { } n ? sum + n : sum);
+        var line = Theme.T(Tr($"토큰 입력 {ApiTokens.Short(used.In)} · 출력 {ApiTokens.Short(used.Out)}", $"Tokens in {ApiTokens.Short(used.In)} · out {ApiTokens.Short(used.Out)}"),
+            11, Theme.P.TextFaint, Theme.Regular, false);
+        line.Margin = new Thickness(0, 6, 0, 0);
+        line.ToolTip = Tr($"이 대화 전체: 입력 {all.In:N0} · 출력 {all.Out:N0} 토큰", $"This whole chat: {all.In:N0} in · {all.Out:N0} out tokens");
+        return line;
+    }
 
     /// An attached picture, small, opening in the default viewer.
     private static FrameworkElement Thumb(string path)
@@ -427,6 +438,7 @@ internal sealed class ChatView : Grid, IComposerHost
             foreach (string d in done) answer.Children.Add(DoneLine(d));
         foreach (var ask in m.Asks) answer.Children.Add(AskCard(t, ask));
         if (!m.Streaming && !m.Error && m.Text.Length > 0) answer.Children.Add(CopyButton(m.Text));
+        if (!m.Streaming && m.Tokens is { } used) answer.Children.Add(TokensLine(used, t));
         if (m.Streaming)
         {
             var st = Theme.T(m.Status ?? (m.Text.Length == 0 ? Tr("생각하는 중…", "Thinking…") : Tr("쓰는 중…", "Writing…")), 12.5, Theme.P.TextFaint, Theme.Regular, false);
@@ -436,12 +448,13 @@ internal sealed class ChatView : Grid, IComposerHost
         return answer;
     }
 
-    /// What the AI did (or was told not to) on the PC in this answer: ✓ allowed, ✕ declined.
+    /// What the AI did (or was told not to) on the PC in this answer: ✓ allowed, ✕ declined; ℹ a note about its tools
+    /// (an MCP server left out).
     private static FrameworkElement DoneLine(string line)
     {
         bool ok = line.StartsWith('✓');
         var sp = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 0) };
-        var g = Theme.Glyph(ok ? G.Check : G.Close, 10, ok ? Theme.P.Accent : Theme.P.TextFaint);
+        var g = Theme.Glyph(ok ? G.Check : line.StartsWith('ℹ') ? G.Info : G.Close, 10, ok ? Theme.P.Accent : Theme.P.TextFaint);
         g.VerticalAlignment = VerticalAlignment.Center;
         g.Margin = new Thickness(0, 1, 7, 0);
         sp.Children.Add(g);
@@ -459,7 +472,8 @@ internal sealed class ChatView : Grid, IComposerHost
         shield.VerticalAlignment = VerticalAlignment.Center;
         shield.Margin = new Thickness(0, 1, 7, 0);
         top.Children.Add(shield);
-        string title = ToolPermissions.IsFileOrCommand(ask.Key) ? Tr("파일 · 명령 승인", "Approve file or command") : Tr("PC 작업 승인", "Approve PC action");
+        string title = ToolPermissions.IsMcp(ask.Key) ? Tr("MCP 도구 승인", "Approve MCP tool")
+            : ToolPermissions.IsFileOrCommand(ask.Key) ? Tr("파일 · 명령 승인", "Approve file or command") : Tr("PC 작업 승인", "Approve PC action");
         top.Children.Add(Theme.T(title, 12, Theme.P.TextDim, Theme.Medium, false));
         col.Children.Add(top);
         int colon = ask.Says.IndexOf(": ", StringComparison.Ordinal); // "옮기기: a.pdf → …" → 항상 허용 names just 옮기기
@@ -472,8 +486,10 @@ internal sealed class ChatView : Grid, IComposerHost
         if (detail) col.Children.Add(AskDetail(ask.Detail));
         var buttons = new WrapPanel();
         buttons.Children.Add(AskButton(Tr("허용", "Allow"), true, () => host.Chats.Answer(t, ask, true)));
-        buttons.Children.Add(AskButton(verb.Length > 0 ? Tr($"이 대화에서 ‘{verb}’ 항상 허용", $"Always allow ‘{verb}’ in this chat") : Tr("이 대화에서 항상 허용", "Always in this chat"),
-            false, () => host.Chats.Answer(t, ask, true, true)));
+        // a question that is always put (MustAsk) has no "always": it would not be kept
+        if (!ask.MustAsk)
+            buttons.Children.Add(AskButton(verb.Length > 0 ? Tr($"이 대화에서 ‘{verb}’ 항상 허용", $"Always allow ‘{verb}’ in this chat") : Tr("이 대화에서 항상 허용", "Always in this chat"),
+                false, () => host.Chats.Answer(t, ask, true, true)));
         buttons.Children.Add(AskButton(Tr("거절", "Decline"), false, () => host.Chats.Answer(t, ask, false)));
         col.Children.Add(buttons);
         return new SmoothBorder

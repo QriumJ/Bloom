@@ -13,6 +13,10 @@ Could not connect to {0}. Check your connection and send again.	无法连接到 
 No answer from {0}. Send again.	{0} 没有回答。请重新发送。
 Stopped after {0} tool steps. Send again to go on.	已在使用工具 {0} 次后停止。要继续请重新发送。
 The answer from {0} was cut off. Send again.	{0} 的回答中途中断。请重新发送。
+The answer from {0} was too large, so the connection was closed. Split the request and send again.	{0} 的回答过大，已关闭连接。请拆分请求后重新发送。
+The answer from {0} ran too long, so the connection was closed. Send again.	{0} 的回答耗时过长，已关闭连接。请重新发送。
+One answer took too long and was stopped. Send again to go on.	单次回答耗时过长，已停止。要继续请重新发送。
+Stopped after more than {0} tool calls. Send again to go on.	工具调用超过 {0} 次，已停止。要继续请重新发送。
 {0} redirected the request elsewhere. Bloom did not follow it, to keep the key safe.	{0} 将请求转到了其他地址。为保护密钥，Bloom 没有跟随。
 {0} rejected the API key. Check it in Settings > AI accounts.	{0} 拒绝了 API 密钥。请在 设置 > AI 账户 中检查密钥。
 {0} rate limit or credit reached. Send again later or check your plan.	{0} 的请求限额或额度已用完。请稍后重新发送，或检查你的套餐。
@@ -41,6 +45,7 @@ Ultra	超高
 Fast	快速
 New group	新建分组
 New group {0}	新建分组 {0}
+Declined: too big to show in full on the approval card	已拒绝：内容过大，无法在批准卡片上完整显示
 Approval pending	等待批准
 Working…	正在处理…
 New chat	新对话
@@ -49,6 +54,9 @@ Thinking…	思考中…
 \n\n<attachment name="{0}">(This format can't be opened here — tell the user its contents didn't come through)</attachment>	\n\n<attachment name="{0}">(此格式无法在这里打开 — 请告诉用户内容没有传过来)</attachment>
 Could not send the message. Send it again.	无法发送消息。请重新发送。
 **{0}** — file saved	**{0}** — 已保存文件
+{0} · replaces the file that is there	{0} · 将覆盖已有文件
+{0} · a new file	{0} · 新文件
+Save files: {0}	保存文件：{0}
 Searching the web…	正在搜索网页…
 Reading a page…	正在读取网页…
 Reading the attachments…	正在读取附件…
@@ -103,15 +111,37 @@ Another sign-in is running	另一个账户正在登录
 Sign the default account in from Claude Code or Codex itself	默认账户请直接在 Claude Code 或 Codex 中登录
 This account's sign-in terminal is still open. Close it first.	此账户的登录终端仍处于打开状态。请先将其关闭。
 Not signed in · Try again	未登录 · 请重试
+Balance	余额
+The credits left on the OpenRouter account.	OpenRouter 账户剩余的额度。
+What is left of this API key's spending limit.	此 API 密钥消费上限中剩余的金额。
+Used	已用
+What this API key has spent so far. The account's balance needs a management key.	此 API 密钥迄今已花费的金额。账户余额只能用管理密钥查询。
+The DeepSeek account's balance (topped up and granted).	DeepSeek 账户的余额（含充值和赠送）。
+The MCP server {0} has an unsafe setup (an unencrypted http address, or a header Bloom doesn't send); this chat goes on without it.	MCP 服务器 {0} 的设置不安全（未加密的 http 地址，或无法发送的请求头），本次对话将不使用它。
+The MCP server {0} did not start; this chat goes on without it.	MCP 服务器 {0} 未能启动，本次对话将不使用它继续回答。
+The MCP servers have {0} tools; {1} are offered and {2} left out. Switch off a server you need less to offer them all.	MCP 工具共有 {0} 个，数量过多，只提供 {1} 个，省略了 {2} 个。关闭不常用的服务器即可全部提供。
+Starting MCP servers…	正在准备 MCP 服务器…
 Reading a file…	正在读取文件…
 Looking in a folder…	正在查看文件夹…
 Writing a file…	正在写入文件…
 Running a command…	正在运行命令…
+Using an MCP tool…	正在使用 MCP 工具…
+MCP tool {0} · {1}	MCP 工具 {0} · {1}
 List a folder: {0}	查看文件夹: {0}
 Read a file: {0}	读取文件：{0}
 Write a file: {0}	写入文件：{0}
+Content	写入内容
+Before	修改前
+After	修改后
 Edit a file: {0}	编辑文件: {0}
 Run a command: {0}	运行命令: {0}
+somewhere unknown	未知位置
+Goes through a link: {0} → {1}	经过链接：{0} → {1}
+The link leads to a network path or a device.	该链接指向网络路径或设备。
+Really at: {0}	实际位置：{0}
+A network path.	这是网络路径。
+The file exists already.	该文件已存在。
+It has {0} other names, so it changes there too.	它还有 {0} 个其他名称，因此在那些位置也会改变。
 Claude Code · Approval request	Claude Code · 批准请求
 Allow	允许
 Decline	拒绝
@@ -173,7 +203,7 @@ Settings export failed	设置导出失败
 Could not save the file. Check the destination and permissions, then retry.	无法保存文件。请检查保存位置和权限后重试。
 Import Bloom settings	导入 Bloom 设置
 Settings imported	已导入设置
-Previous settings backed up in the data folder.	原设置已备份到数据文件夹。
+Previous settings backed up in the data folder. AI permissions and the MCP servers switched on were kept as they are on this PC.	原有设置已备份到数据文件夹。AI 权限和已启用的 MCP 服务器保持本机设置不变。
 Restart Bloom	重启 Bloom
 Restart Bloom to apply the imported language.	重新启动 Bloom 以应用导入的语言。
 Later	稍后
@@ -762,9 +792,15 @@ Recently changed	最近修改
 Everything's syntax works too: ext:pdf, size:>10mb, dm:today	也支持 Everything 的语法：ext:pdf, size:>10mb, dm:today
 AI chats	AI 聊天
 Delete chat	删除对话
+Source	源
+Destination	目标
+{0} (or, if nothing is there, the app ‘{1}’)	{0}（若该位置没有，则打开应用“{1}”）
+Opens	打开对象
+A path is not on a local drive.	有路径不在本地驱动器上。
 Open a page: {0}	打开网页：{0}
 Find apps: {0}	查找应用：{0}
 Find files: {0}	查找文件：{0}
+Search file contents: {0}	搜索文件内容：{0}
 Timers	计时器
 Find notes: {0}	查找便笺：{0}
 Open: {0}	打开：{0}
@@ -1264,6 +1300,8 @@ Remove	移除
 File not found. Create it again or check its location.	未找到文件。请重新生成或检查位置。
 Save…	保存…
 Save file	保存文件
+Tokens in {0} · out {1}	令牌 输入 {0} · 输出 {1}
+This whole chat: {0:N0} in · {1:N0} out tokens	整个对话：输入 {0:N0} · 输出 {1:N0} 令牌
 Ask about this screen	就这个屏幕提问
 Empty + Enter explains the screen · each question is 1 use	留空按 Enter 解释屏幕 · 每次提问消耗 1 次
 Ask anything	想问什么都可以
@@ -1271,6 +1309,8 @@ Looks up recent things on the web · drop files or press Ctrl+O	最新信息会�
 Bloom Lens picture	Bloom Lens 图片
 Page · {0}	页面 · {0}
 Writing…	正在撰写…
+Approve MCP tool	批准 MCP 工具
+Approve file or command	批准文件 · 命令操作
 Approve PC action	批准电脑操作
 Always allow ‘{0}’ in this chat	在此对话中始终允许“{0}”
 Always in this chat	在此对话中始终允许
@@ -1657,7 +1697,6 @@ Hidden, only while asked: Claude ~470 MB for 4 s · Codex ~110 MB for 1 s	仅在
 5 min	5 分钟
 10 min	10 分钟
 What's used (32%) or what's left (68% left) · the bars follow	已用量 (32%) 或剩余量 (剩 68%) · 进度条也随之变化
-Used	已用
 Left	剩余
 What else to search besides apps as you type	输入时除了应用还要一起搜索什么
 Also search	同时搜索
@@ -1716,17 +1755,17 @@ Permissions	权限
 Ask each time	每次询问
 Always allow	始终允许
 Read files (outside the chat's folder)	读取文件（对话文件夹以外）
-API chats · files in the chat's own folder are read without asking	API 聊天 · 对话文件夹内的文件无需询问直接读取
+API chats · files in the chat's own folder are read without asking · searching inside files follows this in every chat	API 对话 · 对话文件夹内的文件无需询问即可读取 · 在所有对话中，文件内容搜索也遵循此设置
 Write files	写入文件
 API chats · make a file or replace one	API 聊天 · 新建文件、覆盖文件
 Edit files	编辑文件
 API chats · change part of a file	API 聊天 · 修改文件的一部分
 Run commands	运行命令
 API chats · PowerShell in the chat's folder · what it starts ends with it	API 聊天 · 在对话文件夹中运行 PowerShell · 启动的程序会随命令一起结束
+Other MCP tools	其他 MCP 工具
+API chats · tools of the MCP servers switched on below · Off starts none of them	API 聊天 · 下方已开启的本机 MCP 服务器工具 · 关闭后不会启动服务器
 PC actions (Bloom's tool)	电脑操作（Bloom 功能）
 Every chat · open, notes, timers, files, clipboard · look-ups never ask	所有对话 · 打开 · 便笺 · 计时器 · 文件整理 · 剪贴板 · 查询操作无需询问
-Approve file or command	批准文件 · 命令操作
-Really at: {0}	实际位置：{0}
 What it may do	可以做的事
 Look up	查询
 Apps, files, recent files, open windows, timers, your commands — looked up without asking	应用、文件、最近的文件、打开的窗口、计时器、我的命令 — 无需询问直接查询

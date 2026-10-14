@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -51,92 +51,84 @@ internal static class ApiCommand
     {
         // UTF-8 out, so Korean file names and text come through; -EncodedCommand takes the command with no quoting to break
         string script = "[Console]::OutputEncoding = [Text.Encoding]::UTF8; $ProgressPreference = 'SilentlyContinue'; " + command;
-        var psi = new ProcessStartInfo("powershell.exe")
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-            WorkingDirectory = folder,
-        };
-        foreach (string a in new[] { "-NoProfile", "-NonInteractive", "-EncodedCommand", Convert.ToBase64String(Encoding.Unicode.GetBytes(script)) }) psi.ArgumentList.Add(a);
+        string powershell = Path.Combine(System.Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"); // not whatever the current folder holds
+        string line = string.Join(" ", new[] { powershell, "-NoProfile", "-NonInteractive", "-EncodedCommand", Convert.ToBase64String(Encoding.Unicode.GetBytes(script)) }.Select(McpLaunch.Quote));
         // an explicit environment: Bloom's own without what looks like a credential (the provider keys a user may keep there)
-        psi.Environment.Clear();
-        foreach (var (name, value) in Environment().Kept) psi.Environment[name] = value;
+        var kept = Environment().Kept;
         using var job = CommandJob.Create();
         if (job is null) return ("The command could not be started in a job of its own, so it was not run.", true);
-        var output = new StringBuilder();
-        void Take(string? line)
-        {
-            if (line is null) return;
-            lock (output)
-                if (output.Length <= MaxOutput) output.Append(line).Append('\n');
-        }
-        using var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
-        p.OutputDataReceived += (_, e) => Take(e.Data);
-        p.ErrorDataReceived += (_, e) => Take(e.Data);
-        // the process itself ending (WaitForExitAsync also waits for its output to close, which something it left
-        // running in the background may hold open until the time limit)
-        var exited = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        p.Exited += (_, _) => exited.TrySetResult();
+        // created suspended and put into the job before it runs (ChildProcess): nothing it starts can be outside the job
+        ChildProcess p;
         try
         {
-            p.Start();
+            p = ChildProcess.Start(line, folder, kept, job);
         }
-        catch (Win32Exception e)
+        catch (Exception e) when (e is Win32Exception or InvalidOperationException)
         {
             return ("PowerShell could not start: " + e.Message, true);
         }
-        if (!job.Add(p))
-        {
-            Kill(p);
-            return ("The command could not be started in a job of its own, so it was not run.", true);
-        }
-        p.StandardInput.Close();
-        p.BeginOutputReadLine();
-        p.BeginErrorReadLine();
+        using var _ = p;
+        p.Input.Dispose();
+        var output = new StringBuilder();
+        // read in pieces, not lines: a command printing one endless line holds no more than MaxOutput of it
+        var readers = Task.WhenAll(Task.Run(() => Collect(p.Output, output)), Task.Run(() => Collect(p.Error, output)));
         using var limit = CancellationTokenSource.CreateLinkedTokenSource(stop);
         limit.CancelAfter(timeout ?? Timeout);
         try
         {
-            await exited.Task.WaitAsync(limit.Token).ConfigureAwait(false);
+            // the process itself ending (its output closing too may wait for something it left running in the background)
+            await p.WaitForExitAsync(limit.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
-            Kill(p); // with its console host, which Windows made before the process joined the job
+            p.Kill();
             job.Kill(); // the command and all it started, detached ones too
+            readers.Wait(OutputWait);
             stop.ThrowIfCancellationRequested();
             return (Shown(output) + $"\n(stopped: still running after {(int)(timeout ?? Timeout).TotalSeconds} s)", true);
         }
         // what it left running ends with it (an app is the pc tool's to open), and with them their hold on the output
         job.Kill();
-        p.WaitForExit(); // the last lines of output
+        readers.Wait(OutputWait); // the last of the output
         int code = p.ExitCode;
         return (Shown(output) + $"\n(exit code {code})", code != 0);
+    }
+
+    /// How long the readers get to finish after the command and its job ended (the pipes are closed by then).
+    private static readonly TimeSpan OutputWait = TimeSpan.FromSeconds(5);
+
+    /// A pipe's text, in 4 KB pieces, kept up to MaxOutput characters and read on (so the command never blocks) to its end.
+    private static void Collect(Stream stream, StringBuilder output)
+    {
+        var decoder = new UTF8Encoding(false).GetDecoder();
+        var bytes = new byte[4096];
+        var chars = new char[bytes.Length + 1];
+        try
+        {
+            int n;
+            while ((n = stream.Read(bytes, 0, bytes.Length)) > 0)
+            {
+                int count = decoder.GetChars(bytes, 0, n, chars, 0);
+                lock (output)
+                    if (output.Length <= MaxOutput) output.Append(chars, 0, count);
+            }
+        }
+        catch (Exception e) when (e is IOException or ObjectDisposedException)
+        {
+            /* the pipe ended */
+        }
+        finally
+        {
+            stream.Dispose();
+        }
     }
 
     private static string Shown(StringBuilder output)
     {
         lock (output)
         {
-            string text = output.ToString().TrimEnd();
+            string text = output.ToString().Replace("\r\n", "\n", StringComparison.Ordinal).TrimEnd();
             return text.Length > MaxOutput ? text[..MaxOutput] + "\n… (output cut)" : text.Length == 0 ? "(no output)" : text;
-        }
-    }
-
-    /// The process and its tree (its console host among them).
-    private static void Kill(Process p)
-    {
-        try
-        {
-            p.Kill(entireProcessTree: true);
-        }
-        catch (Exception e) when (e is InvalidOperationException or Win32Exception)
-        {
-            /* it ended on its own meanwhile */
         }
     }
 }

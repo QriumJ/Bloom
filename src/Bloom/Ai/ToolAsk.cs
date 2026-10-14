@@ -9,4 +9,8 @@ internal sealed record ToolAsk(string RequestId, string Tool, string Input, stri
     /// The whole of what it will do when Says can't hold it (an API chat's command, a file's full path), already made
     /// visible (ToolText): the card shows it complete, in monospace. Empty: Says is all of it.
     public string Detail { get; init; } = "";
+
+    /// The question is put to the user whatever 설정's 권한 or an earlier 항상 허용 says (사용 안 함 still refuses): what it is
+    /// about goes somewhere only the user can judge, as a path through a link, which the card shows.
+    public bool MustAsk { get; init; }
 }

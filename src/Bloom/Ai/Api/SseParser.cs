@@ -9,6 +9,10 @@ internal sealed class SseParser
     private string? name;
     private readonly StringBuilder data = new();
     private bool hasData;
+    private readonly int maxData;
+
+    /// `maxData`: the most characters one event's data may hold (ResponseTooLargeException past it).
+    public SseParser(int maxData = ApiLimits.MaxEvent) => this.maxData = maxData;
 
     /// One line without its line break → the event it completes, else null.
     public SseEvent? Line(string line)
@@ -22,6 +26,7 @@ internal sealed class SseParser
         if (field == "event") name = value;
         else if (field == "data")
         {
+            if (data.Length + value.Length + 1 > maxData) throw new ResponseTooLargeException();
             if (hasData) data.Append('\n');
             data.Append(value);
             hasData = true;

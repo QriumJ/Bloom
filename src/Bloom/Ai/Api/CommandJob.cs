@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
@@ -75,9 +74,9 @@ internal sealed class CommandJob : IDisposable
         return new CommandJob(job);
     }
 
-    /// Puts a process just started into the job. PowerShell runs nothing of the command before it has loaded (hundreds
-    /// of milliseconds), so this, right after CreateProcess, comes before anything it could start.
-    public bool Add(Process process) => AssignProcessToJobObject(job, process.Handle);
+    /// Puts a process just created, still suspended (ChildProcess), into the job: it has run nothing yet, so nothing it
+    /// starts can be outside the job.
+    public bool Add(IntPtr process) => AssignProcessToJobObject(job, process);
 
     /// Ends every process in the job, and waits (up to KillWait) until they are gone: termination only begins when
     /// TerminateJobObject returns, and until a process is gone it holds the chat's folder (its working folder) and the

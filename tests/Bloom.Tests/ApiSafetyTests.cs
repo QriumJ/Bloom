@@ -93,7 +93,8 @@ internal static class ApiSafetyTests
 
         string deep = Path.Combine(f.Path, string.Join("\\", Enumerable.Repeat("a-long-folder-name", 8)), "file.txt");
         Run(Box(f, _ => false, asked), ApiToolbox.WriteFile, new { path = deep, content = "x" });
-        Check.True(asked[^1].Detail.StartsWith(deep, StringComparison.Ordinal) && asked[^1].Says.Contains(deep, StringComparison.Ordinal), "a write's card names the whole path");
+        Check.True(asked[^1].Detail.StartsWith(deep, StringComparison.Ordinal) && !asked[^1].Says.Contains(deep, StringComparison.Ordinal) && asked[^1].Says.Length < 120,
+            "a write's card names the whole path; the ✓ line a short one");
     }
 
     public static void DetachedProcessesEndWithTheCommand()

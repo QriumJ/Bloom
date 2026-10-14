@@ -29,11 +29,13 @@ internal static class HomeViews
         var grid = new Grid { Margin = new Thickness(16, 0, 16, 6) };
         int columns = Math.Min(accounts.Count, PerRow);
         for (int c = 0; c < columns; c++) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        // 홈 편집's tools move and rename accounts: an API key's balance card is none, and stays where it is
+        var movable = accounts.Where(a => a.Balance is null).ToList();
         for (int i = 0; i < accounts.Count; i++)
         {
             if (i % PerRow == 0) grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             var a = accounts[i];
-            var card = Card(a, AiUsage.Who(a, accounts), edit is { } e ? CardTools(accounts, i, e) : null);
+            var card = Card(a, AiUsage.Who(a, accounts), edit is { } e && a.Balance is null ? CardTools(movable, movable.IndexOf(a), e) : null);
             card.Margin = new Thickness(4, i >= PerRow ? 8 : 0, 4, 0);
             Grid.SetColumn(card, i % PerRow);
             Grid.SetRow(card, i / PerRow);
@@ -151,6 +153,18 @@ internal static class HomeViews
             stack.Children.Add(row);
             stack.Children.Add(Bar(left ? Shown(l.Percent, true) : l.Percent, l.Percent >= 90));
         }
+        if (a.Balance is { } balance) // an API key's card: "잔액  $12.34"
+        {
+            var row = new Grid { Margin = new Thickness(0, 2, 0, 0) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.Children.Add(Theme.T(balance.Label, 11, Theme.P.TextDim));
+            var amount = Theme.T(balance.Amount, 12.5, Theme.P.Text, Theme.Semi, false);
+            Typography.SetNumeralAlignment(amount, FontNumeralAlignment.Tabular);
+            Grid.SetColumn(amount, 1);
+            row.Children.Add(amount);
+            stack.Children.Add(row);
+        }
         FrameworkElement body = stack;
         if (tools is not null)
         {
@@ -171,7 +185,7 @@ internal static class HomeViews
             CornerRadius = new CornerRadius(10),
             Padding = new Thickness(12, 9, 12, 10),
             Child = body,
-            ToolTip = string.Join("\n", a.Limits.Select(l => Tip(l, left))),
+            ToolTip = a.Balance?.Tip ?? string.Join("\n", a.Limits.Select(l => Tip(l, left))),
         };
     }
 

@@ -65,7 +65,7 @@ internal static class Winget
             StandardErrorEncoding = Encoding.UTF8,
         };
         foreach (string a in args) psi.ArgumentList.Add(a);
-        using var p = Process.Start(psi);
+        using var p = Bloom.Ai.ChildProcess.Spawn(psi);
         if (p is null) return (-1, "");
         var read = p.StandardOutput.ReadToEndAsync(stop);
         _ = p.StandardError.ReadToEndAsync(stop); // drained so a full pipe never stalls winget

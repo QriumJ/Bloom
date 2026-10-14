@@ -99,7 +99,7 @@ internal static class Uninstalls
         };
         try
         {
-            using var proc = Process.Start(psi);
+            using var proc = Bloom.Ai.ChildProcess.Spawn(psi);
             if (proc is null) return (false, null);
             string err = await proc.StandardError.ReadToEndAsync();
             await proc.WaitForExitAsync();

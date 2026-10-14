@@ -8,6 +8,7 @@ internal sealed record UsageAccount(string Name, string? Plan, List<UsageLimit> 
 {
     public string Id { get; init; } = ""; // the AiAccount it belongs to
     public string? Who { get; init; } // the account's e-mail, shown when one kind has more than one card
+    public UsageBalance? Balance { get; init; } // an API key's card (ApiBalances): its balance, no limits; not an AiAccount
 
     /// ChatGPT's plan as Codex's app-server and wham name it, in the card's words: the three Pro tiers by their monthly
     /// price (the user's call, 10-12), from Codex's own names (prolite, pro, promax; OpenAI publishes no table), the

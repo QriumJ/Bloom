@@ -25,7 +25,7 @@ internal static class CodexUsage
         Process? p = null;
         try
         {
-            p = Process.Start(psi);
+            p = ChildProcess.Spawn(psi);
             if (p is null) return null;
             string version = typeof(CodexUsage).Assembly.GetName().Version?.ToString(3) ?? "0";
             await p.StandardInput.WriteLineAsync("{\"method\":\"initialize\",\"id\":0,\"params\":{\"clientInfo\":{\"name\":\"bloom\",\"title\":\"Bloom\",\"version\":\"" + version + "\"}}}");

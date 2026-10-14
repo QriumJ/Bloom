@@ -230,7 +230,7 @@ internal sealed class ClaudeSession : IChatSession
         try
         {
             cancellation.ThrowIfCancellationRequested();
-            var p = launched = Process.Start(psi);
+            var p = launched = ChildProcess.Spawn(psi);
             if (p is null)
             {
                 error = AiErrors.ClaudeStartFailed;

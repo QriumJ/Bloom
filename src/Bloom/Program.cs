@@ -238,7 +238,7 @@ internal static class Program
         var psi = new System.Diagnostics.ProcessStartInfo(updater) { UseShellExecute = false };
         psi.ArgumentList.Add("--silent");
         psi.ArgumentList.Add("--uninstall");
-        System.Diagnostics.Process.Start(psi);
+        Bloom.Ai.ChildProcess.Spawn(psi);
         return 0;
     }
 
