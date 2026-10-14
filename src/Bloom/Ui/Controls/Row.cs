@@ -21,6 +21,12 @@ internal sealed class Row : SmoothBorder
     public Action<ActionItem>? SideClicked; // the item's side button (관리자로 실행) was pressed
     private FrameworkElement? side;
     public readonly Grid Cells;
+    private TextBlock? title; // a result's title (Result): up to its share of the row, the subtitle takes the rest
+    private double titleShare;
+
+    // the title's share of a result row: 400 or, with no subtitle, 600 of the 728 px a row has in a launcher of the
+    // default size, so a wider launcher shows more of both
+    private const double TitleShare = 400.0 / 728, LoneTitleShare = 600.0 / 728;
 
     public Row(ResultItem? item, double height = 42)
     {
@@ -55,6 +61,14 @@ internal sealed class Row : SmoothBorder
             RightClicked?.Invoke();
             e.Handled = true;
         };
+    }
+
+    /// A result's title gets its share of the width the row has now, before the row's cells are measured.
+    protected override Size MeasureOverride(Size constraint)
+    {
+        if (title is not null && !double.IsInfinity(constraint.Width))
+            title.MaxWidth = Math.Max(0, constraint.Width - Padding.Left - Padding.Right) * titleShare;
+        return base.MeasureOverride(constraint);
     }
 
     public void Add(UIElement el, GridLength width)
@@ -138,7 +152,8 @@ internal sealed class Row : SmoothBorder
         icon.Margin = new Thickness(0, 0, 12, 0);
         r.Add(icon, GridLength.Auto);
         var title = Theme.T(Core.Hangul.KeepAll(item.Title), 14, Theme.P.Text, Theme.Medium);
-        title.MaxWidth = item.Subtitle is null ? 600 : 400;
+        r.title = title;
+        r.titleShare = item.Subtitle is null ? LoneTitleShare : TitleShare;
         r.Add(title, GridLength.Auto);
         var sub = Theme.T(item.Subtitle ?? "", 12.5, Theme.P.TextFaint);
         sub.Margin = new Thickness(10, 1, 8, 0);

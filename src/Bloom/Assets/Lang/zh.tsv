@@ -1667,6 +1667,9 @@ Glass on (Windows transparency effects)	玻璃效果已开启 (Windows 透明效
 Windows transparency effects are off, so it is solid	Windows 透明效果已关闭，因此显示为纯色
 {0} · the accent and the overall tone change together	{0} · 强调色和整体色调会一起改变
 The launcher, tool windows, chat and settings together · Ctrl+= / Ctrl+- / Ctrl+0 in the launcher	启动器、工具窗口、对话和设置一起调整 · 在启动器中按 Ctrl+= / Ctrl+- / Ctrl+0
+Reset to default	恢复默认大小
+Launcher window size	启动器窗口大小
+Now {0} × {1} · default {2} × {3} · drag the launcher's edges or corners to change it	当前 {0} × {1} · 默认 {2} × {3} · 拖动启动器的边缘或角落即可调整
 Favorite icons	收藏图标
 Icon style	图标样式
 Picture icon background	图片图标的背景

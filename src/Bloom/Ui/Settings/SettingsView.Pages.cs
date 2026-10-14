@@ -62,6 +62,16 @@ internal sealed partial class SettingsView
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         Choice(Tr("크기", "Size"), Tr("런처 · 도구 창 · AI 채팅 · 설정 창을 함께 · 런처에서 Ctrl+= / Ctrl+- / Ctrl+0", "The launcher, tool windows, chat and settings together · Ctrl+= / Ctrl+- / Ctrl+0 in the launcher"), G.Screen,
             Theme.Scales.Select(x => (x.ToString(inv), $"{x * 100:0}%")).ToArray(), Theme.Scale.ToString(inv), v => Theme.SetScale(double.Parse(v, inv)), filter);
+        void ResetSize()
+        {
+            host.Window.ResetSize();
+            Build(lastFilter); // the size on the line
+        }
+        var reset = ToolUi.TextButton(Tr("기본 크기로 되돌리기", "Reset to default"), ResetSize);
+        reset.VerticalAlignment = VerticalAlignment.Center;
+        Add(Tr("런처 창 크기", "Launcher window size"),
+            Tr($"지금 {s.Width} × {s.Height} · 기본 {Settings.DefaultWidth} × {Settings.DefaultHeight} · 런처의 가장자리나 모서리를 끌어서 바꿉니다", $"Now {s.Width} × {s.Height} · default {Settings.DefaultWidth} × {Settings.DefaultHeight} · drag the launcher's edges or corners to change it"),
+            reset, G.Screen, ResetSize, null, filter);
 
         Header(Tr("즐겨찾기 아이콘", "Favorite icons"));
         Choice(Tr("아이콘 스타일", "Icon style"), Tr("그림 아이콘 배경", "Picture icon background"), G.Palette,

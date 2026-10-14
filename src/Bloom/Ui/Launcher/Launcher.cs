@@ -85,8 +85,10 @@ internal sealed partial class Launcher : Window, IChatHost
         Title = "Bloom";
         Width = Settings.Current.Width;
         Height = Settings.Current.Height;
+        MinWidth = LauncherSize.MinWidth;
+        MinHeight = LauncherSize.MinHeight;
         WindowStyle = WindowStyle.SingleBorderWindow;
-        ResizeMode = ResizeMode.NoResize;
+        ResizeMode = ResizeMode.CanResize; // by its edges and corners (Launcher.Size.cs)
         ShowInTaskbar = false;
         Topmost = true;
         Background = Brushes.Transparent;
@@ -94,7 +96,7 @@ internal sealed partial class Launcher : Window, IChatHost
         UseLayoutRounding = true;
         SnapsToDevicePixels = true;
         TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
-        WindowChrome.SetWindowChrome(this, new WindowChrome { CaptionHeight = 0, GlassFrameThickness = new Thickness(-1), ResizeBorderThickness = new Thickness(0), CornerRadius = new CornerRadius(0), UseAeroCaptionButtons = false });
+        WindowChrome.SetWindowChrome(this, new WindowChrome { CaptionHeight = 0, GlassFrameThickness = new Thickness(-1), ResizeBorderThickness = new Thickness(6), CornerRadius = new CornerRadius(0), UseAeroCaptionButtons = false });
 
         layout = new Grid();
         layout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(60) });
@@ -219,7 +221,7 @@ internal sealed partial class Launcher : Window, IChatHost
             Padding = new Thickness(12, 6, 12, 7),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Bottom,
-            Margin = new Thickness(0, 0, 0, 12),
+            Margin = new Thickness(24, 0, 24, 12), // as wide as the body allows, whatever its size
             Visibility = Visibility.Collapsed,
             IsHitTestVisible = false,
         };
@@ -231,13 +233,17 @@ internal sealed partial class Launcher : Window, IChatHost
         var footLine = new SmoothBorder { Background = Theme.P.Line };
         Grid.SetRow(footLine, 3);
         layout.Children.Add(footLine);
+        // the mark, the context (trimmed to the room the hints on the right leave) and the hints
         var foot = new Grid { Margin = new Thickness(16, 0, 14, 0) };
-        var leftSp = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        leftSp.Children.Add(MarkImage(15));
+        foot.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        foot.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        foot.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        foot.Children.Add(MarkImage(15));
         footContext = Theme.T("Bloom", 12, Theme.P.TextFaint, Theme.Medium);
-        footContext.Margin = new Thickness(8, 0, 0, 0);
-        leftSp.Children.Add(footContext);
-        foot.Children.Add(leftSp);
+        footContext.Margin = new Thickness(8, 0, 12, 0);
+        Grid.SetColumn(footContext, 1);
+        foot.Children.Add(footContext);
+        Grid.SetColumn(footRight, 2);
         foot.Children.Add(footRight);
         Grid.SetRow(foot, 4);
         layout.Children.Add(foot);
@@ -247,8 +253,9 @@ internal sealed partial class Launcher : Window, IChatHost
         WireBoxDrag();
         LocationChanged += (_, _) =>
         {
-            if (IsVisible) host.Tools.Layout(); // the attached tools follow while it is dragged
+            if (IsVisible && !sizing) host.Tools.Layout(); // the attached tools follow while it is dragged (sized: SizeChanged)
         };
+        WireSizing();
 
         WireAttachments();
         box.TextChanged += (_, _) => OnText();
@@ -327,14 +334,15 @@ internal sealed partial class Launcher : Window, IChatHost
         return t;
     }
 
-    /// A scroll viewer with a thin thumb over the content (no track, no arrows).
+    /// A scroll viewer with a thin thumb over the content (no track, no arrows); the thumb takes the mouse before a
+    /// window's resize edge under it.
     private static ControlTemplate? thinScroll;
 
     public static ControlTemplate ThinScroll() => thinScroll ??= (ControlTemplate)System.Windows.Markup.XamlReader.Parse("""
         <ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" TargetType="ScrollViewer">
           <Grid>
             <ScrollContentPresenter x:Name="PART_ScrollContentPresenter" CanContentScroll="{TemplateBinding CanContentScroll}"/>
-            <ScrollBar x:Name="PART_VerticalScrollBar" HorizontalAlignment="Right" Width="4" MinWidth="0" Margin="0,6,2,6" Cursor="Arrow"
+            <ScrollBar x:Name="PART_VerticalScrollBar" HorizontalAlignment="Right" Width="4" MinWidth="0" Margin="0,6,2,6" Cursor="Arrow" WindowChrome.IsHitTestVisibleInChrome="True"
                        Maximum="{TemplateBinding ScrollableHeight}" ViewportSize="{TemplateBinding ViewportHeight}"
                        Value="{Binding VerticalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}"
                        Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}">
@@ -606,14 +614,16 @@ internal sealed partial class Launcher : Window, IChatHost
     }
 
     /// Where it was dragged to, while that is on a screen; else centred on the monitor under the mouse, a little above
-    /// the middle.
+    /// the middle. Its size is the kept one at Bloom's scale, no larger than that monitor's work area.
     public void Place(int? displayIndex = null)
     {
+        var info = new Win32.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<Win32.MONITORINFO>() };
         if (displayIndex is null && movedTo is { } at && Handle != IntPtr.Zero
-            && Win32.MonitorFromPoint(new Win32.POINT { X = at.X + 40, Y = at.Y + 20 }, 0 /* MONITOR_DEFAULTTONULL */) != IntPtr.Zero)
+            && Win32.MonitorFromPoint(new Win32.POINT { X = at.X + 40, Y = at.Y + 20 }, 0 /* MONITOR_DEFAULTTONULL */) is var here && here != IntPtr.Zero
+            && Win32.GetMonitorInfo(here, ref info))
         {
-            uint dpiHere = Win32.GetDpiForWindow(Handle) is > 0 and var dw ? dw : 96;
-            Win32.SetWindowPos(Handle, Win32.HWND_TOPMOST, at.X, at.Y, (int)Math.Round(Width * dpiHere / 96.0), (int)Math.Round(Height * dpiHere / 96.0), Win32.SWP_NOACTIVATE);
+            var (mw, mh) = LauncherSize.Fit(Settings.Current.Width, Settings.Current.Height, ToolDock.Dpi(Handle) * Theme.Scale, info.rcWork);
+            Win32.SetWindowPos(Handle, Win32.HWND_TOPMOST, at.X, at.Y, mw, mh, Win32.SWP_NOACTIVATE);
             return;
         }
         IntPtr mon;
@@ -627,18 +637,19 @@ internal sealed partial class Launcher : Window, IChatHost
             Win32.GetCursorPos(out var p);
             mon = Win32.MonitorFromPoint(p, Win32.MONITOR_DEFAULTTONEAREST);
         }
-        var info = new Win32.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<Win32.MONITORINFO>() };
         if (!Win32.GetMonitorInfo(mon, ref info)) return;
         if (Win32.GetDpiForMonitor(mon, 0, out uint dpi, out _) != 0 || dpi == 0) dpi = 96; // failed: 100 %, never a zero-size window
         double scale = dpi / 96.0;
-        int w = (int)Math.Round(Width * scale), h = (int)Math.Round(Height * scale);
         var wa = info.rcWork;
+        var (w, h) = LauncherSize.Fit(Settings.Current.Width, Settings.Current.Height, scale * Theme.Scale, wa);
         int x = wa.Left + (wa.Right - wa.Left - w) / 2;
         int y = wa.Top + (int)((wa.Bottom - wa.Top - h) * 0.3);
         if (Handle == IntPtr.Zero)
         {
             Left = x / scale;
             Top = y / scale;
+            Width = w / scale;
+            Height = h / scale;
             return;
         }
         Win32.SetWindowPos(Handle, Win32.HWND_TOPMOST, x, y, w, h, Win32.SWP_NOACTIVATE);
@@ -677,7 +688,6 @@ internal sealed partial class Launcher : Window, IChatHost
     public void ShowToast(string text)
     {
         toastText.Text = text;
-        toast.MaxWidth = Math.Max(120, ActualWidth - 48);
         toast.Visibility = Visibility.Visible;
         toast.Opacity = 1;
         // without fades it simply goes after the same time

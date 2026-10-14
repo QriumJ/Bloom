@@ -66,7 +66,7 @@ internal sealed partial class Launcher
                 Foot(Tr("새 대화", "New chat"), "Ctrl+N", () => ShowChat(host.Chats.New()));
                 Divider();
                 Foot(Tr("더보기", "More"), "Ctrl+K", OpenActions);
-                footContext.Text = thread is { Messages.Count: > 0 } ? ClipText(thread.Title, 34) : Tr("AI 채팅", "AI chat");
+                footContext.Text = thread is { Messages.Count: > 0 } ? thread.Title : Tr("AI 채팅", "AI chat"); // trimmed to the footer's room
                 work.Working = busy;
                 break;
             case Mode.Form:

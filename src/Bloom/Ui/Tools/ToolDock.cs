@@ -297,6 +297,18 @@ internal sealed class ToolDock
         }
     }
 
+    /// The launcher was sized from `from` to `to` (dip at 100 %; by hand, or back to its default): a tool put beyond its
+    /// right or bottom edge moves with that edge, the others keep their place from its top-left; then all are laid out.
+    public void LauncherSized((int w, int h) from, (int w, int h) to)
+    {
+        foreach (var s in windows.Where(w => w.Edge == "free").Select(w => w.Spot).OfType<ToolPlace>())
+        {
+            if (s.X >= from.w) s.X += to.w - from.w;
+            if (s.Y >= from.h) s.Y += to.h - from.h;
+        }
+        Layout();
+    }
+
     /// A tool was dropped after a drag or a resize: touching the open launcher, or a tool attached to it, it stays
     /// attached right there; anywhere else it floats there.
     public void Moved(ToolWindow w)
@@ -521,7 +533,8 @@ internal sealed class ToolDock
 
     // ── screens ─────────────────────────────────────────────────────────────────────────────────
 
-    private static double Dpi(IntPtr hwnd) => hwnd != IntPtr.Zero && Win32.GetDpiForWindow(hwnd) is > 0 and var d ? d / 96.0 : 1;
+    /// A window's screen scale (1 = 96 dpi).
+    public static double Dpi(IntPtr hwnd) => hwnd != IntPtr.Zero && Win32.GetDpiForWindow(hwnd) is > 0 and var d ? d / 96.0 : 1;
 
     private static Win32.RECT WorkArea(int x, int y)
     {

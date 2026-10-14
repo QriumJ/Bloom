@@ -106,8 +106,9 @@ internal sealed class Settings
     public string Transparency { get; set; } = "system"; // system (Windows' transparency effects) | off (solid, lighter on the GPU)
     public double Scale { get; set; } = 1; // 설정 > 일반 > 크기: 0.8 … 1.5 (Ui\Theme\Theme.cs Zoom)
     public List<ToolPlace> Tools { get; set; } = new(); // the open tool windows (Ui\Tools\ToolDock.cs)
-    public int Width { get; set; } = 760;
-    public int Height { get; set; } = 476;
+    public int Width { get; set; } = DefaultWidth; // the launcher as last sized by hand: dip at 100 % (Scale multiplies it)
+    public int Height { get; set; } = DefaultHeight;
+    public const int DefaultWidth = 760, DefaultHeight = 476; // 설정 > 일반 > 런처 창 크기 puts it back to these
 
     [JsonIgnore] private static Saver? saver;
     [JsonIgnore] public static Settings Current { get; private set; } = new();

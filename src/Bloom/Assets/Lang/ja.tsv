@@ -1667,6 +1667,9 @@ Glass on (Windows transparency effects)	ガラス効果オン (Windows の透明
 Windows transparency effects are off, so it is solid	Windows の透明効果がオフのため、単色になります
 {0} · the accent and the overall tone change together	{0} · アクセントと全体のトーンが一緒に変わります
 The launcher, tool windows, chat and settings together · Ctrl+= / Ctrl+- / Ctrl+0 in the launcher	ランチャー、ツール ウィンドウ、チャット、設定をまとめて · ランチャーで Ctrl+= / Ctrl+- / Ctrl+0
+Reset to default	既定のサイズに戻す
+Launcher window size	ランチャー ウィンドウのサイズ
+Now {0} × {1} · default {2} × {3} · drag the launcher's edges or corners to change it	現在 {0} × {1} · 既定 {2} × {3} · ランチャーの端や角をドラッグして変更します
 Favorite icons	お気に入りのアイコン
 Icon style	アイコンのスタイル
 Picture icon background	画像アイコンの背景
