@@ -12,8 +12,15 @@ internal sealed record ApiProvider(string Id, string Name, string BaseUrl, ApiWi
     /// Model families served on another endpoint than `Wire`, or on none Bloom speaks (ApiProviders.WireFor).
     public ApiRoute[] Routes { get; init; } = Array.Empty<ApiRoute>();
 
+    /// Model ids containing one of these (lower case) take no tools: their chats are plain conversations.
+    public string[] NoToolModels { get; init; } = Array.Empty<string>();
+
     /// OpenRouter takes the level as `reasoning: { effort }` rather than `reasoning_effort`.
     public bool NestedEffort { get; init; }
+
+    /// Its thinking models want their `reasoning_content` back on every earlier assistant turn of a request with tools
+    /// (DeepSeek: a 400 without it); kept with the answer's steps for that.
+    public bool ReplaysReasoning { get; init; }
 
     /// Its /models entries may name each model's endpoint (OpenCode Go): such a name decides before the Routes.
     public bool MixedEndpoints { get; init; }

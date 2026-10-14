@@ -22,6 +22,7 @@ internal sealed class ChatMessage
     public string? Sent { get; set; } // user: the message as any model got it (time, a page's contents; Files are added by each side); null = Text (older files)
 
     public List<string>? Done { get; set; } // what the AI did on the PC with the user's yes ("✓ 옮기기: …", "✕ …")
+    public List<ApiStep>? Steps { get; set; } // assistant, API chats: the model calls of an answer that used tools, sent again when the chat resumes
     [System.Text.Json.Serialization.JsonIgnore] public bool Streaming;
     [System.Text.Json.Serialization.JsonIgnore] public string? Status;
     [System.Text.Json.Serialization.JsonIgnore] public readonly List<ToolAsk> Asks = new(); // waiting for the user
@@ -436,7 +437,7 @@ internal sealed partial class Chats
         }
         s = sessionFactory is not null ? sessionFactory(t, effort)
             : Demo.On ? new DemoSession(t.Model, effort)
-            : provider == "api" ? new ApiSession(t.Model, effort, t.Id, ApiSession.Past(t.Messages), UnavailableNote())
+            : provider == "api" ? new ApiSession(t.Model, effort, t.Id, ApiSession.Past(t.Messages), UnavailableNote(), ThreadFiles(t))
             : provider == "chatgpt" ? new CodexSession(t.Model, effort, FilesRel(t), t.Id) { AccountHome = account.Home }
             : new ClaudeSession(t.Model, effort, FilesRel(t), "Bloom · " + (t.Messages.Count > 0 ? (t.Title.Length > 40 ? t.Title[..40] + "…" : t.Title) : Tr("새 대화", "New chat"))) { AccountHome = account.Home };
         // a session lives in its account's folder: under another account it starts fresh, with the chat so far given to it;
@@ -493,6 +494,12 @@ internal sealed partial class Chats
         {
             if (Current() is { } m && m.Asks.RemoveAll(a => a.RequestId == id) > 0) Updated?.Invoke(t);
         });
+        // an API answer's tool calls, kept with it before it finishes (TurnEnded comes after) so the chat's file has them
+        if (s is ApiSession apiSession)
+            apiSession.StepsDone += steps => events.Post(() =>
+            {
+                if (Current() is { } m) m.Steps = steps;
+            });
         s.Exited += _ => events.Post(() =>
         {
             if (sessions.TryGetValue(t.Id, out var cur) && ReferenceEquals(cur, s) && sessions.Remove(t.Id)) SessionsChanged?.Invoke();

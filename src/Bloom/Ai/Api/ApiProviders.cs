@@ -43,6 +43,8 @@ internal static class ApiProviders
         new(AnthropicId, "Anthropic", "https://api.anthropic.com/v1", ApiWire.Messages, "https://console.anthropic.com/settings/keys"),
         new("gemini", "Gemini", "https://generativelanguage.googleapis.com/v1beta/openai/", ApiWire.ChatCompletions, "https://aistudio.google.com/apikey")
         {
+            // its Gemma models answer a request with tools "Function calling is not enabled"
+            NoToolModels = new[] { "gemma" },
             // only the thinking models take reasoning_effort: 2.5 Pro can't turn thinking off, 3 knows low and high
             EffortRules = new ApiEffortRule[]
             {
@@ -57,7 +59,11 @@ internal static class ApiProviders
             EffortRules = new ApiEffortRule[] { new("", "low", "medium", "high") },
             NestedEffort = true,
         },
-        new("deepseek", "DeepSeek", "https://api.deepseek.com", ApiWire.ChatCompletions, "https://platform.deepseek.com/api_keys"),
+        new("deepseek", "DeepSeek", "https://api.deepseek.com", ApiWire.ChatCompletions, "https://platform.deepseek.com/api_keys")
+        {
+            // its thinking mode (api-docs.deepseek.com/guides/thinking_mode): with tools, every earlier turn's reasoning goes back
+            ReplaysReasoning = true,
+        },
         new("xai", "xAI", "https://api.x.ai/v1", ApiWire.ChatCompletions, "https://console.x.ai")
         {
             // only Grok 3 mini takes reasoning_effort; Grok 4 refuses a request that names one
@@ -86,6 +92,13 @@ internal static class ApiProviders
         if (provider.MixedEndpoints && meta is { ValueKind: JsonValueKind.Object } entry && Hint(entry) is { } named) return named;
         string id = model.ToLowerInvariant();
         return provider.Routes.FirstOrDefault(r => id.Contains(r.Pattern, StringComparison.Ordinal)) is { } route ? route.Wire : provider.Wire;
+    }
+
+    /// Whether a model takes tools: not when its listing (`info`) or its provider's NoToolModels say otherwise.
+    public static bool TakesTools(ApiProvider provider, string model, ApiModelInfo? info)
+    {
+        string id = model.ToLowerInvariant();
+        return info is not { NoTools: true } && !provider.NoToolModels.Any(n => id.Contains(n, StringComparison.Ordinal));
     }
 
     /// The levels a model takes, AiModels.Auto first (= none sent): its family's EffortRule, or Auto alone.

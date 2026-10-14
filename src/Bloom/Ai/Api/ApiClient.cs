@@ -45,9 +45,10 @@ internal static class ApiClient
         if (AiModels.ApiParts(model) is not { } parts || ApiProviders.Find(parts.provider) is not { } provider) return (null, AiErrors.ApiModelGone);
         if (ApiKeys.Get(provider.Id) is not { Length: > 0 } key) return (null, AiErrors.ApiNoKey(provider.Name));
         await ApiCatalog.Loaded().ConfigureAwait(false);
-        if ((ApiCatalog.Find(provider.Id, parts.id)?.Wire ?? ApiProviders.WireFor(provider, parts.id)) is not { } wire) return (null, AiErrors.ApiModelGone);
+        var info = ApiCatalog.Find(provider.Id, parts.id);
+        if ((info?.Wire ?? ApiProviders.WireFor(provider, parts.id)) is not { } wire) return (null, AiErrors.ApiModelGone);
         string? level = effort is null || effort == AiModels.Auto || Array.IndexOf(AiModels.Efforts(model), effort) < 0 ? null : effort;
-        return (new ApiRequest(provider, key, parts.id, wire, system, messages, level, session), null);
+        return (new ApiRequest(provider, key, parts.id, wire, system, messages, level, session) { TakesTools = ApiProviders.TakesTools(provider, parts.id, info) }, null);
     }
 
     /// One streamed answer: each piece of text goes to `delta` as it comes (on a worker thread). Cancelling `stop` ends it
@@ -59,6 +60,10 @@ internal static class ApiClient
         string name = request.Provider.Name;
         var text = new StringBuilder();
         bool complete = false, cut = false;
+        var calls = new ApiCallBuilder(); // the tool calls as their pieces come
+        // the reasoning to send back later: DeepSeek's text (only for a provider that wants it back), Responses' items
+        var reasoning = request.Provider.ReplaysReasoning ? new StringBuilder() : null;
+        var thoughts = new List<ApiThought>();
         using var idle = CancellationTokenSource.CreateLinkedTokenSource(stop);
         idle.CancelAfter(IdleLimit);
         try
@@ -97,6 +102,10 @@ internal static class ApiClient
                         Log.Write($"api {request.Provider.Id}: stream error");
                         return new ApiReply(false, text.ToString(), AiErrors.ApiFailed(name, Redact(failure, request.Key)));
                     }
+                    foreach (var part in chunk.Calls ?? []) calls.Add(part);
+                    reasoning?.Append(chunk.Reasoning);
+                    // items stream in order: a reasoning item stands before the text (if none came yet) or the next call
+                    if (chunk.Thought is { } item) thoughts.Add(new ApiThought(item, (text.Length > 0 ? 1 : 0) + calls.Count));
                     complete |= chunk.End == ApiEnd.Complete;
                     cut |= chunk.End == ApiEnd.Cut;
                     if (chunk.Done) break;
@@ -108,7 +117,9 @@ internal static class ApiClient
                 Log.Write($"api {request.Provider.Id}: answer cut off ({(cut ? "the provider said so" : "the stream ended early")})");
                 return new ApiReply(false, text.ToString(), AiErrors.ApiCutOff(name));
             }
-            return text.Length > 0 ? new ApiReply(true, text.ToString(), null) : new ApiReply(false, "", AiErrors.ApiNoAnswer(name));
+            var made = calls.Calls();
+            if (made.Count == 0 && text.Length == 0) return new ApiReply(false, "", AiErrors.ApiNoAnswer(name));
+            return new ApiReply(true, text.ToString(), null) { Calls = made, Reasoning = reasoning is { Length: > 0 } ? reasoning.ToString() : null, Thoughts = thoughts };
         }
         catch (OperationCanceledException) when (stop.IsCancellationRequested)
         {

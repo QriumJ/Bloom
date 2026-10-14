@@ -134,8 +134,11 @@ internal static class ApiTests
         var openai = ApiCatalog.Parse(P("openai"), "{\"data\":[{\"id\":\"gpt-5\"},{\"id\":\"text-embedding-3-small\"},{\"id\":\"whisper-1\"},{\"id\":\"gpt-4o\"},{\"id\":\"gpt-5-codex\"},{\"id\":\"o4-mini-deep-research\"}]}");
         Check.Eq(string.Join(",", openai.Select(m => m.Id + "/" + m.Wire)), "gpt-4o/ChatCompletions,gpt-5/ChatCompletions,gpt-5-codex/Responses", "chat models only, by name, each on its wire");
         // as the compat endpoint lists them (live, 2026-10): "models/" ids, speech and embedding models among them
-        var gemini = ApiCatalog.Parse(P("gemini"), "{\"object\":\"list\",\"data\":[{\"id\":\"models/gemini-flash-lite-latest\",\"object\":\"model\",\"owned_by\":\"google\"},{\"id\":\"models/gemini-2.5-flash-preview-tts\"},{\"id\":\"models/gemini-embedding-001\"},{\"id\":\"models/gemini-2.5-flash-image\"},{\"id\":\"models/gemma-3-27b-it\"}]}");
-        Check.Eq(string.Join(",", gemini.Select(m => m.Id)), "gemini-flash-lite-latest,gemma-3-27b-it", "Gemini's models/ prefix goes; speech, embedding and picture models too");
+        var gemini = ApiCatalog.Parse(P("gemini"), "{\"object\":\"list\",\"data\":[{\"id\":\"models/gemini-flash-lite-latest\",\"object\":\"model\",\"owned_by\":\"google\"},{\"id\":\"models/gemini-2.5-flash-preview-tts\"},{\"id\":\"models/gemini-embedding-001\"},{\"id\":\"models/gemini-2.5-flash-image\"},{\"id\":\"models/gemma-3-27b-it\"},{\"id\":\"models/antigravity-preview\"},{\"id\":\"models/deep-research-pro-preview\"}]}");
+        Check.Eq(string.Join(",", gemini.Select(m => m.Id)), "gemini-flash-lite-latest,gemma-3-27b-it", "Gemini's models/ prefix goes; speech, embedding, picture, agent and research models too");
+        Check.True(!ApiProviders.TakesTools(P("gemini"), "gemma-3-27b-it", gemini[1]) && ApiProviders.TakesTools(P("gemini"), "gemini-flash-lite-latest", gemini[0]), "Gemma takes no tools");
+        var tooled = ApiCatalog.Parse(P("openrouter"), "{\"data\":[{\"id\":\"a/tools\",\"supported_parameters\":[\"tools\",\"reasoning\"]},{\"id\":\"b/plain\",\"supported_parameters\":[\"temperature\"]}]}");
+        Check.True(!tooled[0].NoTools && tooled[1].NoTools, "OpenRouter's supported_parameters say which take tools");
         var router = ApiCatalog.Parse(P("openrouter"), "{\"data\":[{\"id\":\"a/text\",\"name\":\"A: Text\",\"architecture\":{\"output_modalities\":[\"text\"]}},{\"id\":\"b/pic\",\"name\":\"B\",\"architecture\":{\"output_modalities\":[\"picture\"]}}]}");
         Check.True(router.Count == 1 && router[0].Name == "A: Text", "a model writing no text is left out; its name is kept");
         var anthropic = ApiCatalog.Parse(P("anthropic"), "{\"data\":[{\"id\":\"claude-x\",\"display_name\":\"Claude X\"}],\"has_more\":false}");

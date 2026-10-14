@@ -4,4 +4,9 @@ namespace Bloom.Ai;
 /// with --permission-prompt-tool stdio). `Input` stays raw JSON: a yes sends it back as it came. `Says` is how the chat
 /// names it ("옮기기: a.pdf → D:\문서"); `Key` is what 이 대화에서 항상 허용 remembers — one action ("pc:move"), never
 /// the whole tool.
-internal sealed record ToolAsk(string RequestId, string Tool, string Input, string Says, string Key = "");
+internal sealed record ToolAsk(string RequestId, string Tool, string Input, string Says, string Key = "")
+{
+    /// The whole of what it will do when Says can't hold it (an API chat's command, a file's full path), already made
+    /// visible (ToolText): the card shows it complete, in monospace. Empty: Says is all of it.
+    public string Detail { get; init; } = "";
+}

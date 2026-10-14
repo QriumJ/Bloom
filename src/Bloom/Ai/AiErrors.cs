@@ -25,6 +25,7 @@ internal static class AiErrors
     public static string ApiNoKey(string provider) => Tr($"{provider} API 키가 없습니다. 설정 > AI 계정에서 키를 추가하세요.", $"No {provider} API key. Add one in Settings > AI accounts.");
     public static string ApiNetwork(string provider) => Tr($"{provider}에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 보내세요.", $"Could not connect to {provider}. Check your connection and send again.");
     public static string ApiNoAnswer(string provider) => Tr($"{provider} 답변이 없습니다. 다시 보내세요.", $"No answer from {provider}. Send again.");
+    public static string ApiTooManySteps(int steps) => Tr($"도구를 {steps}번 사용한 뒤 멈췄습니다. 이어서 하려면 다시 보내세요.", $"Stopped after {steps} tool steps. Send again to go on.");
     public static string ApiCutOff(string provider) => Tr($"{provider} 답변이 중간에 끊겼습니다. 다시 보내세요.", $"The answer from {provider} was cut off. Send again.");
 
     /// A request the provider refused: 3xx a redirect (not followed, so the key goes nowhere else), 401/403 the key,

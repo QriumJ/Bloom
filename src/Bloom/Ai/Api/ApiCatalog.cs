@@ -170,9 +170,9 @@ internal static class ApiCatalog
     }
 
     // ids that name no chat model (embeddings, speech, pictures, video, moderation, old completions), left out of the
-    // pickers; OpenAI's and Gemini's lists carry them all (Gemini's also its Live API and computer-use models, which its
-    // chat endpoint doesn't serve)
-    private static readonly string[] NotChat = { "embed", "tts", "whisper", "dall-e", "moderation", "transcribe", "realtime", "audio", "image", "imagen", "veo", "sora", "davinci", "babbage", "aqa", "-live", "computer-use" };
+    // pickers; OpenAI's and Gemini's lists carry them all (Gemini's also its Live API, computer-use, agent and research
+    // models, which are not plain chat: antigravity-*, deep-research-*)
+    private static readonly string[] NotChat = { "embed", "tts", "whisper", "dall-e", "moderation", "transcribe", "realtime", "audio", "image", "imagen", "veo", "sora", "davinci", "babbage", "aqa", "-live", "computer-use", "antigravity", "deep-research" };
 
     /// A /models answer (`data: [{ id, display_name | name }]`) → the chat models, by name, each with the wire it is on.
     /// Gemini's "models/…" ids lose the prefix its chat endpoint doesn't take; a model whose metadata says it writes no
@@ -189,11 +189,16 @@ internal static class ApiCatalog
             if (id.Length == 0 || NotChat.Any(n => id.Contains(n, StringComparison.OrdinalIgnoreCase)) || !WritesText(m)) continue;
             if (ApiProviders.WireFor(provider, id, m) is not { } wire) continue;
             string name = ApiJson.Str(m, "display_name") is { Length: > 0 } d ? d : ApiJson.Str(m, "name") is { Length: > 0 } n2 ? n2 : id;
-            list.Add(new ApiModelInfo(id, name, wire));
+            list.Add(new ApiModelInfo(id, name, wire) { NoTools = Strings(m, "supported_parameters") is { } supported && !supported.Contains("tools") });
         }
         list.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
         return list;
     }
+
+    /// A string array field (OpenRouter's supported_parameters); null when the entry has none.
+    private static List<string>? Strings(JsonElement m, string field) =>
+        m.TryGetProperty(field, out var v) && v.ValueKind == JsonValueKind.Array
+            ? v.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString()!).ToList() : null;
 
     /// OpenRouter's `architecture.output_modalities`; a list without it is taken as text.
     private static bool WritesText(JsonElement m) =>

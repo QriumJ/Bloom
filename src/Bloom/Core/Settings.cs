@@ -41,6 +41,10 @@ internal sealed class Settings
     public bool AiTitles { get; set; } = true; // the AI names each task "[◆ Opus • Code ] …" (ChatTitles)
     public bool AiTools { get; set; } = true; // Claude chats get Bloom's MCP tools (actions asked in the chat first)
     public bool AiToolsGpt { get; set; } = true; // ChatGPT (Codex) chats get them too (Bloom asks in the chat itself)
+    public bool AiToolsApi { get; set; } = true; // API chats get them too, as a function (Bloom asks in the chat itself)
+    public Dictionary<string, string> Permissions { get; set; } = new(); // 설정 > PC 작업 · MCP > 권한: action → ask | allow | off; missing = ask (Core\ToolPermissions.cs)
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? ApiFileTools { get; set; } // a settings file from before 권한: its switch off reads once as the four file and command actions off
     public List<string> AiToolsOff { get; set; } = new(); // BloomTools groups the AI may not use: look | open | files | clip
     public List<string> McpOn { get; set; } = new(); // other MCP servers the chats may use: "source|name" (Ai\McpCatalog.cs)
     public List<string> McpFiles { get; set; } = new(); // .mcp.json files brought in on 설정 > PC 작업 · MCP
@@ -120,6 +124,7 @@ internal sealed class Settings
             Current.ClipKeepMinutes = Math.Max(0, days) * 24 * 60;
             Current.ClipKeepDays = null;
         }
+        Current.MoveApiFileTools();
         // 0.9.2 saved its default of 5 idle minutes: a restarted Claude CLI rewrites its whole prompt cache, so 0.9.3 is
         // back at 10 (the first start after 0.9.2 only; SeenVersion moves on at that start)
         if (Current.SeenVersion == "0.9.2" && Current.AiIdleMinutes == 5) Current.AiIdleMinutes = 10;
@@ -131,6 +136,16 @@ internal sealed class Settings
             Current.AiModel = "sonnet";
         }
         saver = Saver.ForJson(Paths.In("settings.json"), () => Current);
+    }
+
+    /// The API chats' file and command tools had one switch before each action had its 권한: off is the four of them
+    /// 사용 안 함 (read once; the switch is gone after).
+    internal void MoveApiFileTools()
+    {
+        if (ApiFileTools is not { } files) return;
+        if (!files)
+            foreach (string action in ToolPermissions.FileActions) Permissions[action] = ToolPermissions.Off;
+        ApiFileTools = null;
     }
 
     private static int version;

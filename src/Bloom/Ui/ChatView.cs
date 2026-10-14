@@ -449,7 +449,8 @@ internal sealed class ChatView : Grid, IComposerHost
         return sp;
     }
 
-    /// A tool call waiting for the user: what it will do, 허용 · 이 대화에서 항상 허용 · 거절.
+    /// A tool call waiting for the user: what it will do (all of it: a command or path whole, AskDetail), 허용 · 이 대화에서
+    /// 항상 허용 · 거절.
     private SmoothBorder AskCard(ChatThread t, ToolAsk ask)
     {
         var col = new StackPanel();
@@ -458,16 +459,19 @@ internal sealed class ChatView : Grid, IComposerHost
         shield.VerticalAlignment = VerticalAlignment.Center;
         shield.Margin = new Thickness(0, 1, 7, 0);
         top.Children.Add(shield);
-        top.Children.Add(Theme.T(Tr("PC 작업 승인", "Approve PC action"), 12, Theme.P.TextDim, Theme.Medium, false));
+        string title = ToolPermissions.IsFileOrCommand(ask.Key) ? Tr("파일 · 명령 승인", "Approve file or command") : Tr("PC 작업 승인", "Approve PC action");
+        top.Children.Add(Theme.T(title, 12, Theme.P.TextDim, Theme.Medium, false));
         col.Children.Add(top);
-        var what = Markdown.Para(14, Theme.Medium);
-        what.Margin = new Thickness(0, 6, 0, 10);
-        what.Text = ask.Says;
-        col.Children.Add(what);
-        var buttons = new WrapPanel();
-        buttons.Children.Add(AskButton(Tr("허용", "Allow"), true, () => host.Chats.Answer(t, ask, true)));
         int colon = ask.Says.IndexOf(": ", StringComparison.Ordinal); // "옮기기: a.pdf → …" → 항상 허용 names just 옮기기
         string verb = colon > 0 ? ask.Says[..colon] : "";
+        bool detail = ask.Detail.Length > 0;
+        var what = Markdown.Para(14, Theme.Medium);
+        what.Margin = new Thickness(0, 6, 0, detail ? 6 : 10);
+        what.Text = detail && verb.Length > 0 ? verb : ask.Says; // with the whole below, the action's name is enough
+        col.Children.Add(what);
+        if (detail) col.Children.Add(AskDetail(ask.Detail));
+        var buttons = new WrapPanel();
+        buttons.Children.Add(AskButton(Tr("허용", "Allow"), true, () => host.Chats.Answer(t, ask, true)));
         buttons.Children.Add(AskButton(verb.Length > 0 ? Tr($"이 대화에서 ‘{verb}’ 항상 허용", $"Always allow ‘{verb}’ in this chat") : Tr("이 대화에서 항상 허용", "Always in this chat"),
             false, () => host.Chats.Answer(t, ask, true, true)));
         buttons.Children.Add(AskButton(Tr("거절", "Decline"), false, () => host.Chats.Answer(t, ask, false)));
@@ -483,6 +487,40 @@ internal sealed class ChatView : Grid, IComposerHost
             Child = col,
         };
     }
+
+    /// A card's command or path, never cut: monospace on the code tint, wrapped, scrolling inside past AskDetailHeight
+    /// (the wheel goes on to the conversation once it is at its end, or when there's nothing to scroll).
+    private static SmoothBorder AskDetail(string detail)
+    {
+        var scroll = new ScrollViewer
+        {
+            Content = new TextBlock { Text = detail, FontFamily = Theme.Mono, FontSize = 12.5, LineHeight = 19, Foreground = Theme.P.Text, TextWrapping = TextWrapping.Wrap },
+            MaxHeight = AskDetailHeight,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            Focusable = false,
+            Template = Launcher.ThinScroll(),
+        };
+        scroll.PreviewMouseWheel += (_, e) =>
+        {
+            bool inside = e.Delta > 0 ? scroll.VerticalOffset > 0 : scroll.VerticalOffset < scroll.ScrollableHeight;
+            if (inside) return;
+            e.Handled = true;
+            if (VisualTreeHelper.GetParent(scroll) is UIElement parent)
+                parent.RaiseEvent(new System.Windows.Input.MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta) { RoutedEvent = MouseWheelEvent, Source = parent });
+        };
+        return new SmoothBorder
+        {
+            Background = Theme.P.Code,
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(10, 7, 10, 8),
+            Margin = new Thickness(0, 0, 0, 10),
+            Child = scroll,
+        };
+    }
+
+    /// Ten lines of AskDetail before it scrolls.
+    private const double AskDetailHeight = 10 * 19;
 
     private static SmoothBorder AskButton(string label, bool main, Action click)
     {

@@ -4,6 +4,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace Bloom.Core;
 
@@ -42,20 +43,36 @@ internal static class ApiKeys
         return Unprotect(blob);
     }
 
+    /// Encrypts and stores the key. The DPAPI call and the file write happen outside Gate (the UI takes it to ask Has),
+    /// the writes one at a time, each with the latest keys.
     public static void Set(string provider, string key)
     {
-        lock (Gate)
-        {
-            Blobs()[provider] = Protect(key.Trim());
-            Write(FilePath, Blobs());
-        }
+        string blob = Protect(key.Trim());
+        lock (Gate) Blobs()[provider] = blob;
+        Persist();
     }
 
     public static void Remove(string provider)
     {
-        lock (Gate)
+        bool removed;
+        lock (Gate) removed = Blobs().Remove(provider);
+        if (removed) Persist();
+    }
+
+    /// Set and Remove on a worker thread, for the UI (설정 > AI 계정).
+    public static Task SetAsync(string provider, string key) => Task.Run(() => Set(provider, key));
+
+    public static Task RemoveAsync(string provider) => Task.Run(() => Remove(provider));
+
+    private static readonly object WriteGate = new();
+
+    private static void Persist()
+    {
+        lock (WriteGate)
         {
-            if (Blobs().Remove(provider)) Write(FilePath, Blobs());
+            Dictionary<string, string> now;
+            lock (Gate) now = new(Blobs());
+            Write(FilePath, now);
         }
     }
 

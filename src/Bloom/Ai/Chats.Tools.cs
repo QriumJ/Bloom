@@ -1,11 +1,13 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Bloom.Core;
 
 namespace Bloom.Ai;
 
-/// The AI's tool calls in a conversation: look-ups go through, actions already allowed for the whole conversation go
-/// through and are recorded, the rest wait on an approval card (ChatMessage.Asks) for the user's yes or no.
+/// The AI's tool calls in a conversation: look-ups go through, actions 설정's 권한 decides (ToolPermissions: 항상 허용,
+/// 사용 안 함) or already allowed for the whole conversation go through or are refused and are recorded, the rest wait on
+/// an approval card (ChatMessage.Asks) for the user's yes or no.
 internal sealed partial class Chats
 {
     /// Which calls run without asking, how they read and what 항상 허용 remembers (Host: BloomTools).
@@ -27,11 +29,19 @@ internal sealed partial class Chats
             s.Answer(raw, true);
             return;
         }
-        var ask = raw with { Says = Tools?.Says(raw.Tool, raw.Input) ?? raw.Tool, Key = Tools?.Key(raw.Tool, raw.Input) ?? raw.Tool };
-        if (t.AlwaysAllowed.Contains(ask.Key))
+        // a session that words its own calls (an API chat's file and command tools) keeps its wording and key
+        var ask = raw with
         {
-            (m.Done ??= new()).Add("✓ " + ask.Says);
-            s.Answer(ask, true);
+            Says = raw.Says.Length > 0 ? raw.Says : Tools?.Says(raw.Tool, raw.Input) ?? raw.Tool,
+            Key = raw.Key.Length > 0 ? raw.Key : Tools?.Key(raw.Tool, raw.Input) ?? raw.Tool,
+        };
+        // 설정's 권한 first (사용 안 함 says no, 항상 허용 yes), then this chat's 항상 허용; either way the answer shows the line
+        string rule = ToolPermissions.Of(ask.Key);
+        if (rule != ToolPermissions.Ask || t.AlwaysAllowed.Contains(ask.Key))
+        {
+            bool allow = rule != ToolPermissions.Off;
+            (m.Done ??= new()).Add((allow ? "✓ " : "✕ ") + ask.Says);
+            s.Answer(ask, allow);
             Updated?.Invoke(t);
             return;
         }

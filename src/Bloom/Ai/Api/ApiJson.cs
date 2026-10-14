@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Bloom.Ai;
 
@@ -41,4 +42,24 @@ internal static class ApiJson
     }
 
     private const int MaxShown = 300;
+
+    /// A tool call's arguments as a JSON object for a wire that sends them as one (Messages' input): what the model
+    /// wrote, or {} when that was no object (a cut-off call; its result already says the arguments were bad).
+    public static JsonObject Arguments(string json) => ArgumentsObject(json) ?? new JsonObject();
+
+    /// The arguments as text for a wire that sends them so: what the model wrote when it is a JSON object, else "{}"
+    /// (a provider that reads them back refuses the whole request over a broken one: Gemini's 400 "invalid argument").
+    public static string SendableArguments(string json) => ArgumentsObject(json) is null ? "{}" : json;
+
+    private static JsonObject? ArgumentsObject(string json)
+    {
+        try
+        {
+            return JsonNode.Parse(json.Length > 0 ? json : "{}") as JsonObject;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 }

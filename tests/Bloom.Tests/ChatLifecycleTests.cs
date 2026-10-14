@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using Bloom.Ai;
+using Bloom.Core;
 
 namespace Bloom.Tests;
 
@@ -80,6 +81,8 @@ internal static class ChatLifecycleTests
         public void Answer(ToolAsk ask, bool allow) => Answered = allow;
         public void Interrupt() { }
         public void Dispose() { Disposals++; Alive = false; }
+
+        public void Ask(ToolAsk ask) => ToolAsked?.Invoke(ask);
 
         public void CompleteAnswer()
         {
@@ -160,6 +163,35 @@ internal static class ChatLifecycleTests
         Check.True(!current.Streaming, "current completion still finishes its answer");
         Check.Eq(current.Text, "current answer", "current session still streams normally");
         Check.Eq(f.Thread.SessionId, "current-session", "current resume id is saved");
+    }
+
+    public static void PermissionsAnswerWithoutACard()
+    {
+        using var f = new Fixture();
+        var prior = new Dictionary<string, string>(Settings.Current.Permissions);
+        try
+        {
+            f.Chats.Send(f.Thread, "hello");
+            Wait(f.Chats.WhenPrepared(f.Thread));
+            var s = f.Sessions[0];
+            var answer = f.Thread.Messages[^1];
+            Settings.Current.Permissions[ToolPermissions.Command] = ToolPermissions.Allow;
+            s.Ask(new ToolAsk("a1", "run_command", "{}", "Run a command: dir", ToolPermissions.Command));
+            Drain();
+            Check.True(s.Answered == true && answer.Asks.Count == 0 && answer.Done?[^1] == "✓ Run a command: dir", "항상 허용: allowed without a card, the line shown");
+            Settings.Current.Permissions[ToolPermissions.Pc] = ToolPermissions.Off;
+            s.Ask(new ToolAsk("a2", "mcp__bloom__pc", "{\"do\":\"move\"}", "Move: a", "pc:move"));
+            Drain();
+            Check.True(s.Answered == false && answer.Asks.Count == 0 && answer.Done?[^1] == "✕ Move: a", "사용 안 함: refused without a card, the line shown");
+            Settings.Current.Permissions.Remove(ToolPermissions.Pc);
+            s.Ask(new ToolAsk("a3", "mcp__bloom__pc", "{\"do\":\"move\"}", "Move: a", "pc:move"));
+            Drain();
+            Check.Eq(answer.Asks.Count, 1, "매번 묻기: the card");
+        }
+        finally
+        {
+            Settings.Current.Permissions = prior;
+        }
     }
 
     public static void FailedStartDisposesTheSession()

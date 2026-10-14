@@ -11,6 +11,7 @@ This API model is not available. Choose another model and send again.	この API
 No {0} API key. Add one in Settings > AI accounts.	{0} の API キーがありません。設定 > AI アカウントでキーを追加してください。
 Could not connect to {0}. Check your connection and send again.	{0} に接続できませんでした。接続を確認して送り直してください。
 No answer from {0}. Send again.	{0} から回答がありません。送り直してください。
+Stopped after {0} tool steps. Send again to go on.	ツールを {0} 回使ったところで止めました。続けるには送り直してください。
 The answer from {0} was cut off. Send again.	{0} の回答が途中で途切れました。送り直してください。
 {0} redirected the request elsewhere. Bloom did not follow it, to keep the key safe.	{0} がリクエストを別のアドレスに転送しました。キーを守るため、Bloom は転送先に送りませんでした。
 {0} rejected the API key. Check it in Settings > AI accounts.	{0} が API キーを拒否しました。設定 > AI アカウントでキーを確認してください。
@@ -102,6 +103,15 @@ Another sign-in is running	別のアカウントのサインイン中
 Sign the default account in from Claude Code or Codex itself	既定のアカウントは Claude Code または Codex で直接サインインしてください
 This account's sign-in terminal is still open. Close it first.	このアカウントのサインイン用ターミナルがまだ開いています。先に閉じてください。
 Not signed in · Try again	サインインされていません · もう一度お試しください
+Reading a file…	ファイルを読み込み中…
+Looking in a folder…	フォルダーを確認中…
+Writing a file…	ファイルを書き込み中…
+Running a command…	コマンドを実行中…
+List a folder: {0}	フォルダーを表示: {0}
+Read a file: {0}	ファイルを読む: {0}
+Write a file: {0}	ファイルに書く: {0}
+Edit a file: {0}	ファイルを編集: {0}
+Run a command: {0}	コマンドを実行: {0}
 Claude Code · Approval request	Claude Code · 承認リクエスト
 Allow	許可
 Decline	拒否
@@ -752,8 +762,6 @@ Recently changed	最近変更したもの
 Everything's syntax works too: ext:pdf, size:>10mb, dm:today	Everything の構文も使えます: ext:pdf, size:>10mb, dm:today
 AI chats	AI チャット
 Delete chat	チャットを削除
-Read a file: {0}	ファイルを読む: {0}
-Write a file: {0}	ファイルに書く: {0}
 Open a page: {0}	ページを開く: {0}
 Find apps: {0}	アプリを探す: {0}
 Find files: {0}	ファイルを探す: {0}
@@ -1703,6 +1711,22 @@ Use AI chat to open apps, find and move files, and set timers on this PC.	AI チ
 In Claude chats	Claude のチャットで
 Approval card in AI chat before actions · applies from the next message	操作前に AI チャットで承認カードを表示 · 次のメッセージから適用
 In ChatGPT chats	ChatGPT のチャットで
+In API chats	API チャットで
+Permissions	権限
+Ask each time	毎回確認
+Always allow	常に許可
+Read files (outside the chat's folder)	ファイルの読み込み (チャットフォルダーの外)
+API chats · files in the chat's own folder are read without asking	API チャット · チャットフォルダー内のファイルは確認なしで読み込みます
+Write files	ファイルの書き込み
+API chats · make a file or replace one	API チャット · 新しいファイルの作成、ファイルの上書き
+Edit files	ファイルの編集
+API chats · change part of a file	API チャット · ファイルの一部の変更
+Run commands	コマンドの実行
+API chats · PowerShell in the chat's folder · what it starts ends with it	API チャット · チャットフォルダーで PowerShell を実行 · 起動したプログラムはコマンドと一緒に終了します
+PC actions (Bloom's tool)	PC の操作 (Bloom の機能)
+Every chat · open, notes, timers, files, clipboard · look-ups never ask	すべてのチャット · 開く · メモ · タイマー · ファイル整理 · クリップボード · 調べる操作は確認しません
+Approve file or command	ファイル · コマンドの承認
+Really at: {0}	実際の場所: {0}
 What it may do	できること
 Look up	調べる
 Apps, files, recent files, open windows, timers, your commands — looked up without asking	アプリ、ファイル、最近のファイル、開いているウィンドウ、タイマー、マイコマンド — 確認なしで調べます

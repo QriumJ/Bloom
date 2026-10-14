@@ -6,7 +6,8 @@ using System.Text.Json.Nodes;
 namespace Bloom.Ai;
 
 /// Anthropic's Messages (also some OpenCode Go models): the key in x-api-key with the API version, the instructions in
-/// `system`, pictures as base64 image blocks, `content_block_delta` text deltas until `message_stop`.
+/// `system`, pictures as base64 image blocks, `content_block_delta` text deltas until `message_stop`; tools as
+/// tool_use blocks, their results as tool_result blocks in the next user message.
 internal sealed class MessagesWire : IApiWire
 {
     public static readonly MessagesWire Instance = new();
@@ -30,16 +31,38 @@ internal sealed class MessagesWire : IApiWire
     public string Body(ApiRequest request)
     {
         var messages = new JsonArray();
+        JsonArray? results = null; // the tool results after one assistant turn go together in one user message
         foreach (var m in request.Messages)
         {
-            var parts = new JsonArray();
+            if (m.Role == ApiMessage.Tool)
+            {
+                if (results is null)
+                {
+                    results = new JsonArray();
+                    messages.Add(new JsonObject { ["role"] = ApiMessage.User, ["content"] = results });
+                }
+                results.Add(new JsonObject { ["type"] = "tool_result", ["tool_use_id"] = m.CallId, ["content"] = m.Text, ["is_error"] = m.IsError });
+                continue;
+            }
+            // a question right after tool results (an answer that stopped mid-way, sent again from the saved chat) joins
+            // their user message, after them: two user messages in a row are one turn
+            var parts = m.Role == ApiMessage.User && results is not null ? results : new JsonArray();
+            if (!ReferenceEquals(parts, results)) messages.Add(new JsonObject { ["role"] = m.Role, ["content"] = parts });
+            results = null;
             foreach (var image in ApiImage.Load(m.Images))
                 parts.Add(new JsonObject { ["type"] = "image", ["source"] = new JsonObject { ["type"] = "base64", ["media_type"] = image.MediaType, ["data"] = image.Data } });
-            parts.Add(new JsonObject { ["type"] = "text", ["text"] = m.Text });
-            messages.Add(new JsonObject { ["role"] = m.Role, ["content"] = parts });
+            // an empty text block is refused: a turn that only calls tools has none
+            if (m.Text.Length > 0 || m.Calls.Count == 0) parts.Add(new JsonObject { ["type"] = "text", ["text"] = m.Text });
+            foreach (var c in m.Calls) parts.Add(new JsonObject { ["type"] = "tool_use", ["id"] = c.Id, ["name"] = c.Name, ["input"] = ApiJson.Arguments(c.Arguments) });
         }
         var body = new JsonObject { ["model"] = request.Model, ["max_tokens"] = MaxTokens, ["stream"] = true };
         if (request.System.Length > 0) body["system"] = request.System;
+        if (request.Tools.Count > 0)
+        {
+            var tools = new JsonArray();
+            foreach (var t in request.Tools) tools.Add(new JsonObject { ["name"] = t.Name, ["description"] = t.Description, ["input_schema"] = JsonNode.Parse(t.Parameters) });
+            body["tools"] = tools;
+        }
         body["messages"] = messages;
         return body.ToJsonString();
     }
@@ -54,6 +77,11 @@ internal sealed class MessagesWire : IApiWire
             {
                 case "content_block_delta" when root.TryGetProperty("delta", out var delta) && ApiJson.Str(delta, "type") == "text_delta":
                     return new ApiChunk(ApiJson.Str(delta, "text"));
+                // a tool_use block: its id and name at its start, its input as JSON text a piece at a time
+                case "content_block_start" when root.TryGetProperty("content_block", out var block) && ApiJson.Str(block, "type") == "tool_use":
+                    return new ApiChunk(Calls: [new ApiCallPiece(Index(root), ApiJson.Str(block, "id"), ApiJson.Str(block, "name"))]);
+                case "content_block_delta" when root.TryGetProperty("delta", out var json) && ApiJson.Str(json, "type") == "input_json_delta":
+                    return new ApiChunk(Calls: [new ApiCallPiece(Index(root), Arguments: ApiJson.Str(json, "partial_json"))]);
                 // the stop reason comes before the end: "max_tokens" = MaxTokens cut the answer
                 case "message_delta" when root.TryGetProperty("delta", out var stop) && ApiJson.Str(stop, "stop_reason") == "max_tokens":
                     return new ApiChunk(End: ApiEnd.Cut);
@@ -69,4 +97,6 @@ internal sealed class MessagesWire : IApiWire
         }
         return ApiChunk.None;
     }
+
+    private static int Index(JsonElement root) => root.TryGetProperty("index", out var i) && i.TryGetInt32(out int n) ? n : 0;
 }

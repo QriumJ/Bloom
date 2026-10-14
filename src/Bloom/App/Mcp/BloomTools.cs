@@ -29,7 +29,7 @@ internal sealed record PcAction(string Do, string Group, Func<string, string, Ta
 /// chat instead of one per action (measured on a session's first request: +400 tokens, against +1,520 for 15 tools and
 /// +720 for six). Every call reaches Bloom as a question (--permission-prompt-tool stdio); Bloom lets the look-ups
 /// through itself (Quiet) and asks about the rest.
-internal sealed class BloomTools : IToolPolicy
+internal sealed class BloomTools : IPcTools
 {
     public const string Server = "bloom";
     public const string Prefix = "mcp__bloom__";
@@ -62,8 +62,10 @@ internal sealed class BloomTools : IToolPolicy
 
     public static bool GroupOn(string group) => !Settings.Current.AiToolsOff.Contains(group);
 
-    /// A provider's chats (claude | chatgpt) get the tool: its switch is on and so is one of the groups at least.
-    public static bool OfferedTo(string provider) => (provider == "chatgpt" ? Settings.Current.AiToolsGpt : Settings.Current.AiTools) && Groups.Any(GroupOn);
+    /// A provider's chats (claude | chatgpt | api) get the tool: its switch is on, so is one of the groups at least, and
+    /// 권한's PC 조작 is not 사용 안 함.
+    public static bool OfferedTo(string provider) => (provider switch { "chatgpt" => Settings.Current.AiToolsGpt, "api" => Settings.Current.AiToolsApi, _ => Settings.Current.AiTools })
+        && Groups.Any(GroupOn) && ToolPermissions.Of(ToolPermissions.Pc) != ToolPermissions.Off;
 
     /// Asks the user in a conversation's chat before an action and says whether they allowed it (Host: Chats); for
     /// Codex runs, which don't ask on their own. (conversation id, tool, input JSON) → allowed.
@@ -132,7 +134,8 @@ internal sealed class BloomTools : IToolPolicy
     {
         if (!IsPc(tool)) return ($"No tool named {tool}.", true);
         if (ActionOf(args) is not { } action) return ($"Unknown do: {S(args, "do")}.", true);
-        if (!GroupOn(action.Group)) return ("The user switched this off in Bloom's settings.", true);
+        // a session started before PC 조작 went to 사용 안 함 still has the tool: it does nothing now
+        if (!GroupOn(action.Group) || ToolPermissions.Of(ToolPermissions.Pc) == ToolPermissions.Off) return ("The user switched this off in Bloom's settings.", true);
         if (conversation is not null && action.Asks && !(Approve is { } approve && await approve(conversation, Name, args.GetRawText())))
             return ("The user declined this. Don't try it again unless they ask.", true);
         try

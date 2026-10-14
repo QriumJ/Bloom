@@ -266,6 +266,23 @@ internal sealed partial class SettingsView
         Add(Tr("Claude 대화에서", "In Claude chats"), Tr("실행 전 AI 채팅에 승인 카드 표시 · 다음 메시지부터 적용", "Approval card in AI chat before actions · applies from the next message"), pcSw, G.Bolt, pcT, null, filter);
         var gptSw = Toggle(s.AiToolsGpt, v => s.AiToolsGpt = v, out var gptT);
         Add(Tr("ChatGPT 대화에서", "In ChatGPT chats"), Tr("실행 전 AI 채팅에 승인 카드 표시 · 다음 메시지부터 적용", "Approval card in AI chat before actions · applies from the next message"), gptSw, G.Bolt, gptT, null, filter);
+        var apiSw = Toggle(s.AiToolsApi, v => s.AiToolsApi = v, out var apiT);
+        Add(Tr("API 대화에서", "In API chats"), Tr("실행 전 AI 채팅에 승인 카드 표시 · 다음 메시지부터 적용", "Approval card in AI chat before actions · applies from the next message"), apiSw, G.Bolt, apiT, null, filter);
+        Header(Tr("권한", "Permissions"));
+        (string, string)[] rules = { (ToolPermissions.Ask, Tr("매번 묻기", "Ask each time")), (ToolPermissions.Allow, Tr("항상 허용", "Always allow")), (ToolPermissions.Off, Tr("사용 안 함", "Off")) };
+        // `restart`: the rule decides whether a chat gets the tool at all, which a running CLI session fixed when it began
+        void Rule(string action, string title, string sub, char glyph, bool restart = false) =>
+            Choice(title, sub, glyph, rules, ToolPermissions.Of(s.Permissions, action), v =>
+            {
+                if (v == ToolPermissions.Ask) s.Permissions.Remove(action);
+                else s.Permissions[action] = v;
+                if (restart) host.Chats.EndAll();
+            }, filter);
+        Rule(ToolPermissions.ReadOutside, Tr("파일 읽기 (대화 폴더 밖)", "Read files (outside the chat's folder)"), Tr("API 대화 · 대화 폴더 안의 파일은 묻지 않고 읽습니다", "API chats · files in the chat's own folder are read without asking"), G.Document);
+        Rule(ToolPermissions.Write, Tr("파일 쓰기", "Write files"), Tr("API 대화 · 새 파일 만들기, 파일 덮어쓰기", "API chats · make a file or replace one"), G.Save);
+        Rule(ToolPermissions.Edit, Tr("파일 고치기", "Edit files"), Tr("API 대화 · 파일의 일부 바꾸기", "API chats · change part of a file"), G.Pen);
+        Rule(ToolPermissions.Command, Tr("명령 실행", "Run commands"), Tr("API 대화 · 대화 폴더에서 PowerShell 실행 · 시작한 프로그램은 명령과 함께 끝납니다", "API chats · PowerShell in the chat's folder · what it starts ends with it"), G.Code);
+        Rule(ToolPermissions.Pc, Tr("PC 조작 (Bloom 기능)", "PC actions (Bloom's tool)"), Tr("모든 대화 · 열기 · 메모 · 타이머 · 파일 정리 · 클립보드 · 찾아보기는 묻지 않습니다", "Every chat · open, notes, timers, files, clipboard · look-ups never ask"), G.Bolt, restart: true);
         Header(Tr("할 수 있는 일", "What it may do"));
         void Group(string key, string title, string sub, char glyph)
         {

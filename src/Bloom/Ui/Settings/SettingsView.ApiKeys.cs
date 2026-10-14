@@ -50,19 +50,29 @@ internal sealed partial class SettingsView
             case MessageBoxResult.No:
                 if (ConfirmWindow.Ask(owner, Tr("키 삭제", "Remove key"), Tr($"이 PC에서 {p.Name} API 키와 모델 목록을 삭제합니다.", $"Deletes the {p.Name} API key and model list from this PC."),
                     (Tr("삭제", "Remove"), MessageBoxResult.Yes), (Tr("취소", "Cancel"), MessageBoxResult.No)) != MessageBoxResult.Yes) break;
-                ApiKeys.Remove(p.Id);
-                ApiCatalog.Forget(p.Id);
-                Build(lastFilter);
+                ApiCatalog.Forget(p.Id); // at once: a refresh under way publishes nothing
+                _ = RemoveApiKey(p);
                 break;
         }
+    }
+
+    private async Task RemoveApiKey(ApiProvider p)
+    {
+        await ApiKeys.RemoveAsync(p.Id); // DPAPI and the file off the UI thread
+        Build(lastFilter);
     }
 
     private void EnterApiKey(ApiProvider p)
     {
         if (ApiKeyWindow.Ask(Window.GetWindow(this), p) is not { } key) return;
-        ApiKeys.Set(p.Id, key);
+        _ = StoreApiKey(p, key);
+    }
+
+    private async Task StoreApiKey(ApiProvider p, string key)
+    {
+        await ApiKeys.SetAsync(p.Id, key); // stored before the look, which reads it
         Build(lastFilter);
-        _ = RefreshApiModels(p);
+        await RefreshApiModels(p);
     }
 
     /// Asks the provider for its models with the stored key (the key's test) and tells how it went; a look that a newer
