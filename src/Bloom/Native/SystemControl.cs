@@ -251,13 +251,6 @@ internal static unsafe class SystemControl
     public static void DisplayOff() =>
         _ = Task.Delay(600).ContinueWith(_ => Win32.PostMessage(new IntPtr(0xFFFF), 0x0112 /* WM_SYSCOMMAND */, new IntPtr(0xF170 /* SC_MONITORPOWER */), new IntPtr(2)), TaskScheduler.Default);
 
-    /// (items, bytes) in the recycle bin of every drive.
-    public static (long items, long bytes) RecycleBin()
-    {
-        var info = new SHQUERYRBINFO { cbSize = Marshal.SizeOf<SHQUERYRBINFO>() };
-        return SHQueryRecycleBin(null, ref info) == 0 ? (info.i64NumItems, info.i64Size) : (0, 0);
-    }
-
     public static bool EmptyRecycleBin() => SHEmptyRecycleBin(IntPtr.Zero, null, 0x1 | 0x2 | 0x4 /* no confirmation, progress, sound */) is 0 or unchecked((int)0x8000FFFF) /* already empty */;
 
     // ── interop ─────────────────────────────────────────────────────────────────────────────────
@@ -348,18 +341,9 @@ internal static unsafe class SystemControl
         public IntPtr Pointer2;
     }
 
-    [StructLayout(LayoutKind.Sequential)] // shellapi.h packs it by 8 on 64-bit Windows
-    private struct SHQUERYRBINFO
-    {
-        public int cbSize;
-        public long i64Size;
-        public long i64NumItems;
-    }
-
     [DllImport("ole32.dll")] private static extern int PropVariantClear(ref PropVariant pv);
     [DllImport("powrprof.dll")] private static extern bool SetSuspendState(bool hibernate, bool force, bool wakeupEventsDisabled);
     [DllImport("shell32.dll")] private static extern void SHChangeNotify(int eventId, uint flags, IntPtr item1, IntPtr item2);
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode)] private static extern int SHQueryRecycleBin(string? root, ref SHQUERYRBINFO info);
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)] private static extern int SHEmptyRecycleBin(IntPtr hwnd, string? root, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr SendMessageTimeout(IntPtr hwnd, uint msg, IntPtr wParam, string lParam, uint flags, uint timeout, out IntPtr result);

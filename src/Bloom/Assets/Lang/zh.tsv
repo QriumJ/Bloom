@@ -619,9 +619,9 @@ Hide	隐藏
 Put the PC to sleep	让电脑睡眠
 Sleep	睡眠
 A key or the mouse wakes it	按键或移动鼠标即可唤醒
-{0} items · {1}	{0} 项 · {1}
+Permanently delete everything in the Recycle Bin	永久删除回收站中的所有项目
 Empty recycle bin	清空回收站
-Permanently deletes {0} items ({1}) from the Recycle Bin.	永久删除回收站中的 {0} 个项目（{1}）。
+Permanently deletes everything in the Recycle Bin.	永久删除回收站中的所有项目。
 Recycle bin emptied	已清空回收站
 Could not change the setting. Try again.	无法更改设置。请重试。
 {0} on	{0} 已开启

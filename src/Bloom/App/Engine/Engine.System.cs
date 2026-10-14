@@ -209,19 +209,20 @@ internal sealed partial class Engine
                 item.Run = SystemControl.DisplayOff;
                 break;
             case "sys:recycle":
-                var (n, bytes) = SystemControl.RecycleBin();
-                item.Subtitle = n == 0 ? Tr("비어 있음", "Empty") : Tr($"{n}개 · {Size(bytes)}", $"{n} items · {Size(bytes)}");
+                // No count on the row: SHQueryRecycleBin walks every item (0.3 s for a few thousand, seconds on a busy PC)
+                // and this row is built on the UI thread for nearly any first letter typed in the root search.
+                item.Subtitle = Tr("휴지통의 모든 항목 영구 삭제", "Permanently delete everything in the Recycle Bin");
                 item.PrimaryLabel = Tr("휴지통 비우기", "Empty recycle bin");
-                if (n > 0)
-                    item.Run = () => host.Window.Confirm(Tr($"휴지통의 {n}개 항목({Size(bytes)})을 영구 삭제합니다.", $"Permanently deletes {n} items ({Size(bytes)}) from the Recycle Bin."), new ActionItem
-                    {
-                        Title = Tr("휴지통 비우기", "Empty recycle bin"),
-                        Keys = "Enter",
-                        Glyph = G.Delete,
-                        Danger = true,
-                        StayOpen = true,
-                        Run = () => Done(SystemControl.EmptyRecycleBin(), Tr("휴지통 비우기 완료", "Recycle bin emptied")),
-                    });
+                item.Run = () => host.Window.Confirm(Tr("휴지통의 모든 항목을 영구 삭제합니다.", "Permanently deletes everything in the Recycle Bin."), new ActionItem
+                {
+                    Title = Tr("휴지통 비우기", "Empty recycle bin"),
+                    Keys = "Enter",
+                    Glyph = G.Delete,
+                    Danger = true,
+                    StayOpen = true,
+                    // a full bin takes seconds to empty: off the UI thread
+                    Run = async () => Done(await System.Threading.Tasks.Task.Run(SystemControl.EmptyRecycleBin), Tr("휴지통 비우기 완료", "Recycle bin emptied")),
+                });
                 break;
         }
         return item;

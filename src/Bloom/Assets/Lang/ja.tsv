@@ -619,9 +619,9 @@ Hide	非表示
 Put the PC to sleep	PC をスリープにする
 Sleep	スリープ
 A key or the mouse wakes it	キーかマウスで復帰します
-{0} items · {1}	{0} 件 · {1}
+Permanently delete everything in the Recycle Bin	ごみ箱のすべての項目を完全に削除
 Empty recycle bin	ごみ箱を空にする
-Permanently deletes {0} items ({1}) from the Recycle Bin.	ごみ箱の {0} 件 ({1}) を完全に削除します。
+Permanently deletes everything in the Recycle Bin.	ごみ箱のすべての項目を完全に削除します。
 Recycle bin emptied	ごみ箱を空にする操作完了
 Could not change the setting. Try again.	設定を変更できませんでした。再試行してください。
 {0} on	{0} オン
