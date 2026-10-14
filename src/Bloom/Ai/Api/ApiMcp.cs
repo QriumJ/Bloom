@@ -102,6 +102,8 @@ internal sealed class ApiMcp : IDisposable
                     gone.Add(running[key].Client);
                     running.Remove(key);
                 }
+            foreach (string key in failed.Keys.ToList())
+                if (!wanted.ContainsKey(key)) failed.Remove(key); // switched off meanwhile: switched on again, it is tried again
             due = defs.Where(d => !running.ContainsKey(d.Key) && failed.GetValueOrDefault(d.Key) != d.ConfigHash).ToList();
         }
         foreach (var c in gone) c.Dispose();
@@ -246,8 +248,9 @@ internal sealed class ApiMcp : IDisposable
     }
 
     /// Every server ends, on a worker thread (each may take a moment), and a start under way is cancelled. The next
-    /// PrepareAsync starts them again.
-    public void Close()
+    /// PrepareAsync starts them again; a server that failed stays left out for the conversation (a stop doesn't undo
+    /// that), unless `forgetFailed` (the MCP settings changed).
+    public void Close(bool forgetFailed = false)
     {
         List<McpClient> all;
         CancellationTokenSource old;
@@ -258,7 +261,7 @@ internal sealed class ApiMcp : IDisposable
             closing = new CancellationTokenSource();
             all = running.Values.Select(r => r.Client).ToList();
             running.Clear();
-            failed.Clear();
+            if (forgetFailed) failed.Clear();
             routes = new();
             offered = [];
             Secrets = [];

@@ -238,6 +238,18 @@ internal static class ChatCompletionTests
         }
     }
 
+    /// An API answer that is only a title line (taken out), with no tool call, is an error rather than an empty
+    /// successful reply.
+    public static void AnApiAnswerThatIsOnlyATitleLineIsAnError()
+    {
+        using var f = new Fixture();
+        f.Thread.Model = "api:gemini:gemini-flash-lite-latest";
+        Say(f, "hi", "<chat-title field=\"Etc\">인사</chat-title>", ok: true);
+        PumpUntil(() => !f.Thread.Busy);
+        var m = f.Thread.Messages[^1];
+        Check.True(m.Error && m.Text == AiErrors.ApiNoAnswer("Gemini") && !m.Text.Contains("chat-title", StringComparison.Ordinal), "no empty answer saved as a success: the no-answer error, without the line");
+    }
+
     public static void FencedFilesFollowTheWritePermissionAndNeverSaveAFailedAnswer()
     {
         Bloom.Core.Lang.Force(true);

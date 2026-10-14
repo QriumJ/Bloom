@@ -531,6 +531,12 @@ internal sealed partial class Chats
         m.Status = null;
         m.Asks.Clear();
         if (leads.Remove(t.Id, out var lead)) m.Text += lead.Flush();
+        // an API answer with nothing in it (a title line only, once stripped) and no tool call is no answer
+        if (ok && AiModels.IsApi(t.Model) && m.Text.Trim().Length == 0 && m.Steps is not { Count: > 0 })
+        {
+            ok = false;
+            error = AiErrors.ApiNoAnswer(AiModels.ApiProviderOf(t.Model)?.Name ?? "API");
+        }
         DateTime? since = turnStarted.Remove(t.Id, out var started) ? started : null;
         // ```file: blocks are saved only for an answer that finished, and as 파일 쓰기 (the 권한) says: 사용 안 함 saves none,
         // 매번 묻기 asks first (below) — replacing a file included — and 항상 허용 saves

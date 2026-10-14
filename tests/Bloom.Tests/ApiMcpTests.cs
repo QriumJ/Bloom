@@ -57,6 +57,29 @@ internal static class ApiMcpTests
         Check.Eq(Prepare(mcp, crash, missing, ok).Count, 0, "the next turn says nothing again");
     }
 
+    public static void AServerThatFailedIsStartedOncePerConversation()
+    {
+        using var data = new SettingsTransferTests.DataFolder();
+        int starts = 0;
+        using var mcp = new ApiMcp((_, _) =>
+        {
+            Interlocked.Increment(ref starts);
+            throw new McpException("no");
+        });
+        var def = new McpServerDef("broken", "test", "x", [], new Dictionary<string, string>(), null, null);
+        Check.Eq(Prepare(mcp, def).Count, 1, "the failure is told once");
+        mcp.Close(); // a stop in between
+        Check.Eq(Prepare(mcp, def).Count, 0, "not told again after a stop");
+        Check.Eq(Prepare(mcp, def).Count, 0, "nor on the next message");
+        Check.Eq(starts, 1, "and started once");
+        Prepare(mcp); // switched off in the settings
+        Check.Eq(Prepare(mcp, def).Count, 1, "switched on again: tried again");
+        Check.Eq(starts, 2, "started again");
+        mcp.Close(true); // the MCP settings changed
+        Prepare(mcp, def);
+        Check.Eq(starts, 3, "tried again after the settings changed");
+    }
+
     public static void ClosingEndsTheServer()
     {
         using var data = new SettingsTransferTests.DataFolder();

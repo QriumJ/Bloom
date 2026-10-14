@@ -38,7 +38,7 @@ internal sealed class ApiSession : IChatSession
         foreach (var s in live.Keys)
         {
             s.EndMcpLifetime();
-            _ = Task.Run(s.mcp.Close);
+            _ = Task.Run(() => s.mcp.Close(true));
         }
     }
 
@@ -139,14 +139,14 @@ internal sealed class ApiSession : IChatSession
         var rules = new Dictionary<string, string>(s.Permissions);
         // the servers switched on (read from their programs' files on the worker); 다른 MCP 도구 사용 안 함: none at all
         var servers = ToolPermissions.Of(rules, ToolPermissions.Mcp) == ToolPermissions.Off ? null : McpCatalog.PreparePicked();
-        _ = Task.Run(() => RunTurn(asked, stop, pc, rules, servers, s.AiTitles, life.Token));
+        _ = Task.Run(() => RunTurn(asked, stop, pc, rules, servers, life.Token));
         return true;
     }
 
     /// One turn, on a worker thread: the history built from the saved chat (the first turn: its files are read again),
     /// the other MCP servers started or closed as now switched on, the answer's steps (ApiTurn), and they into the
     /// conversation (also a partial answer, so the next turn knows what was said).
-    private async Task RunTurn(ApiMessage asked, CancellationTokenSource stop, IPcTools? pc, Dictionary<string, string> rules, Func<List<McpServerDef>>? servers, bool titles, CancellationToken life)
+    private async Task RunTurn(ApiMessage asked, CancellationTokenSource stop, IPcTools? pc, Dictionary<string, string> rules, Func<List<McpServerDef>>? servers, CancellationToken life)
     {
         ApiReply reply;
         var steps = new List<ApiStep>();
@@ -178,7 +178,7 @@ internal sealed class ApiSession : IChatSession
                     tools = new ApiToolbox(folder, pc, rules, ask => Ask(pending, ask), ApiToolbox.Secrets(), life.IsCancellationRequested ? null : mcp);
                 }
                 // fenced ```file: blocks are saved only under 파일 쓰기 (Chats.Finish), so the model is only told of them then
-                request = request with { System = Instructions(titles, tools, pc is not null && tools is not null, ToolPermissions.Of(rules, ToolPermissions.Write) != ToolPermissions.Off) };
+                request = request with { System = Instructions(tools, pc is not null && tools is not null, ToolPermissions.Of(rules, ToolPermissions.Write) != ToolPermissions.Off) };
                 (reply, steps) = await ApiTurn.RunAsync(request, tools, d => TextDelta?.Invoke(d), st => Status?.Invoke(st), stop.Token).ConfigureAwait(false);
             }
         }
@@ -224,7 +224,7 @@ internal sealed class ApiSession : IChatSession
     public void Interrupt()
     {
         lock (gate) turn?.Cancel();
-        _ = Task.Run(mcp.Close);
+        _ = Task.Run(() => mcp.Close());
     }
 
     public void Dispose()
@@ -245,7 +245,7 @@ internal sealed class ApiSession : IChatSession
     /// The instructions: the chats' own (no web search here). Without write_file (no file tools, or 파일 쓰기 사용 안 함),
     /// files go inline as with ChatGPT; with it, the working folder and its out\ for the files the user asks for (Chats
     /// shows what lands there).
-    internal static string Instructions(bool titles, ApiToolbox? tools, bool pc, bool saveFenced)
+    internal static string Instructions(ApiToolbox? tools, bool pc, bool saveFenced)
     {
         string folder = tools is not null && tools.Offers(ApiToolbox.ReadFile)
             ? "You have file tools on the user's Windows PC; your working folder is this chat's own, relative paths start there, and the user's attached files have copies in in\\ there. "
@@ -254,11 +254,11 @@ internal sealed class ApiSession : IChatSession
             : "";
         if (tools?.OffersMcp == true) folder += "Tools named <server>__<tool> are other MCP servers' on the user's PC; each call may wait for the user's OK. ";
         if (tools is null || !tools.Offers(ApiToolbox.WriteFile))
-            return ClaudeSession.SystemPrompt(null, Intro + (saveFenced ? CodexSession.InlineFiles : "Files can't be saved from this chat: give what the user asks for in your message. ") + folder, pc: pc, titles: titles, web: false);
+            return ClaudeSession.SystemPrompt(null, Intro + (saveFenced ? CodexSession.InlineFiles : "Files can't be saved from this chat: give what the user asks for in your message. ") + folder, pc: pc, titles: false, web: false); // no title line asked of an API model: small ones then write their tool calls as text
         string files = "Files the user attached come in the message: text files inside <attachment name=\"…\"> blocks, pictures as images. "
             + "When the user asks for a file (a document, code, a table, an SVG picture...), make it by calling the write_file tool with the path out\\<a fitting name> (a file you only describe does not exist) and say its name in one line; "
             + "it appears in the chat as a file the user can open or save. ";
-        return ClaudeSession.SystemPrompt(null, Intro + files + folder, pc: pc, titles: titles, web: false);
+        return ClaudeSession.SystemPrompt(null, Intro + files + folder, pc: pc, titles: false, web: false);
     }
 
     /// The saved chat's earlier turns, on the UI thread (strings only): each question with the answer it got, the
