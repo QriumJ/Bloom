@@ -118,7 +118,11 @@ internal sealed class Section
     public string? Note; // right-aligned small text on the header (counts, status)
     public bool Strip; // favorites: one row of icons under the search line
     public System.Func<System.Windows.FrameworkElement>? Widget; // a home block drawn as is (usage, week), no rows
-    public string? HomeKey; // a home block: hover shows ▲ ▼ 숨기기 on it (Core\Home.cs)
+    public string? HomeKey; // a home block: 홈 편집 shows its tools on it (Core\Home.cs)
+    public bool HomeRight; // … in the right column when the home has two (Ui\Controls\HomeColumns.cs)
+    public bool Collapsed; // … folded: only its header shows (no rows, widget or strip)
+    public int HomeCount; // … a list block's rows as set (Home.Count; 0: not a list), its tools' − n +
+    public bool HomeFoot; // 홈 편집: a column's "+ 블록 추가" and its cards, at the end of its column (HomeRight)
     public System.Action? Reload; // a ↻ on the header (the AI usage block)
     public bool Fallback; // the root's "다른 곳에서 찾기": late results (files) go in before it
     public readonly List<ResultItem> Items = new();

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using Bloom.App;
 using Bloom.Core;
 using Bloom.Search;
@@ -86,15 +88,30 @@ internal sealed partial class Launcher
 
     public static bool ShowHomeToolsForQa;
 
-    /// 홈 편집: the blocks show ▲ ▼ 숨기기, the AI usage cards ‹ › ✎, and the hidden blocks come back as rows at the end.
+    /// 홈 편집: the blocks show their tools (Launcher.HomeTools), drag by their header rows and fold by their titles
+    /// (Launcher.HomeDrag.cs), the AI usage cards ‹ › ✎, and each column ends with "+ 블록 추가" (Launcher.HomeAdd.cs).
     public bool HomeEditing { get; private set; }
 
     public void ToggleHomeEdit()
     {
         HomeEditing = !HomeEditing;
+        addOpen = null;
         if (HomeEditing && (Mode != Mode.Root || box.Text.Length > 0)) Go(Mode.Root);
         else Refresh(true);
-        if (HomeEditing) ShowToast(Tr("홈 편집 · 블록은 ▲ ▼ ✕ · AI 사용량 카드는 ‹ › 순서, ✎ 이름 · 끝내려면 Esc 또는 ‘편집 끝’", "Editing home · ▲ ▼ ✕ on blocks · ‹ › order and ✎ names the AI usage cards · Esc or ‘Done’ to finish"));
+        if (HomeEditing) ShowToast(Tr("홈 편집 · 블록 제목 줄을 끌어 옮기고 제목을 눌러 접기 · ▲ ▼ ‹ › 이동, − + 개수, ✕ 숨기기 · ‘+ 블록 추가’로 다시 넣기 · 끝내려면 Esc", "Editing home · drag a block by its title row, click the title to fold it · ▲ ▼ ‹ › move, − + rows, ✕ hides · ‘+ Add a block’ puts one back · Esc to finish"));
+    }
+
+    /// The home blocks shown as last drawn (their ▲ ▼ ‹ › go past these only).
+    private HashSet<string> homeShown = [];
+
+    /// Whether the home is two columns at the list's width now (before the first layout: at the window's).
+    private bool HomeWide() => HomeColumns.Wide(body.ActualWidth > 0 ? body.ActualWidth : Width / Theme.Scale);
+
+    /// A block's header: folded to its header, or open again.
+    private void FoldBlock(string key, bool folded)
+    {
+        Home.SetCollapsed(key, folded);
+        Refresh(true);
     }
 
     /// AI draws a favorite's icon (one Claude call); the toast says when it starts and how it ended.
@@ -112,24 +129,42 @@ internal sealed partial class Launcher
         ShowToast(Tr($"‘{ClipText(name, 14)}’ 아이콘 변경 완료 · Ctrl+K로 다시 그리기", $"Icon changed for ‘{ClipText(name, 14)}’ · Ctrl+K to draw again"));
     }
 
-    /// ▲ ▼ 숨기기 on a home block (top right, over its header): order and hide right on the home.
-    private FrameworkElement HomeTools(string key)
+    /// A home block's tools (top right, over its header): − n + for a list's rows, ≡ to drag it (as its whole header row
+    /// does, Launcher.HomeDrag.cs), ▲ ▼ a place up or down as laid out (one column: through both), ‹ › to the other
+    /// column, ✕ to hide it. Drawn from the block's section `s` (its column and count), which its kept key holds
+    /// (Launcher.Kept.cs).
+    private FrameworkElement HomeTools(string key, Section s)
     {
-        var (first, last) = Home.Ends();
-        void Move(int by)
+        bool wide = HomeWide(), right = s.HomeRight;
+        var shownNow = homeShown;
+        void Then(Action change)
         {
-            Home.MoveShown(key, by);
+            change();
             Refresh(true);
         }
         void Hide()
         {
             Home.Set(key, false);
-            ShowToast(Tr($"‘{Home.Name(key)}’ 숨김 · 홈 편집에서 다시 표시", $"‘{Home.Name(key)}’ hidden · restore in Edit home"));
+            ShowToast(Tr($"‘{Home.Name(key)}’ 숨김 · ‘+ 블록 추가’로 다시 넣기", $"‘{Home.Name(key)}’ hidden · ‘+ Add a block’ puts it back"));
             Refresh(true);
         }
-        var bar = HomeViews.EditBar((G.Up, Tr("위로", "Up"), key != first, () => Move(-1)), (G.Down, Tr("아래로", "Down"), key != last, () => Move(1)), (G.Close, Tr("홈에서 숨기기", "Hide from home"), true, Hide));
-        bar.Margin = new Thickness(0, 6, 16, 0);
-        return bar;
+        var grip = HomeViews.EditButton(G.Grip, Tr("끌어서 옮기기", "Drag to move"), true, null);
+        grip.Cursor = Cursors.SizeAll;
+        var bar = HomeViews.Pill(grip,
+            HomeViews.EditButton(G.Up, Tr("위로", "Up"), Home.CanStep(key, -1, wide, shownNow), () => Then(() => Home.Step(key, -1, wide, shownNow))),
+            HomeViews.EditButton(G.Down, Tr("아래로", "Down"), Home.CanStep(key, 1, wide, shownNow), () => Then(() => Home.Step(key, 1, wide, shownNow))),
+            HomeViews.EditButton(G.Left, Tr("왼쪽 열로", "To the left column"), right, () => Then(() => Home.MoveAcross(key, shownNow))),
+            HomeViews.EditButton(G.Right, Tr("오른쪽 열로", "To the right column"), !right, () => Then(() => Home.MoveAcross(key, shownNow))),
+            HomeViews.EditButton(G.Close, Tr("홈에서 숨기기", "Hide from home"), true, Hide));
+        var tools = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 6, 16, 0) };
+        if (s.HomeCount > 0)
+        {
+            var stepper = HomeViews.Stepper(s.HomeCount, Home.CountMin, Home.CountMax, n => Then(() => Home.SetCount(key, n)));
+            stepper.Margin = new Thickness(0, 0, 6, 0);
+            tools.Children.Add(stepper);
+        }
+        tools.Children.Add(bar);
+        return tools;
     }
 
     /// Which folder an item goes into (or a new one).

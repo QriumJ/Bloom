@@ -464,10 +464,6 @@ Recent files	最近的文件
 Recently copied	最近复制
 Ctrl+Alt+V all	Ctrl+Alt+V 查看全部
 Recent AI chats	最近的 AI 聊天
-Hidden blocks	已隐藏的区块
-Enter shows it again	按 Enter 重新显示
-Hidden	已隐藏
-Show again	重新显示
 Set a shortcut…	设置快捷键…
 Change the shortcut… ({0})	更改快捷键… ({0})
 Remove the shortcut	删除快捷键
@@ -817,6 +813,11 @@ Copy to the clipboard: {0}	复制到剪贴板：{0}
 saved captures	已保存的截图
 glass	玻璃效果
 shortcut	快捷键
+Focus	专注
+Meeting	会议
+Drag to move	拖动以移动
+More rows	增加条数
+No hidden blocks · hide one with its ✕ to add it back here	没有已隐藏的区块 · 用区块的 ✕ 隐藏后，可在这里重新添加
 Downloads	下载
 color picker	color picker
 left half	left half
@@ -875,8 +876,6 @@ ntpd	ntpd
 chrom	chrom
 Friday meeting\nresend the quote · fix the date	周五会议\n重新发送报价单 · 确定日期
 Trip ideas\nJeju 3 nights · rent a car	旅行想法\n济州岛 3 晚 · 租车
-Focus	专注
-Meeting	会议
 note buy milk	note buy milk
 quote	quote
 Sum up this launcher's shortcuts	总结一下这个启动器的快捷键
@@ -1034,10 +1033,10 @@ See the disk as a map and clear big files	以地图方式查看磁盘并清理�
 Running timers and reminders (only while there are some)	进行中的计时器和提醒 (仅在有时显示)
 Reminders for the next 7 days — click a day for the calendar	未来 7 天的提醒 — 点击日期打开日历
 A row of icons · Ctrl+1…9	图标栏 · Ctrl+1…9
-The last 5 apps and files you opened	最近打开的 5 个应用和文件
-3 files Windows remembers you opened	Windows 记录的最近打开的 3 个文件
-The last 3 clipboard entries	最近 3 条剪贴板记录
-3 chats to pick up again	可以继续的 3 个对话
+The apps and files you opened last	最近打开的应用和文件
+Files Windows remembers you opened	Windows 记录的最近打开的文件
+The latest clipboard entries	最近的剪贴板记录
+Chats to pick up again	可以继续的对话
 Commands	命令
 Bloom's features	Bloom 的功能
 Empty note	空便笺
@@ -1333,6 +1332,8 @@ Could not get usage. Check the Claude Code or Codex sign-in, then press ↻.	无
 Move earlier	前移
 Move later	后移
 Rename	重命名
+Rows shown ({0}–{1})	显示条数 ({0}–{1})
+Fewer rows	减少条数
 {0} ago	{0}前
 Last fetched	上次获取
  left	 剩余
@@ -1501,6 +1502,8 @@ Select all	全选
 Run as admin	以管理员身份运行
 Expression	算式
 Result · Enter copies	结果 · 按 Enter 复制
+Expand	展开
+Collapse	折叠
 Refresh	刷新
 Remove from favorites	从收藏中移除
 Add to favorites	添加到收藏
@@ -1513,11 +1516,13 @@ Remove from recent	从最近使用中删除
 Draw with AI… (describe the picture)	用 AI 画… (用文字描述图案)
 Back to the original icon	恢复原图标
 Picture icon for ‘{0}’	“{0}”的图案图标
-Editing home · ▲ ▼ ✕ on blocks · ‹ › order and ✎ names the AI usage cards · Esc or ‘Done’ to finish	正在编辑主页 · 区块用 ▲ ▼ ✕ · AI 用量卡片用 ‹ › 调整顺序、✎ 改名 · 按 Esc 或“完成”结束
+Editing home · drag a block by its title row, click the title to fold it · ▲ ▼ ‹ › move, − + rows, ✕ hides · ‘+ Add a block’ puts one back · Esc to finish	正在编辑主页 · 拖动区块的标题行即可移动，点击标题折叠 · ▲ ▼ ‹ › 移动、− + 调整条数、✕ 隐藏 · 用“+ 添加区块”重新放回 · 按 Esc 结束
 Creating icon for ‘{0}’… (1 use)	正在生成“{0}”图标…（计入 1 次用量）
 Icon creation failed. Try again.	图标生成失败。请重试。
 Icon changed for ‘{0}’ · Ctrl+K to draw again	已更改“{0}”图标 · Ctrl+K 重新生成
-‘{0}’ hidden · restore in Edit home	已隐藏“{0}” · 在编辑主页中恢复
+‘{0}’ hidden · ‘+ Add a block’ puts it back	已隐藏“{0}” · 可用“+ 添加区块”放回
+To the left column	移到左栏
+To the right column	移到右栏
 Hide from home	从主页隐藏
   (here now)	  (当前所在)
   · {0}	  · {0} 项
@@ -1549,6 +1554,13 @@ Quick AI answer ready · Tab	快速 AI 回答完成 · Tab
 Edit home	编辑主页
 Done (Esc · Ctrl+E)	完成 (Esc · Ctrl+E)
 Order or hide the home blocks (Ctrl+E)	排列或隐藏主页区块 (Ctrl+E)
+Add a block	添加区块
+Click a card to add it here, or drag it into place	点击卡片添加到此栏末尾，拖动则添加到放下的位置
+1 hidden block	1 个已隐藏的区块
+{0} hidden blocks	{0} 个已隐藏的区块
+Close list	收起列表
+Open list	展开列表
+Click to add at this column's end · drag it into place	点击添加到此栏末尾 · 拖动放到想要的位置
 Type to search	输入以搜索
 Search, or ask AI	搜索，或问 AI
 What you can type	可输入的内容

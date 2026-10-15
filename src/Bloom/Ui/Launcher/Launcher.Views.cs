@@ -86,6 +86,11 @@ internal sealed partial class Launcher
     public void DataChanged()
     {
         if (!IsVisible) return;
+        if (hold is not null) // a home block or card held: once it is let go (Launcher.HomeDrag.cs)
+        {
+            refreshAfterHold = true;
+            return;
+        }
         if (View(Mode).Live) Refresh(true);
     }
 

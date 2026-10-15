@@ -13,7 +13,48 @@ namespace Bloom.Tests;
 
 internal static class LauncherPreviewTests
 {
-    public static void HiddenSelectedFilePreviewStartsOnShowAndRestartsAfterHide()
+    public static void HiddenSelectedFilePreviewStartsOnShowAndRestartsAfterHide() => WithLauncher(window =>
+    {
+        int reads = 0;
+        const string text = "synthetic selected file preview";
+        var section = new Section(null);
+        section.Items.Add(new ResultItem
+        {
+            Id = "synthetic:file",
+            Title = "Synthetic file",
+            Kind = ItemKind.File,
+            Icon = IconSpec.Of(G.Document),
+            ReadDetail = () =>
+            {
+                Interlocked.Increment(ref reads);
+                return new Detail { Text = text };
+            },
+        });
+        const BindingFlags instance = BindingFlags.Instance | BindingFlags.NonPublic;
+        typeof(Launcher).GetField("views", instance)!.SetValue(window, new Dictionary<Mode, ViewSpec>
+        {
+            [Mode.Root] = new(),
+            [Mode.Clipboard] = new() { Split = true, Context = () => "Synthetic clipboard" },
+        });
+        typeof(Launcher).GetMethod("SetMode", instance)!.Invoke(window, new object[] { Mode.Clipboard });
+        window.QaRender(new List<Section> { section });
+        Check.True(!window.IsVisible, "selection is rendered before the actual window becomes visible");
+        Check.Eq(Volatile.Read(ref reads), 0, "hidden selected file does not read early");
+        Check.Eq(window.Selected?.Id, "synthetic:file", "hidden render has the selected file row");
+
+        window.Show();
+        PumpUntil(() => PreviewText(window) == text);
+        Check.Eq(Volatile.Read(ref reads), 1, "actual Show starts the selected preview without a new selection");
+        window.Hide();
+        Check.True(PreviewText(window) is null, "actual Hide clears the preview");
+        window.Show();
+        PumpUntil(() => PreviewText(window) == text);
+        Check.Eq(Volatile.Read(ref reads), 2, "same-id selected file is read again on reopening");
+    });
+
+    /// A launcher for a test, off the screen and never activated, its host not started (Host.Start is deliberately not
+    /// called: no settings, clipboard, disk index or hooks); closed after `test`.
+    internal static void WithLauncher(Action<Launcher> test)
     {
         const BindingFlags fields = BindingFlags.Static | BindingFlags.NonPublic;
         var changed = typeof(Theme).GetField("Changed", fields)!;
@@ -22,12 +63,9 @@ internal static class LauncherPreviewTests
         var beforeScaled = scaled.GetValue(null);
         bool beforeNoActivate = Launcher.NoActivateForQa;
         Launcher? window = null;
-        int reads = 0;
-        const string text = "synthetic selected file preview";
         try
         {
             Launcher.NoActivateForQa = true;
-            // Host.Start is deliberately not called: no settings, clipboard, disk index or hooks.
             var host = new Host(new Options());
             host.Engine = new Engine(host);
             host.Tools = new ToolDock(host);
@@ -41,39 +79,7 @@ internal static class LauncherPreviewTests
                 AllowClose = true,
             };
             host.Window = window;
-            var section = new Section(null);
-            section.Items.Add(new ResultItem
-            {
-                Id = "synthetic:file",
-                Title = "Synthetic file",
-                Kind = ItemKind.File,
-                Icon = IconSpec.Of(G.Document),
-                ReadDetail = () =>
-                {
-                    Interlocked.Increment(ref reads);
-                    return new Detail { Text = text };
-                },
-            });
-            const BindingFlags instance = BindingFlags.Instance | BindingFlags.NonPublic;
-            typeof(Launcher).GetField("views", instance)!.SetValue(window, new Dictionary<Mode, ViewSpec>
-            {
-                [Mode.Root] = new(),
-                [Mode.Clipboard] = new() { Split = true, Context = () => "Synthetic clipboard" },
-            });
-            typeof(Launcher).GetMethod("SetMode", instance)!.Invoke(window, new object[] { Mode.Clipboard });
-            window.QaRender(new List<Section> { section });
-            Check.True(!window.IsVisible, "selection is rendered before the actual window becomes visible");
-            Check.Eq(Volatile.Read(ref reads), 0, "hidden selected file does not read early");
-            Check.Eq(window.Selected?.Id, "synthetic:file", "hidden render has the selected file row");
-
-            window.Show();
-            PumpUntil(() => PreviewText(window) == text);
-            Check.Eq(Volatile.Read(ref reads), 1, "actual Show starts the selected preview without a new selection");
-            window.Hide();
-            Check.True(PreviewText(window) is null, "actual Hide clears the preview");
-            window.Show();
-            PumpUntil(() => PreviewText(window) == text);
-            Check.Eq(Volatile.Read(ref reads), 2, "same-id selected file is read again on reopening");
+            test(window);
         }
         finally
         {

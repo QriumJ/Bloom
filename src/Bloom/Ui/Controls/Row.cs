@@ -19,6 +19,7 @@ internal sealed class Row : SmoothBorder
     public Action? Clicked, RightClicked;
     public Action? Tick; // once a second while shown (a live accessory)
     public Action<ActionItem>? SideClicked; // the item's side button (관리자로 실행) was pressed
+    private static Row? pressed; // the row the left button last went down on: only a release on it clicks it
     private FrameworkElement? side;
     public readonly Grid Cells;
     private TextBlock? title; // a result's title (Result): up to its share of the row, the subtitle takes the rest
@@ -27,6 +28,10 @@ internal sealed class Row : SmoothBorder
     // the title's share of a result row: 400 or, with no subtitle, 600 of the 728 px a row has in a launcher of the
     // default size, so a wider launcher shows more of both
     private const double TitleShare = 400.0 / 728, LoneTitleShare = 600.0 / 728;
+
+    /// A press anywhere in a window forgets the row pressed before (a row's own press, nearer the mouse, comes after it):
+    /// a row is clicked by a press and a release both on it.
+    static Row() => EventManager.RegisterClassHandler(typeof(Window), PreviewMouseLeftButtonDownEvent, new MouseButtonEventHandler((_, _) => pressed = null), true);
 
     public Row(ResultItem? item, double height = 42)
     {
@@ -51,9 +56,12 @@ internal sealed class Row : SmoothBorder
             hover = false;
             Paint();
         };
+        AddHandler(PreviewMouseLeftButtonDownEvent, new MouseButtonEventHandler((_, _) => pressed = this), true);
         MouseLeftButtonUp += (_, e) =>
         {
-            Clicked?.Invoke();
+            bool mine = pressed == this; // not a button held on from what is gone (a list drawn anew under it)
+            pressed = null;
+            if (mine) Clicked?.Invoke();
             e.Handled = true;
         };
         MouseRightButtonUp += (_, e) =>
@@ -187,6 +195,47 @@ internal sealed class Row : SmoothBorder
         return r;
     }
 
+    /// 홈 편집's "+ 블록 추가" at a column's end (Launcher.HomeAdd.cs): a dashed outline, the + and its words in the
+    /// accent, the subtitle beside them, a chevron saying whether its cards show (`open`).
+    public static Row AddTile(ResultItem item, bool open)
+    {
+        var r = new Row(item, 44) { CornerRadius = new CornerRadius(10), Margin = new Thickness(16, 8, 16, 4), Padding = new Thickness(0), Cursor = Cursors.Hand };
+        var frame = new Grid();
+        r.Child = frame;
+        frame.Children.Add(HomeViews.Dashes(Theme.P.Track));
+        r.Cells.Margin = new Thickness(0, 0, 14, 0);
+        frame.Children.Add(r.Cells);
+        var plus = Theme.Glyph(G.Add, 11, Theme.P.AccentText);
+        plus.Margin = new Thickness(0, 1, 10, 0);
+        r.Add(plus, GridLength.Auto);
+        r.Add(Theme.T(item.Title, 13.5, Theme.P.AccentText, Theme.Medium), GridLength.Auto);
+        var sub = Theme.T(item.Subtitle ?? "", 12, Theme.P.TextFaint);
+        sub.Margin = new Thickness(10, 1, 8, 0);
+        r.Add(sub, new GridLength(1, GridUnitType.Star));
+        r.Add(Theme.Glyph(open ? G.Up : G.Down, 9, Theme.P.TextFaint), GridLength.Auto);
+        return r;
+    }
+
+    /// A hidden block's card under "+ 블록 추가": its glyph, its name and what it shows, a + at the end; outlined, filled
+    /// when hovered or selected. Pressed it adds its block, dragged it goes where it is let go (Launcher.HomeDrag.cs).
+    public static Row Card(ResultItem item)
+    {
+        var r = new Row(item, 54) { CornerRadius = new CornerRadius(10), BorderBrush = Theme.P.CardLine, BorderThickness = new Thickness(1), Margin = new Thickness(16, 3, 16, 3), Cursor = Cursors.Hand };
+        var icon = Icons.Build(item.Icon);
+        icon.Margin = new Thickness(0, 0, 12, 0);
+        r.Add(icon, GridLength.Auto);
+        var words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        words.Children.Add(Theme.T(item.Title, 13.5, Theme.P.Text, Theme.Medium));
+        var about = Theme.T(item.Subtitle ?? "", 12, Theme.P.TextFaint);
+        about.Margin = new Thickness(0, 2, 0, 0);
+        words.Children.Add(about);
+        r.Add(words, new GridLength(1, GridUnitType.Star));
+        var plus = Theme.Glyph(G.Add, 11, Theme.P.TextDim);
+        plus.Margin = new Thickness(10, 0, 0, 0);
+        r.Add(plus, GridLength.Auto);
+        return r;
+    }
+
     /// The calculator answer: the expression on the left, the result large on the right.
     public static Row Calc(ResultItem item)
     {
@@ -227,11 +276,36 @@ internal sealed class Row : SmoothBorder
 
 internal static class Section2
 {
-    /// A list header: the title, a small note on the right and, when given, a ↻ after the note.
-    public static FrameworkElement Header(string title, string? note, Action? reload = null)
+    /// The mark on a header's title when it folds its block (`fold`): 홈 편집's handle tells a press there (a click folds)
+    /// from one beside it (Launcher.HomeDrag.cs).
+    public static readonly object FoldTag = new();
+
+    /// A list header: the title, a small note on the right and, when given, a ↻ after the note. `fold` (a home block):
+    /// a chevron left of the title, and a click on either folds the block or (`folded`) opens it again.
+    public static FrameworkElement Header(string title, string? note, Action? reload = null, Action? fold = null, bool folded = false)
     {
         var g = new Grid { Margin = new Thickness(22, 12, 22, 5) };
-        g.Children.Add(Theme.T(title, 11.5, Theme.P.TextFaint, Theme.Semi));
+        var name = Theme.T(title, 11.5, Theme.P.TextFaint, Theme.Semi);
+        if (fold is null) g.Children.Add(name);
+        else
+        {
+            // the chevron in the margin: the title stays where it is on any home
+            var chevron = Theme.Glyph(folded ? G.Right : G.Down, 8.5, Theme.P.TextFaint);
+            chevron.VerticalAlignment = VerticalAlignment.Center;
+            chevron.Margin = new Thickness(0, 1, 5, 0);
+            var toggle = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(-14, 0, 0, 0), Background = Brushes.Transparent, Cursor = Cursors.Hand, ToolTip = folded ? Tr("펼치기", "Expand") : Tr("접기", "Collapse"), Tag = FoldTag };
+            toggle.Children.Add(chevron);
+            toggle.Children.Add(name);
+            toggle.MouseEnter += (_, _) => chevron.Foreground = name.Foreground = Theme.P.Text;
+            toggle.MouseLeave += (_, _) => chevron.Foreground = name.Foreground = Theme.P.TextFaint;
+            toggle.MouseLeftButtonDown += (_, e) => e.Handled = true; // the search line keeps the focus
+            toggle.MouseLeftButtonUp += (_, e) =>
+            {
+                e.Handled = true;
+                fold();
+            };
+            g.Children.Add(toggle);
+        }
         var right = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
         if (note is not null)
         {

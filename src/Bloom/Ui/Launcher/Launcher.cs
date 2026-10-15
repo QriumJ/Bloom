@@ -53,6 +53,7 @@ internal sealed partial class Launcher : Window, IChatHost
     private FavStrip? strip; // the favorites row in the empty view
     private bool inStrip;
     private int stripSel;
+    private int stripAt; // the rows before the strip (its block's place in the keyboard's order, Launcher.NextStop)
     private readonly ActionPanel actions;
     private readonly Border toast;
     private readonly TextBlock toastText;
@@ -256,6 +257,7 @@ internal sealed partial class Launcher : Window, IChatHost
             if (IsVisible && !sizing) host.Tools.Layout(); // the attached tools follow while it is dragged (sized: SizeChanged)
         };
         WireSizing();
+        WireHomeGrid();
 
         WireAttachments();
         box.TextChanged += (_, _) => OnText();
@@ -606,11 +608,14 @@ internal sealed partial class Launcher : Window, IChatHost
     private Win32.POINT? movedTo;
 
     /// A click on something in `root` that takes clicks itself (a hand cursor on it or above it).
-    private static bool OnButton(DependencyObject? d, DependencyObject root)
+    private static bool OnButton(DependencyObject? d, DependencyObject root) =>
+        Up(d).TakeWhile(x => x != root).Any(x => x is FrameworkElement { Cursor: { } c } && c == Cursors.Hand);
+
+    /// `d` and what it is in, up to the window (a text run by its logical parent).
+    private static IEnumerable<DependencyObject> Up(DependencyObject? d)
     {
-        for (; d is not null && d != root; d = d is Visual or System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
-            if (d is FrameworkElement { Cursor: { } c } && c == Cursors.Hand) return true;
-        return false;
+        for (; d is not null; d = d is Visual or System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
+            yield return d;
     }
 
     /// Where it was dragged to, while that is on a screen; else centred on the monitor under the mouse, a little above

@@ -4,6 +4,9 @@ Each release on GitHub shows its section from this file (the workflow looks for 
 
 ## 0.14.0
 
+- The launcher resizes from its edges and corners. A bigger launcher shows more, not bigger: text and icons keep their size. The size is kept, fitted to the screen on open, and Settings › General resets it.
+- Home editing (Ctrl+E or "Edit home"): drag a block by its title bar to move it, and a gap shows where it will land. Each list block has its own row count (− +), and clicking a title folds the block. A wide launcher lays the home out in two columns, and ‹ › moves a block to the other column.
+- "+ Add block" at the end of each column lists the hidden blocks as cards. Click one to add it at the end of that column, or drag it to where it should go.
 - Claude Code and Codex task cards (working, done, needs approval) now take you to the session: a click brings the terminal or editor window the task runs in to the front.
 - Type `?` alone in the search line to see what Bloom understands, with examples by kind; Enter puts one in the search line. The empty search line shows one example at a time.
 - Bloom's own settings show up in search: type a setting's name (glass, shortcut) and Enter opens it in the settings window.
@@ -23,6 +26,9 @@ Each release on GitHub shows its section from this file (the workflow looks for 
 
 ### 한국어
 
+- 런처 테두리와 모서리를 끌어 크기를 바꿀 수 있습니다. 창을 키우면 글자와 아이콘은 그대로이고 보이는 내용이 늘어납니다. 크기는 기억했다가 열 때 화면에 맞추고, 설정 › 일반에서 초기화할 수 있습니다.
+- 홈 편집(Ctrl+E 또는 '홈 편집'): 블록 제목 줄을 끌어 옮기면 놓일 자리에 빈칸이 표시됩니다. 목록 블록은 − +로 보일 개수를 정하고, 제목을 누르면 접힙니다. 런처가 넓으면 홈이 두 열로 나뉘고, ‹ ›로 블록을 다른 열로 옮깁니다.
+- 각 열 끝의 '+ 블록 추가'를 누르면 숨긴 블록이 카드로 표시됩니다. 카드를 누르면 그 열 끝에 추가되고, 끌면 원하는 자리에 놓입니다.
 - Claude Code · Codex 작업 알림 카드(진행 중 · 작업 완료 · 승인 대기)를 누르면 그 작업이 실행 중인 터미널이나 편집기 창으로 이동합니다.
 - 검색창에 `?`만 입력하면 쓸 수 있는 표현을 종류별 예시로 표시합니다. Enter를 누르면 예시가 검색창에 들어갑니다. 빈 검색창에도 예시가 하나씩 표시됩니다.
 - Bloom 설정을 검색할 수 있습니다. `유리 효과`, `단축키`처럼 설정 이름을 입력하고 Enter를 누르면 설정 창에서 열립니다.

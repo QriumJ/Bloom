@@ -52,6 +52,8 @@ internal static partial class Captures
         ["new"] = NewScreens,
         ["draw"] = DrawScreens,
         ["guide"] = GuideScreens,
+        ["home"] = HomeScreens,
+        ["homeinput"] = HomeInputScreens,
     };
 
     public static async Task Run(Host host, string dir)

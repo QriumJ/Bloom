@@ -38,16 +38,18 @@ internal sealed partial class Launcher
         Refresh(false);
     }
 
-    public void Refresh(bool keep)
+    /// The view built again: `keep`, the selection stays (`select`: on that item instead, for the caller to bring into
+    /// view). 홈 편집's changes keep the scroll where it was.
+    public void Refresh(bool keep, string? select = null)
     {
         int v = ++version;
         string text = box.Text;
-        string? keepId = keep ? Selected?.Id : null;
+        string? keepId = select ?? (keep ? Selected?.Id : null);
         switch (Mode)
         {
             case Mode.Root:
                 sections = Engine.Root(text);
-                Render(sections, keepId);
+                Render(sections, keepId, keepScroll: keep && select is null && HomeEditing && text.Length == 0);
                 debounce.Stop();
                 if (Settings.Current.FilesInRoot && text.Trim().Length >= 2) debounce.Start();
                 break;
@@ -136,7 +138,10 @@ internal sealed partial class Launcher
         int v = ++renderVersion;
         int keep = -1, keepStrip = -1;
         inStrip = false;
-        var shown = secs.Where(s => s.Widget is not null || s.Items.Count > 0).ToList();
+        var shown = secs.Where(s => s.Widget is not null || s.Items.Count > 0 || s.Collapsed).ToList();
+        homeShown = shown.Select(s => s.HomeKey).OfType<string>().ToHashSet();
+        // 홈 편집: "+ 블록 추가" at the columns' ends (Launcher.HomeAdd.cs); a home edited is drawn anew each time
+        if (HomeEditing && Mode == Mode.Root && box.Text.Length == 0) AddFeet(shown);
         // the home: its blocks stay as the list holds them where they would show the same (Launcher.Kept.cs)
         string? look = null;
         List<string>? keys = null;
@@ -163,12 +168,14 @@ internal sealed partial class Launcher
         {
             home = null;
             list.Children.Clear();
+            homeGrid.Children.Clear();
             rows.Clear();
             strip = null;
             // the list as steps in order (a section's start, then its rows), so the late rows land where they belong
             var steps = new List<(Action run, bool row)>();
             Panel into = list;
             int first = opening ? ScreenRows() : FirstRows, need = first, counted = 0;
+            bool wide = HomeWide(), right = false;
             var holders = new UIElement?[shown.Count];
             var starts = new int[shown.Count];
             var strips = new FavStrip?[shown.Count];
@@ -178,6 +185,12 @@ internal sealed partial class Launcher
                 int at = n;
                 // the favorites row comes in the first go wherever it is: the home opens on it (Enter runs the first one)
                 if (sec.Strip) need = Math.Max(need, counted);
+                // two columns: the right one's first screen too (its rows come after all of the left one's)
+                if (wide && sec.HomeRight && !right)
+                {
+                    right = true;
+                    need = Math.Max(need, counted + first);
+                }
                 steps.Add((() =>
                 {
                     starts[at] = rows.Count;
@@ -188,7 +201,7 @@ internal sealed partial class Launcher
                 if (sec.Widget is not null || sec.Strip) continue;
                 foreach (var item in sec.Items)
                 {
-                    if (keepId is not null && item.Id == keepId && need == first) need = Math.Max(first, counted + 1);
+                    if (keepId is not null && item.Id == keepId) need = Math.Max(need, counted + 1); // past the right column's first screen too
                     counted++;
                     var it = item;
                     steps.Add((() =>
@@ -202,7 +215,7 @@ internal sealed partial class Launcher
                 steps.Add((() =>
                 {
                     // the home whole (its late rows too), one box per block: kept for the next time
-                    if (list.Children.Count != shown.Count) return;
+                    if (homeGrid.Children.Count != shown.Count) return;
                     var blocks = new List<Block>(shown.Count);
                     for (int n = 0; n < shown.Count; n++)
                     {
@@ -247,37 +260,53 @@ internal sealed partial class Launcher
         }
         sel = -1;
         // the empty view starts on the first favorite (Enter opens it, as before the row of icons)
-        if (strip is not null && (keepStrip >= 0 || keep < 0)) SelectStrip(Math.Max(0, keepStrip));
+        if (strip is not null && (keepStrip >= 0 || keep < 0)) SelectStrip(Math.Max(0, keepStrip), false);
         else Select(keep >= 0 ? keep : 0, false);
         if (keepScroll) scroll.ScrollToVerticalOffset(offset);
-        else if (keep < 0) scroll.ScrollToTop();
+        else if (keep < 0 && keepStrip < 0) scroll.ScrollToTop(); // a kept favorite, as a kept row, keeps the view on it
         UpdateChrome();
     }
 
-    /// A section's start in the list: a home block's own box (▲ ▼ 숨기기 while 홈 편집 is on), a widget, the favorites
-    /// strip or a header. Returns the panel its rows go into; `keepStrip`: the kept item's place in the strip (or -1);
-    /// `holder`: a home block's box. `widget`: the section's widget if already made (SectionKey).
+    /// A section's start in the list: a home block's own box in its column (while 홈 편집 is on its tools, and its header
+    /// row the handle that drags it), a column's foot (Launcher.HomeAdd.cs), a widget, the favorites strip or a header.
+    /// Returns the panel its rows go into; `keepStrip`: the kept item's place in the strip (or -1); `holder`: a home
+    /// block's box. `widget`: the section's widget if already made (SectionKey).
     private Panel StartSection(Section s, string? keepId, FrameworkElement? widget, out int keepStrip, out UIElement? holder)
     {
         keepStrip = -1;
         holder = null;
+        if (s.HomeFoot) return StartFoot(s, out holder);
         Panel into = list;
+        Action? fold = null;
+        Grid? blockBox = null;
+        FrameworkElement? tools = null;
         if (s.HomeKey is { } homeKey)
         {
             var inner = new StackPanel();
-            var blockBox = new Grid { Background = Brushes.Transparent };
+            blockBox = new Grid { Background = Brushes.Transparent, Tag = homeKey };
             blockBox.Children.Add(inner);
-            var tools = HomeTools(homeKey);
             // only while 홈 편집 is on (the footer button / Ctrl+E), never on a mere hover
-            tools.Visibility = HomeEditing || ShowHomeToolsForQa ? Visibility.Visible : Visibility.Collapsed;
-            blockBox.Children.Add(tools);
-            list.Children.Add(blockBox);
+            if (HomeEditing || ShowHomeToolsForQa)
+            {
+                tools = HomeTools(homeKey, s);
+                blockBox.Children.Add(tools);
+            }
+            HomeColumns.SetRight(blockBox, s.HomeRight);
+            if (homeGrid.Parent is null) list.Children.Add(homeGrid);
+            homeGrid.Children.Add(blockBox);
             holder = blockBox;
             into = inner;
+            // folded and opened by its header while 홈 편집 is on; a folded one opens by it any time
+            if (tools is not null || s.Collapsed) fold = () => FoldBlock(homeKey, !s.Collapsed);
         }
+        // the favorites strip has no header on the home, but one to fold it by (and for the tools to sit on) while 홈 편집 is on
+        var header = s.Collapsed ? Section2.Header(s.Title ?? "", s.Note, s.Reload, fold, true)
+            : s.Title is null || (s.Strip && fold is null) ? null
+            : Section2.Header(s.Title, s.Note, s.Widget is not null ? s.Reload : null, fold);
+        if (header is not null) into.Children.Add(blockBox is not null && tools is not null ? HeaderHandle(header, blockBox, tools, fold) : header);
+        if (s.Collapsed) return into;
         if (s.Widget is { } make)
         {
-            if (s.Title is not null) into.Children.Add(Section2.Header(s.Title, s.Note, s.Reload));
             into.Children.Add(widget ?? make());
             return into;
         }
@@ -303,17 +332,16 @@ internal sealed partial class Launcher
             };
             if (keepId is not null) keepStrip = s.Items.FindIndex(x => x.Id == keepId);
             strip = st;
+            stripAt = rows.Count; // the rows of the blocks before it
             into.Children.Add(st);
-            return into;
         }
-        if (s.Title is not null) into.Children.Add(Section2.Header(s.Title, s.Note));
         return into;
     }
 
     /// One result row, wired to select and run; added to `rows` (the keyboard's order).
     private Row AddRow(ResultItem item)
     {
-        Row r = item.Kind == ItemKind.Calc ? Row.Calc(item) : Split || Mode == Mode.Calendar ? Row.Compact(item, Mode is Mode.Clipboard or Mode.Calendar) : Row.Result(item);
+        Row r = item.Data is HomeAdd add ? FootRow(item, add) : item.Kind == ItemKind.Calc ? Row.Calc(item) : Split || Mode == Mode.Calendar ? Row.Compact(item, Mode is Mode.Clipboard or Mode.Calendar) : Row.Result(item);
         r.Clicked = () =>
         {
             Select(rows.IndexOf(r), false);
@@ -354,7 +382,7 @@ internal sealed partial class Launcher
         UpdateChrome();
     }
 
-    private void SelectStrip(int i)
+    private void SelectStrip(int i, bool bring = true)
     {
         if (strip is null || strip.Items.Count == 0) return;
         if (sel >= 0 && sel < rows.Count) rows[sel].Selected = false;
@@ -362,7 +390,8 @@ internal sealed partial class Launcher
         inStrip = true;
         stripSel = Math.Clamp(i, 0, strip.Items.Count - 1);
         strip.Select(stripSel);
-        scroll.ScrollToTop();
+        // into view where its block is (the home's top, or lower down, or the right column)
+        if (bring) strip.BringIntoView(new Rect(0, -30, strip.ActualWidth, strip.ActualHeight + 60));
         UpdateChrome();
     }
 
@@ -384,23 +413,24 @@ internal sealed partial class Launcher
 
     private void Move(int delta)
     {
-        // the favorites row sits above the first line: ↓ leaves it, ↑ from the first line enters it
-        if (inStrip)
-        {
-            if (rows.Count == 0) return;
-            Select(delta > 0 ? 0 : delta == -1 ? rows.Count - 1 : 0);
-            return;
-        }
-        if (strip is not null && ((sel == 0 && delta < 0) || (sel == rows.Count - 1 && delta == 1)))
-        {
-            SelectStrip(delta < 0 ? stripSel : 0);
-            return;
-        }
-        if (rows.Count == 0) return;
-        int i = sel + delta;
-        if (i < 0) i = delta < -1 ? 0 : rows.Count - 1; // wrap on single steps
-        else if (i >= rows.Count) i = delta > 1 ? rows.Count - 1 : 0;
-        Select(i);
+        if (NextStop(sel, inStrip, delta, rows.Count, strip is { Items.Count: > 0 } ? stripAt : -1) is not { } to) return;
+        if (to < 0) SelectStrip(stripSel); // the icon it was left on
+        else Select(to);
+    }
+
+    /// ↑ ↓ (PageUp/PageDown: more) from row `sel` or the favorites strip (`inStrip`), among `rows` rows: the row it
+    /// lands on, -1 for the strip, null when there is nowhere to go. The strip is a stop of its own in its block's place,
+    /// `stripAt` rows before it (-1: no strip), so the keys go through the blocks in their order — the left column's,
+    /// then the right one's — in one column as in two. Single steps wrap around, longer ones stop at the ends.
+    internal static int? NextStop(int sel, bool inStrip, int delta, int rows, int stripAt)
+    {
+        int count = rows + (stripAt >= 0 ? 1 : 0);
+        if (count == 0) return null;
+        int at = inStrip ? stripAt : stripAt >= 0 && sel >= stripAt ? sel + 1 : sel;
+        int to = at + delta;
+        if (to < 0) to = delta < -1 ? 0 : count - 1;
+        else if (to >= count) to = delta > 1 ? count - 1 : 0;
+        return to == stripAt ? -1 : stripAt >= 0 && to > stripAt ? to - 1 : to;
     }
 
     public void RunSelected(string? combo)

@@ -361,7 +361,7 @@ internal static partial class Captures
         sw.Close();
     }
 
-    /// `--qa-set v8`: the footer's 홈 편집 button, edit mode (tools + hidden blocks), then back.
+    /// `--qa-set v8`: the footer's 홈 편집 button, edit mode (tools + "+ 블록 추가"), then back.
     private static async Task V8Screens(Host host, Launcher w, string dir)
     {
         Settings.Current.Home = null;

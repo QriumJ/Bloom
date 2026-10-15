@@ -66,6 +66,17 @@ internal sealed partial class Launcher
             FormKeys(e); // before Ctrl+K, Ctrl+P …, which could be the shortcut being pressed in
             return;
         }
+        if (key == Key.Escape && CancelHold()) // a home block (or a card) held goes back
+        {
+            e.Handled = true;
+            return;
+        }
+        if (key == Key.Escape && HomeEditing && Mode == Mode.Root && addOpen is { } col) // the open cards close first
+        {
+            e.Handled = true;
+            ToggleAdd(col);
+            return;
+        }
         if (key == Key.Escape && HomeEditing && Mode == Mode.Root) // in a form (✎ on a usage card) Esc leaves the form first
         {
             e.Handled = true;

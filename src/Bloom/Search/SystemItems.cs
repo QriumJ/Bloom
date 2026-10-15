@@ -155,6 +155,7 @@ internal static class SystemItems
 internal static class G
 {
     public const char Sparkle = '✦';
+    public const char Grip = '\uE700', Minus = '\uE738'; // 홈 편집: a block's drag handle (≡), a count's −
 
     // (written as escapes: the notices and 성능)
     public const char Bell = '', Speed = '', Warning = '', Done = '', Code = '', Volume = '',

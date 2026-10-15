@@ -62,27 +62,67 @@ internal static class HomeViews
     }
 
     /// 홈 편집's small bar of glyph buttons (a block's ▲ ▼ ✕, a usage card's ‹ › ✎), at the right of where it is put.
-    public static SmoothBorder EditBar(params (char glyph, string tip, bool enabled, Action run)[] tools)
+    public static SmoothBorder EditBar(params (char glyph, string tip, bool enabled, Action run)[] tools) =>
+        Pill(tools.Select(t => (UIElement)EditButton(t.glyph, t.tip, t.enabled, t.run)).ToArray());
+
+    /// One of 홈 편집's glyph buttons; `run` null: no click of its own (a handle wired by the caller).
+    public static SmoothBorder EditButton(char glyph, string tip, bool enabled, Action? run)
+    {
+        var g = Theme.Glyph(glyph, 10.5, enabled ? Theme.P.TextDim : Theme.P.Track);
+        g.HorizontalAlignment = HorizontalAlignment.Center;
+        g.VerticalAlignment = VerticalAlignment.Center;
+        var b = new SmoothBorder { Width = 26, Height = 22, CornerRadius = new CornerRadius(5), Background = Brushes.Transparent, Child = g, ToolTip = tip, Cursor = enabled ? Cursors.Hand : Cursors.Arrow };
+        if (!enabled) return b;
+        b.MouseEnter += (_, _) => b.Background = Theme.P.Hover;
+        b.MouseLeave += (_, _) => b.Background = Brushes.Transparent;
+        if (run is not null)
+            b.MouseLeftButtonUp += (_, e) =>
+            {
+                run();
+                e.Handled = true;
+            };
+        return b;
+    }
+
+    /// 홈 편집's − n + on a list block: how many rows it shows (`min`…`max`).
+    public static SmoothBorder Stepper(int value, int min, int max, Action<int> set)
+    {
+        var n = Theme.T(value.ToString(System.Globalization.CultureInfo.InvariantCulture), 11.5, Theme.P.Text, Theme.Medium, false);
+        n.MinWidth = 16;
+        n.TextAlignment = TextAlignment.Center;
+        n.VerticalAlignment = VerticalAlignment.Center;
+        n.ToolTip = Tr($"표시 개수 ({min}–{max})", $"Rows shown ({min}–{max})");
+        return Pill(EditButton(G.Minus, Tr("개수 줄이기", "Fewer rows"), value > min, () => set(value - 1)), n,
+            EditButton(G.Add, Tr("개수 늘리기", "More rows"), value < max, () => set(value + 1)));
+    }
+
+    /// A dashed rounded outline over the whole of what it is put in (홈 편집's "+ 블록 추가").
+    public static System.Windows.Shapes.Rectangle Dashes(Brush line) => new()
+    {
+        Stroke = line,
+        StrokeThickness = 1,
+        StrokeDashArray = new DoubleCollection { 4, 3 },
+        RadiusX = 10,
+        RadiusY = 10,
+        IsHitTestVisible = false,
+    };
+
+    /// "+ 블록 추가" with nothing hidden: says so, takes no clicks (no row: the keys pass it by).
+    public static FrameworkElement NoneHidden()
+    {
+        var g = new Grid { Height = 44, Margin = new Thickness(16, 8, 16, 4) };
+        g.Children.Add(Dashes(Theme.P.Line));
+        var t = Theme.T(Tr("숨긴 블록 없음 · 블록의 ✕로 숨기면 여기서 다시 추가할 수 있습니다", "No hidden blocks · hide one with its ✕ to add it back here"), 12, Theme.P.TextFaint);
+        t.Margin = new Thickness(16, 0, 16, 1);
+        g.Children.Add(t);
+        return g;
+    }
+
+    /// 홈 편집's bar: its buttons in a row on a small popup-coloured plate.
+    public static SmoothBorder Pill(params UIElement[] children)
     {
         var bar = new StackPanel { Orientation = Orientation.Horizontal };
-        foreach (var (glyph, tip, enabled, run) in tools)
-        {
-            var g = Theme.Glyph(glyph, 10.5, enabled ? Theme.P.TextDim : Theme.P.Track);
-            g.HorizontalAlignment = HorizontalAlignment.Center;
-            g.VerticalAlignment = VerticalAlignment.Center;
-            var b = new SmoothBorder { Width = 26, Height = 22, CornerRadius = new CornerRadius(5), Background = Brushes.Transparent, Child = g, ToolTip = tip, Cursor = enabled ? Cursors.Hand : Cursors.Arrow };
-            if (enabled)
-            {
-                b.MouseEnter += (_, _) => b.Background = Theme.P.Hover;
-                b.MouseLeave += (_, _) => b.Background = Brushes.Transparent;
-                b.MouseLeftButtonUp += (_, e) =>
-                {
-                    run();
-                    e.Handled = true;
-                };
-            }
-            bar.Children.Add(b);
-        }
+        foreach (var c in children) bar.Children.Add(c);
         return new SmoothBorder
         {
             Child = bar,

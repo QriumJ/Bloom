@@ -464,10 +464,6 @@ Recent files	最近のファイル
 Recently copied	最近コピーしたもの
 Ctrl+Alt+V all	Ctrl+Alt+V ですべて
 Recent AI chats	最近の AI チャット
-Hidden blocks	非表示のブロック
-Enter shows it again	Enter で再表示
-Hidden	非表示
-Show again	再表示
 Set a shortcut…	ショートカットを設定…
 Change the shortcut… ({0})	ショートカットを変更… ({0})
 Remove the shortcut	ショートカットを削除
@@ -817,6 +813,11 @@ Copy to the clipboard: {0}	クリップボードにコピー: {0}
 saved captures	保存したキャプチャ
 glass	ガラス効果
 shortcut	ショートカットキー
+Focus	集中
+Meeting	会議
+Drag to move	ドラッグで移動
+More rows	件数を増やす
+No hidden blocks · hide one with its ✕ to add it back here	非表示のブロックはありません · ブロックの ✕ で非表示にすると、ここから再び追加できます
 Downloads	ダウンロード
 color picker	color picker
 left half	left half
@@ -875,8 +876,6 @@ ntpd	ntpd
 chrom	chrom
 Friday meeting\nresend the quote · fix the date	金曜の会議\n見積書を再送 · 日程を確定
 Trip ideas\nJeju 3 nights · rent a car	旅行のアイデア\n済州 3 泊 · レンタカー
-Focus	集中
-Meeting	会議
 note buy milk	note buy milk
 quote	quote
 Sum up this launcher's shortcuts	このランチャーのショートカットをまとめて
@@ -1034,10 +1033,10 @@ See the disk as a map and clear big files	ディスクを地図のように見�
 Running timers and reminders (only while there are some)	実行中のタイマーとリマインダー (あるときだけ)
 Reminders for the next 7 days — click a day for the calendar	今後 7 日間のリマインダー — 日付をクリックするとカレンダー
 A row of icons · Ctrl+1…9	アイコンの列 · Ctrl+1…9
-The last 5 apps and files you opened	最近開いたアプリとファイル 5 件
-3 files Windows remembers you opened	Windows が覚えている最近開いたファイル 3 件
-The last 3 clipboard entries	クリップボード履歴の最新 3 件
-3 chats to pick up again	続きから再開できるチャット 3 件
+The apps and files you opened last	最近開いたアプリとファイル
+Files Windows remembers you opened	Windows が覚えている最近開いたファイル
+The latest clipboard entries	クリップボード履歴の最新の項目
+Chats to pick up again	続きから再開できるチャット
 Commands	コマンド
 Bloom's features	Bloom の機能
 Empty note	空のメモ
@@ -1333,6 +1332,8 @@ Could not get usage. Check the Claude Code or Codex sign-in, then press ↻.	使
 Move earlier	前へ
 Move later	後ろへ
 Rename	名前を変更
+Rows shown ({0}–{1})	表示件数 ({0}–{1})
+Fewer rows	件数を減らす
 {0} ago	{0}前
 Last fetched	最終取得
  left	 残り
@@ -1501,6 +1502,8 @@ Select all	すべて選択
 Run as admin	管理者として実行
 Expression	式
 Result · Enter copies	結果 · Enter でコピー
+Expand	展開
+Collapse	折りたたみ
 Refresh	更新
 Remove from favorites	お気に入りから外す
 Add to favorites	お気に入りに追加
@@ -1513,11 +1516,13 @@ Remove from recent	最近使ったものから削除
 Draw with AI… (describe the picture)	AI で描く… (絵を言葉で説明)
 Back to the original icon	元のアイコンに戻す
 Picture icon for ‘{0}’	「{0}」の絵のアイコン
-Editing home · ▲ ▼ ✕ on blocks · ‹ › order and ✎ names the AI usage cards · Esc or ‘Done’ to finish	ホームを編集中 · ブロックは ▲ ▼ ✕ · AI 使用量カードは ‹ › で順序、✎ で名前 · Esc か「完了」で終了
+Editing home · drag a block by its title row, click the title to fold it · ▲ ▼ ‹ › move, − + rows, ✕ hides · ‘+ Add a block’ puts one back · Esc to finish	ホームを編集中 · ブロックはタイトル行をドラッグして移動、タイトルのクリックで折りたたみ · ▲ ▼ ‹ › で移動、− + で件数、✕ で非表示 · 「+ ブロックを追加」で再表示 · Esc で終了
 Creating icon for ‘{0}’… (1 use)	「{0}」のアイコン作成中… (利用 1 回)
 Icon creation failed. Try again.	アイコンの作成に失敗しました。再試行してください。
 Icon changed for ‘{0}’ · Ctrl+K to draw again	「{0}」のアイコン変更済み · Ctrl+K で再作成
-‘{0}’ hidden · restore in Edit home	「{0}」を非表示 · ホーム編集で再表示
+‘{0}’ hidden · ‘+ Add a block’ puts it back	「{0}」を非表示 · 「+ ブロックを追加」で戻せます
+To the left column	左の列へ
+To the right column	右の列へ
 Hide from home	ホームから非表示
   (here now)	  (現在地)
   · {0}	  · {0} 件
@@ -1549,6 +1554,13 @@ Quick AI answer ready · Tab	クイック AI 回答完了 · Tab
 Edit home	ホームを編集
 Done (Esc · Ctrl+E)	完了 (Esc · Ctrl+E)
 Order or hide the home blocks (Ctrl+E)	ホームのブロックの並べ替えや非表示 (Ctrl+E)
+Add a block	ブロックを追加
+Click a card to add it here, or drag it into place	カードをクリックでこの列の末尾に、ドラッグで置いた場所に追加
+1 hidden block	非表示のブロック 1 個
+{0} hidden blocks	非表示のブロック {0} 個
+Close list	一覧を閉じる
+Open list	一覧を開く
+Click to add at this column's end · drag it into place	クリックでこの列の末尾に追加 · ドラッグで好きな場所に配置
 Type to search	入力して検索
 Search, or ask AI	検索、または AI に聞く
 What you can type	入力できる表現

@@ -1,0 +1,441 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Text.Json;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using Bloom.Core;
+using Bloom.Search;
+using Bloom.Ui;
+
+namespace Bloom.Tests;
+
+/// The home's blocks (Core\Home.cs): kept lists old and new, their columns, rows and moves; the two columns themselves
+/// (Ui\Controls\HomeColumns.cs) and the kept home's keys (Ui\Launcher\Launcher.Kept.cs).
+internal static class HomeLayoutTests
+{
+    /// The blocks in order (one column's order), or those of one column.
+    private static string Blocks(bool? right = null) =>
+        string.Join(" ", Home.Order().Where(w => right is null || (w.Right is true) == right).Select(w => w.Key));
+
+    private static void From(string json, Action check)
+    {
+        Settings.Current.Home = JsonSerializer.Deserialize<Settings>(json, Json.Options)!.Home;
+        try
+        {
+            check();
+        }
+        finally
+        {
+            Settings.Current.Home = null;
+        }
+    }
+
+    private static readonly HashSet<string> Shown = ["usage", "timers", "week", "favorites", "recent", "commands"];
+
+    public static void DefaultsAndOldLists()
+    {
+        From("{}", () =>
+        {
+            Check.Eq(Blocks(false), "usage timers week", "the left column by default");
+            Check.Eq(Blocks(true), "favorites recent recentfiles clipboard threads commands", "the right column by default");
+            Check.True(Home.Order().TrueForAll(w => !w.Collapsed && w.Count is null), "none folded, every count its kind's");
+        });
+        // kept before columns (key and on only) in the default order: split as the defaults are
+        From("""{"home":[{"key":"usage","on":true},{"key":"timers","on":true},{"key":"week","on":true},{"key":"favorites","on":true},{"key":"recent","on":true},{"key":"recentfiles","on":false},{"key":"clipboard","on":true},{"key":"threads","on":false},{"key":"commands","on":false}]}""", () =>
+        {
+            Check.Eq(Blocks(false), "usage timers week", "an old default list: left");
+            Check.Eq(Blocks(true), "favorites recent recentfiles clipboard threads commands", "an old default list: right");
+            Check.True(!Home.IsOn("commands") && Home.IsOn("clipboard"), "its switches kept");
+            Check.Eq(Home.Count(Home.Of("clipboard")!), 3, "a new field gets its default");
+        });
+        // reordered before columns: its order stays (one column shows it as it was), split where the fewest move
+        From("""{"home":[{"key":"favorites","on":true},{"key":"usage","on":true},{"key":"timers","on":true},{"key":"week","on":true},{"key":"recent","on":true},{"key":"recentfiles","on":false},{"key":"clipboard","on":false},{"key":"threads","on":false},{"key":"commands","on":true}]}""", () =>
+        {
+            Check.Eq(Blocks(), "favorites usage timers week recent recentfiles clipboard threads commands", "the old order");
+            Check.Eq(Blocks(false), "favorites usage timers week", "the favorites stay above the usage");
+        });
+        // a null in a hand-edited list goes (no throw); alone, the defaults
+        From("""{"home":[null]}""", () =>
+            Check.Eq(Blocks(false) + " | " + Blocks(true), "usage timers week | favorites recent recentfiles clipboard threads commands", "only a null: the defaults"));
+        From("""{"home":[null,{"key":"commands","on":false,"right":false},null]}""", () =>
+        {
+            Check.Eq(Blocks(false), "commands usage timers week", "nulls among kept blocks: those kept, new kinds after");
+            Check.True(!Home.IsOn("commands") && Home.Order().TrueForAll(w => w is not null), "… as they were, and no null left");
+        });
+        // a block kind the list didn't know joins its column with its defaults; an unknown or twice-kept one goes
+        From("""{"home":[{"key":"commands","on":true,"right":false},{"key":"gone","on":true},{"key":"recent","on":false,"right":true,"count":7,"collapsed":true},{"key":"recent","on":true}]}""", () =>
+        {
+            Check.Eq(Blocks(false), "commands usage timers week", "kept columns, new kinds in theirs");
+            Check.Eq(Blocks(true), "recent favorites recentfiles clipboard threads", "the right column");
+            var recent = Home.Of("recent")!;
+            Check.True(!recent.On && recent.Collapsed && Home.Count(recent) == 7, "the first of a twice-kept block");
+        });
+        // saved and read again: the same blocks the same way (no split again)
+        From("""{"home":[{"key":"favorites","on":true},{"key":"usage","on":true}]}""", () =>
+        {
+            Home.SetCollapsed("week", true);
+            string before = Blocks() + "|" + Home.Arrangement();
+            var read = JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(Settings.Current, Json.Options), Json.Options)!;
+            Settings.Current.Home = read.Home;
+            Check.Eq(Blocks() + "|" + Home.Arrangement(), before, "after a restart");
+            Check.True(Home.Of("week")!.Collapsed, "a fold kept");
+        });
+    }
+
+    public static void CountBounds()
+    {
+        From("""{"home":[{"key":"clipboard","on":true,"right":true,"count":50},{"key":"threads","on":true,"right":true,"count":-3}]}""", () =>
+        {
+            Check.Eq(Home.Count(Home.Of("recent")!), 5, "recent: 5 by default");
+            Check.Eq(Home.Count(Home.Of("timers")!), 3, "timers: 3 by default");
+            Check.Eq(Home.Count(Home.Of("recentfiles")!), 3, "recent files: 3 by default");
+            Check.Eq(Home.Count(Home.Of("clipboard")!), Home.CountMax, "a count kept too high");
+            Check.Eq(Home.Count(Home.Of("threads")!), Home.CountMin, "a count kept too low");
+            foreach (string key in new[] { "usage", "week", "favorites", "commands" })
+                Check.Eq(Home.Count(Home.Of(key)!), 0, key + " has no rows to count");
+            Home.SetCount("recent", 8);
+            Check.Eq(Home.Count(Home.Of("recent")!), 8, "set");
+            Home.SetCount("recent", 0);
+            Check.Eq(Home.Count(Home.Of("recent")!), Home.CountMin, "no fewer than the least");
+            Home.SetCount("recent", 99);
+            Check.Eq(Home.Count(Home.Of("recent")!), Home.CountMax, "no more than the most");
+            Home.SetCount("week", 4);
+            Check.True(Home.Of("week")!.Count is null, "a block of no rows keeps no count");
+        });
+    }
+
+    public static void DropAndMoves()
+    {
+        // two columns: into the column it was put in, at the gap
+        From("{}", () =>
+        {
+            Home.Drop("week", null, "favorites", true);
+            Check.Eq(Blocks(false) + " | " + Blocks(true), "usage timers | week favorites recent recentfiles clipboard threads commands", "on top of the right column");
+            Home.Drop("commands", "usage", "timers", false);
+            Check.Eq(Blocks(false), "usage commands timers", "between two of the left column");
+            foreach (string key in new[] { "usage", "commands", "timers" }) Home.Drop(key, null, null, true);
+            Home.Drop("recent", null, null, false);
+            Check.Eq(Blocks(false), "recent", "into an empty left column");
+        });
+        // one column: a gap inside a column joins it; the gap between the columns keeps the block's own
+        From("{}", () =>
+        {
+            Home.Drop("commands", "usage", "timers", null);
+            Check.Eq(Blocks(false), "usage commands timers week", "dropped between two left blocks");
+            Home.Drop("timers", "recent", "recentfiles", null);
+            Check.Eq(Blocks(true), "favorites recent timers recentfiles clipboard threads", "dropped between two right blocks");
+            Home.Drop("recent", "week", "favorites", null);
+            Check.Eq(Blocks(false) + " | " + Blocks(true), "usage commands week | recent favorites timers recentfiles clipboard threads", "between the columns: a right block stays right");
+            Home.Drop("usage", "week", "recent", null);
+            Check.Eq(Blocks(false), "commands week usage", "between the columns: a left block stays left");
+            Check.Eq(Blocks(), "commands week usage recent favorites timers recentfiles clipboard threads", "one column: the left column's first");
+        });
+        // ▲ ▼ as laid out: in one column through both columns, in two within one; past the blocks shown only
+        From("{}", () =>
+        {
+            Check.True(!Home.CanStep("usage", -1, false, Shown) && !Home.CanStep("commands", 1, false, Shown), "the ends");
+            Check.True(Home.CanStep("week", 1, false, Shown) && !Home.CanStep("week", 1, true, Shown), "the left column's end: on in one column, off in two");
+            Check.True(!Home.CanStep("favorites", -1, true, Shown), "the right column's top");
+            Home.Step("favorites", -1, false, Shown);
+            Check.Eq(Blocks(), "usage timers favorites week recent recentfiles clipboard threads commands", "up past the left column's last");
+            Check.True(Home.Of("favorites")!.Right is false, "… into it");
+            Home.Step("week", 1, false, Shown);
+            Check.Eq(Blocks(false) + " | " + Blocks(true), "usage timers favorites | recent recentfiles clipboard threads week commands", "down past the left column's end (before the next block shown)");
+            Home.Step("timers", 1, true, Shown);
+            Check.Eq(Blocks(false), "usage favorites timers", "two columns: within its own");
+            Home.Step("timers", -1, false, Shown.Where(k => k != "favorites").ToHashSet());
+            Check.Eq(Blocks(false), "timers usage favorites", "a block not shown is passed over");
+        });
+        // ‹ ›: across, at the same place among the blocks shown
+        From("{}", () =>
+        {
+            Home.MoveAcross("timers", Shown);
+            Check.Eq(Blocks(false) + " | " + Blocks(true), "usage week | favorites timers recent recentfiles clipboard threads commands", "to the right column, second");
+            Home.MoveAcross("commands", Shown);
+            Check.Eq(Blocks(false), "usage week commands", "to the left column's end");
+        });
+        // 설정's list: ▲ ▼ and a drag through the whole list, hidden blocks too
+        From("{}", () =>
+        {
+            Home.Move("week", 1);
+            Check.Eq(Blocks(), "usage timers favorites week recent recentfiles clipboard threads commands", "down a place");
+            Check.True(Home.Of("week")!.Right is true, "into the right column");
+            Home.MoveTo("commands", 0);
+            Check.Eq(Blocks(false), "commands usage timers", "dragged to the top");
+            Home.MoveTo("usage", 9);
+            Check.Eq(Blocks(), "commands timers favorites week recent recentfiles clipboard threads usage", "dragged to the end");
+            Check.True(Home.Of("usage")!.Right is true, "… the right column's end");
+        });
+    }
+
+    public static void TwoColumnsWhenWide()
+    {
+        Check.True(!HomeColumns.Wide(Settings.DefaultWidth), "the default launcher: one column");
+        Check.True(HomeColumns.Wide(1000) && HomeColumns.Wide(HomeColumns.TwoColumnWidth) && !HomeColumns.Wide(HomeColumns.TwoColumnWidth - 1), "about 1000 wide: two");
+        var grid = new HomeColumns();
+        int flips = 0;
+        grid.Flipped += () => flips++;
+        Border Block(double height, bool right)
+        {
+            var b = new Border { Height = height };
+            HomeColumns.SetRight(b, right);
+            grid.Children.Add(b);
+            return b;
+        }
+        var a = Block(100, false);
+        var b = Block(50, false);
+        var c = Block(80, true);
+        var d = Block(40, true);
+        void Lay(double width)
+        {
+            grid.Measure(new Size(width, double.PositiveInfinity));
+            grid.Arrange(new Rect(0, 0, width, grid.DesiredSize.Height));
+        }
+        static string Box(UIElement e)
+        {
+            var at = System.Windows.Media.VisualTreeHelper.GetOffset(e);
+            return FormattableString.Invariant($"{at.X},{at.Y} {e.RenderSize.Width}");
+        }
+
+        Lay(760);
+        Check.True(!grid.Two && flips == 0, "narrow: one column");
+        Check.Eq(grid.DesiredSize.Height, 270.0, "every block stacked");
+        Check.Eq(string.Join(" / ", new[] { a, b, c, d }.Select(Box)), "0,0 760 / 0,100 760 / 0,150 760 / 0,230 760", "left column's first, then the right's");
+        var (right, above, below) = grid.DropAt(new Point(700, 200));
+        Check.True(right is null && above == c && below == d, "one column: the gap nearest the mouse, any column");
+
+        // a block held: out of its column (the others close up, it stays drawn where it was), the drop taken without it
+        grid.Lift(a);
+        Lay(760);
+        Check.Eq(string.Join(" / ", new[] { a, b, c, d }.Select(Box)), "0,0 760 / 0,0 760 / 0,50 760 / 0,130 760", "held: the rest close up");
+        (right, above, below) = grid.DropAt(new Point(700, 200));
+        Check.True(above == d && below is null, "past the last block, the held one left out: the end");
+        // the gap where it would land: the blocks below move down by it, the drop does not move with them
+        grid.OpenGap(false, c, 60);
+        Lay(760);
+        Check.Eq(string.Join(" / ", new[] { b, c, d }.Select(Box)), "0,0 760 / 0,110 760 / 0,190 760", "a gap before 'c'");
+        Check.Eq(grid.GapBox, new Rect(0, 50, 760, 60), "… where 'c' was");
+        Check.Eq(grid.DesiredSize.Height, 230.0, "the held block's room given to the gap");
+        (_, above, below) = grid.DropAt(new Point(700, 60));
+        Check.True(above == b && below == c, "over the gap: still before 'c'");
+        grid.Lift(null);
+        Lay(760);
+        Check.True(grid.GapBox.IsEmpty && Box(a) == "0,0 760" && Box(b) == "0,100 760", "put back: as before, no gap");
+
+        Lay(1100);
+        Check.True(grid.Two && flips == 1, "wide: two columns (once flipped)");
+        Check.Eq(grid.DesiredSize.Height, 150.0, "as tall as the taller column");
+        Check.Eq(string.Join(" / ", new[] { a, b, c, d }.Select(Box)), "0,0 550 / 0,100 550 / 550,0 550 / 550,80 550", "side by side");
+        (right, above, below) = grid.DropAt(new Point(800, 10));
+        Check.True(right == true && above is null && below == c, "the right column's top");
+        (right, above, below) = grid.DropAt(new Point(100, 500));
+        Check.True(right == false && above == b && below is null, "the left column's end");
+        grid.OpenGap(true, c, 30);
+        Lay(1100);
+        Check.True(Box(c) == "550,30 550" && Box(d) == "550,110 550" && grid.GapBox == new Rect(550, 0, 550, 30), "a gap on top of the right column");
+        grid.OpenGap(false, null, 30);
+        Lay(1100);
+        Check.True(Box(c) == "550,0 550" && grid.GapBox == new Rect(0, 150, 550, 30) && grid.DesiredSize.Height == 180, "… then at the left column's end");
+        grid.OpenGap(false, null, 0);
+
+        // 홈 편집's feet ("+ 블록 추가"): each ends its column, whatever their place among the children; no drop lands by them
+        var leftFoot = new Border { Height = 20 };
+        HomeColumns.SetFoot(leftFoot, true);
+        grid.Children.Insert(2, leftFoot);
+        var rightFoot = new Border { Height = 20 };
+        HomeColumns.SetFoot(rightFoot, true);
+        HomeColumns.SetRight(rightFoot, true);
+        grid.Children.Add(rightFoot);
+        Lay(1100);
+        Check.Eq(string.Join(" / ", new[] { leftFoot, rightFoot }.Select(Box)), "0,150 550 / 550,120 550", "two columns: a foot under each");
+        (right, above, below) = grid.DropAt(new Point(100, 160));
+        Check.True(right == false && above == b && below is null, "over the foot: the column's end");
+        grid.OpenGap(false, null, 30);
+        Lay(1100);
+        Check.Eq(Box(leftFoot), "0,180 550", "a gap at a column's end comes before its foot");
+        grid.OpenGap(false, null, 0);
+        Lay(760);
+        Check.Eq(string.Join(" / ", new[] { d, leftFoot, rightFoot }.Select(Box)), "0,230 760 / 0,270 760 / 0,290 760", "one column: after every block");
+    }
+
+    /// "+ 블록 추가" (Home.Hidden, Home.Add, Home.AddAt): the blocks it offers, and one turned on at a column's end or
+    /// where its card was dropped.
+    public static void AddingBlocks()
+    {
+        static string Hidden() => string.Join(" ", Home.Hidden().Select(w => w.Key));
+        // two columns: at the end of the column whose tile was pressed
+        From("{}", () =>
+        {
+            Check.Eq(Hidden(), "recentfiles clipboard threads", "the blocks off by default, in their order");
+            Home.Add("clipboard", false);
+            Check.True(Home.IsOn("clipboard"), "on");
+            Check.Eq(Blocks(false), "usage timers week clipboard", "the left column's end");
+            Home.Add("threads", true);
+            Check.Eq(Blocks(true), "favorites recent recentfiles commands threads", "the right column's end, past a block still off");
+            Check.Eq(Hidden(), "recentfiles", "one left to offer");
+            Home.Add("recentfiles", false);
+            Check.True(Home.Hidden().Count == 0, "none left");
+        });
+        // one column: after the home's last block, in that block's column
+        From("{}", () =>
+        {
+            Home.Add("recentfiles", null);
+            Check.Eq(Blocks(), "usage timers week favorites recent clipboard threads commands recentfiles", "the home's end");
+            Check.True(Home.Of("recentfiles")!.Right is true, "… in the right column, the last block's");
+        });
+        From("""{"home":[{"key":"usage","on":true,"right":false},{"key":"timers","on":true,"right":false},{"key":"week","on":true,"right":false},{"key":"favorites","on":true,"right":false},{"key":"recent","on":true,"right":false},{"key":"recentfiles","on":false,"right":true},{"key":"clipboard","on":false,"right":false},{"key":"threads","on":false,"right":false},{"key":"commands","on":true,"right":false}]}""", () =>
+        {
+            Home.Add("recentfiles", null);
+            Check.Eq(Blocks(false) + " | " + Blocks(true), "usage timers week favorites recent clipboard threads commands | recentfiles", "every other block left: its own column, still the home's end");
+            Home.Add("threads", null);
+            Check.Eq(Blocks(), "usage timers week favorites recent clipboard commands recentfiles threads", "the next one: after it, in its column");
+        });
+        // a card dropped: between the blocks around the gap, in its column
+        From("{}", () =>
+        {
+            Home.AddAt("threads", null, "usage", false);
+            Check.True(Home.IsOn("threads"), "on");
+            Check.Eq(Blocks(false), "threads usage timers week", "the left column's top");
+            Home.AddAt("clipboard", "favorites", "recent", null);
+            Check.Eq(Blocks(true), "favorites clipboard recent recentfiles commands", "one column, between two right blocks: in the right column");
+            Home.AddAt("recentfiles", null, null, false);
+            Check.Eq(Blocks(false), "threads usage timers week recentfiles", "no blocks around the gap (an empty column): the column's end");
+        });
+        // a block of a feature switched off (설정 > 기능) is not offered: it would not show
+        From("{}", () =>
+        {
+            Settings.Current.FeaturesOff.Add("chat");
+            try
+            {
+                Check.Eq(Hidden(), "recentfiles clipboard", "AI chat off: no 최근 AI 채팅");
+            }
+            finally
+            {
+                Settings.Current.FeaturesOff.Remove("chat");
+            }
+        });
+    }
+
+    /// The kept home draws a block anew when its column, fold or count changes (its key): its tools are drawn from them.
+    public static void KeptBlockKeys()
+    {
+        static Section Block(bool right, bool collapsed, int count = 5) => new("최근 사용") { HomeKey = "recent", HomeRight = right, Collapsed = collapsed, HomeCount = count };
+        string key = Launcher.SectionKey(Block(false, false), out _);
+        Check.Eq(Launcher.SectionKey(Block(false, false), out _), key, "the same");
+        Check.True(Launcher.SectionKey(Block(true, false), out _) != key, "another column");
+        Check.True(Launcher.SectionKey(Block(false, true), out _) != key, "folded");
+        Check.True(Launcher.SectionKey(Block(false, false, 6), out _) != key, "another count");
+        // the same items under another count: a folded block (no items) or a list shorter than either count
+        Check.True(Launcher.SectionKey(Block(false, true, 6), out _) != Launcher.SectionKey(Block(false, true, 5), out _), "another count, folded");
+        static Section Short(int count)
+        {
+            var s = Block(false, false, count);
+            s.Items.Add(new ResultItem { Id = "app:a", Title = "A" });
+            return s;
+        }
+        Check.True(Launcher.SectionKey(Short(4), out _) != Launcher.SectionKey(Short(3), out _), "another count, one item either way");
+    }
+
+    /// ↑ ↓ through the home (Launcher.NextStop): the favorites strip is a stop in its block's place among the rows —
+    /// the left column's blocks, then the right one's, in one column as in two.
+    public static void KeysThroughBlocks()
+    {
+        // `steps` presses of `delta` from row `sel` (or the strip): the stops, ★ for the strip
+        static string Walk(int rows, int stripAt, int sel, bool inStrip, int delta, int steps)
+        {
+            var seen = new List<string>();
+            for (int n = 0; n < steps; n++)
+            {
+                if (Launcher.NextStop(sel, inStrip, delta, rows, stripAt) is not { } to) return "none";
+                inStrip = to < 0;
+                if (!inStrip) sel = to;
+                seen.Add(inStrip ? "★" : sel.ToString(CultureInfo.InvariantCulture));
+            }
+            return string.Join(" ", seen);
+        }
+
+        // the defaults' columns with timers on: left usage, timers (rows 0-2), week; right favorites, recent (rows 3-7)
+        From("{}", () => Check.True(Home.Of("favorites")!.Right is true && Home.Of("timers")!.Right is false, "favorites in the right column"));
+        Check.Eq(Walk(8, 3, 0, false, 1, 9), "1 2 ★ 3 4 5 6 7 0", "↓ from the first timer: past the last one onto the favorites, then recent, then around");
+        Check.Eq(Walk(8, 3, 4, false, -1, 6), "3 ★ 2 1 0 7", "↑ from recent: the favorites, then the timers, then around");
+        Check.Eq(Walk(8, 3, 0, true, 1, 1) + " / " + Walk(8, 3, 0, true, -1, 1), "3 / 2", "from the favorites: ↓ the right column's next, ↑ the left one's last");
+        Check.Eq(Walk(8, 3, 0, false, 8, 2), "7 7", "PageDown stops at the end");
+        Check.Eq(Walk(8, 3, 7, false, -8, 2), "0 0", "PageUp stops at the top");
+        Check.Eq(Walk(12, 3, 10, false, -8, 2), "★ 0", "PageUp onto the favorites, then the top");
+        // the favorites last (the right column's end): ↓ from the last row onto them, then around to the top
+        Check.Eq(Walk(4, 4, 2, false, 1, 4), "3 ★ 0 1", "the favorites last");
+        Check.Eq(Walk(4, 4, 0, false, -1, 2), "★ 3", "↑ from the top: around to the favorites");
+        // the favorites first (as before columns), none, or nothing but them
+        Check.Eq(Walk(3, 0, 1, false, -1, 3), "0 ★ 2", "the favorites first");
+        Check.Eq(Walk(3, -1, 1, false, 1, 3), "2 0 1", "no favorites: the rows around");
+        Check.Eq(Walk(0, 0, -1, true, 1, 2), "★ ★", "the favorites alone stay");
+        Check.Eq(Walk(0, -1, -1, false, 1, 1), "none", "nothing to go to");
+    }
+
+    /// A held block that loses the mouse with the button still down (Esc twice: 홈 편집 ends, the home drawn anew under
+    /// the mouse): the release that comes clicks nothing (Launcher.HomeDrag.cs); and a row clicks only on a press and a
+    /// release both on it (Ui\Controls\Row.cs).
+    public static void ReleaseAfterALostHold() => LauncherPreviewTests.WithLauncher(window =>
+    {
+        static void Press(UIElement on) =>
+            on.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left) { RoutedEvent = UIElement.PreviewMouseLeftButtonDownEvent });
+        // the button let go as WPF sends it: the preview, then the same event bubbling; true: the preview was handled
+        static bool Release(UIElement on)
+        {
+            var e = new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left) { RoutedEvent = UIElement.PreviewMouseLeftButtonUpEvent };
+            on.RaiseEvent(e);
+            bool swallowed = e.Handled;
+            e.RoutedEvent = UIElement.MouseLeftButtonUpEvent;
+            on.RaiseEvent(e);
+            return swallowed;
+        }
+
+        int clicks = 0;
+        var a = new Row(null) { Clicked = () => clicks++ };
+        var b = new Row(null) { Clicked = () => clicks++ };
+        Release(a);
+        Check.Eq(clicks, 0, "a row let go on with no press on it: no click");
+        Press(a);
+        Release(a);
+        Check.Eq(clicks, 1, "pressed and let go on a row: a click");
+        Press(a);
+        Release(b);
+        Check.Eq(clicks, 1, "pressed on one row, let go on another: no click");
+        Press(a);
+        Press(window);
+        Release(a);
+        Check.Eq(clicks, 1, "a press elsewhere in a window since: no click");
+
+        const BindingFlags instance = BindingFlags.Instance | BindingFlags.NonPublic;
+        var held = typeof(Launcher).GetField("hold", instance)!;
+        var source = new Border();
+        typeof(Launcher).GetMethod("WireHold", instance)!.Invoke(window, new object[] { source });
+        void Hold()
+        {
+            var type = typeof(Launcher).GetNestedType("Hold", BindingFlags.NonPublic)!;
+            var h = Activator.CreateInstance(type)!;
+            type.GetField("Source")!.SetValue(h, source);
+            type.GetField("Key")!.SetValue(h, "week");
+            held.SetValue(window, h);
+        }
+        void Lose() => source.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0) { RoutedEvent = Mouse.LostMouseCaptureEvent });
+
+        Hold();
+        Lose();
+        Check.True(held.GetValue(window) is null, "the hold ends as the mouse goes");
+        Check.True(Release(window), "the button let go after it: clicks nothing");
+        Check.True(!Release(window), "… that once");
+        Hold();
+        Lose();
+        Press(window);
+        Check.True(!Release(window), "a new press since: its release is the window's as ever");
+        Hold();
+        Release(source);
+        Lose(); // the mouse let go after the hold ended
+        Check.True(held.GetValue(window) is null && !Release(window), "a hold let go as usual leaves the next release alone");
+    });
+}

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,7 +15,8 @@ namespace Bloom.Ui;
 /// the home kept). The usage block's "1분 전" and resets change by the minute, so most openings redraw that block only.
 /// Blocks taken out and put back were slower than drawn anew (WPF lays a returned block out again, all its rows), so
 /// the kept ones never leave the list. A block's key is what it shows: its header, its items' words and icons, a
-/// widget's words, colours and sizes; with what every block hangs on (HomeLook). The theme lets them go (ApplyTheme).
+/// widget's words, colours and sizes, and what its tools are drawn from (its column, fold and rows as set — the same
+/// items can show under another count); with what every block hangs on (HomeLook). The theme lets them go (ApplyTheme).
 internal sealed partial class Launcher
 {
     /// A home block as the list holds it: its key, its box in the list, its rows (in the keyboard's order), its strip.
@@ -25,17 +25,22 @@ internal sealed partial class Launcher
     private List<Block>? home; // the home as the list holds it whole (null: something else, or still being drawn)
     private string? homeLook;
 
-    /// What the list's look hangs on besides its sections: the language, the icon style, 홈 편집 and the first and last
-    /// block (the block tools' ▲ ▼), the preview split and the screen's scale (text is laid out for it).
-    private string HomeLook() =>
-        $"{Lang.Code}|{Settings.Current.IconStyle}|{HomeEditing || ShowHomeToolsForQa}|{Home.Ends()}|{Split}|{VisualTreeHelper.GetDpi(this).PixelsPerDip}";
+    /// What the list's look hangs on besides its sections: the language, the icon style, 홈 편집 with the blocks' order
+    /// and columns and whether there are two (the block tools' ▲ ▼ ‹ ›), the preview split and the screen's scale (text
+    /// is laid out for it). The columns themselves follow the width as it changes (HomeColumns).
+    private string HomeLook()
+    {
+        bool editing = HomeEditing || ShowHomeToolsForQa;
+        return $"{Lang.Code}|{Settings.Current.IconStyle}|{editing}|{Home.Arrangement()}|{editing && HomeWide()}|{Split}|{VisualTreeHelper.GetDpi(this).PixelsPerDip}";
+    }
 
     /// A section's key. A widget is made here to be read (its words, colours and sizes): `widget` is that one, for the
     /// section if it is drawn anew.
     internal static string SectionKey(Section s, out FrameworkElement? widget)
     {
         var b = new StringBuilder().Append('\u001d').Append(s.Title).Append('\u001f').Append(s.Note).Append('\u001f').Append(s.HomeKey)
-            .Append('\u001f').Append(s.Strip).Append(s.Fallback).Append(s.Reload is null ? "" : "↻");
+            .Append('\u001f').Append(s.Strip).Append(s.Fallback).Append(s.Reload is null ? "" : "↻").Append(s.HomeRight).Append(s.Collapsed)
+            .Append('\u001f').Append(s.HomeCount);
         widget = s.Widget?.Invoke();
         if (widget is not null) Look(b, widget);
         foreach (var i in s.Items)
@@ -104,10 +109,11 @@ internal sealed partial class Launcher
     };
 
     /// The home the list holds, brought up to date in place (Render): false when it can't be (another home, blocks
-    /// in another order, more new rows than come at once), then the home is drawn anew. `made`: widgets made for the keys.
+    /// in another order, more new rows than come at once — in two columns, twice the rows show), then the home is drawn
+    /// anew. `made`: widgets made for the keys.
     private bool KeepHome(List<Section> shown, string look, List<string> keys, Dictionary<Section, FrameworkElement> made)
     {
-        if (home is null || homeLook != look || home.Count != shown.Count || list.Children.Count != home.Count) return false;
+        if (home is null || homeLook != look || home.Count != shown.Count || list.Children.Count != 1 || homeGrid.Parent != list || homeGrid.Children.Count != home.Count) return false;
         int build = 0;
         for (int i = 0; i < shown.Count; i++)
         {
@@ -115,7 +121,7 @@ internal sealed partial class Launcher
             if (home[i].HomeKey != shown[i].HomeKey) return false;
             if (shown[i].Widget is null && !shown[i].Strip) build += shown[i].Items.Count;
         }
-        if (build > (opening ? ScreenRows() : FirstRows)) return false;
+        if (build > (opening ? ScreenRows() : FirstRows) * (HomeWide() ? 2 : 1)) return false;
         for (int i = 0; i < shown.Count; i++)
         {
             var b = home[i];
@@ -131,15 +137,19 @@ internal sealed partial class Launcher
             if (shown[i].Widget is null && !shown[i].Strip)
                 foreach (var item in shown[i].Items) into.Children.Add(AddRow(item));
             // into the old one's place (StartSection put it last)
-            list.Children.Remove(holder);
-            int at = list.Children.IndexOf(b.Holder);
-            list.Children.RemoveAt(at);
-            list.Children.Insert(at, holder!);
+            homeGrid.Children.Remove(holder);
+            int at = homeGrid.Children.IndexOf(b.Holder);
+            homeGrid.Children.RemoveAt(at);
+            homeGrid.Children.Insert(at, holder!);
             home[i] = new Block(keys[i], shown[i].HomeKey, holder!, rows.GetRange(before, rows.Count - before), shown[i].Strip ? strip : null);
         }
         rows.Clear();
-        foreach (var b in home) rows.AddRange(b.Rows);
-        strip = home.Select(b => b.Strip).FirstOrDefault(st => st is not null);
+        strip = null;
+        foreach (var b in home)
+        {
+            if (b.Strip is not null && strip is null) (strip, stripAt) = (b.Strip, rows.Count);
+            rows.AddRange(b.Rows);
+        }
         return true;
     }
 }

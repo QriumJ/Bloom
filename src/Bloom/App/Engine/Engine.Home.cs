@@ -32,7 +32,8 @@ internal sealed partial class Engine
         host.Window.StartForm(f);
     }
 
-    /// The home: the blocks the user turned on, in their order (설정 > 홈 화면).
+    /// The home: the blocks the user turned on, in their order (설정 > 홈 화면), the left column's first; a list block
+    /// as many rows as set (Home.Count), a folded one its header only.
     private List<Section> RootEmpty(List<Section> sections)
     {
         var shown = new HashSet<string>();
@@ -52,7 +53,7 @@ internal sealed partial class Engine
                     break;
                 case "timers":
                     var timers = new Section(Tr("타이머 · 알림", "Timers · reminders"), Tr("Ctrl+K 5분 더 · 취소", "Ctrl+K 5 more min · cancel"));
-                    foreach (var e in Timers.Waiting.Take(3)) timers.Items.Add(FromTimer(e));
+                    foreach (var e in Timers.Waiting.Take(Home.Count(w))) timers.Items.Add(FromTimer(e));
                     if (timers.Items.Count > 0) sections.Add(timers);
                     break;
                 case "favorites":
@@ -75,23 +76,23 @@ internal sealed partial class Engine
                         if (FromId(id) is not { } item) continue;
                         recent.Items.Add(item);
                         shown.Add(id);
-                        if (recent.Items.Count >= 5) break;
+                        if (recent.Items.Count >= Home.Count(w)) break;
                     }
                     if (recent.Items.Count > 0) sections.Add(recent);
                     break;
                 case "recentfiles":
                     var files = new Section(Tr("최근 파일", "Recent files"));
-                    foreach (var f in RecentFiles.List().Where(f => !shown.Contains((f.Folder ? "folder:" : "file:") + f.Path.ToLowerInvariant())).Take(3)) files.Items.Add(FromRecent(f));
+                    foreach (var f in RecentFiles.List().Where(f => !shown.Contains((f.Folder ? "folder:" : "file:") + f.Path.ToLowerInvariant())).Take(Home.Count(w))) files.Items.Add(FromRecent(f));
                     if (files.Items.Count > 0) sections.Add(files);
                     break;
                 case "clipboard":
                     var clips = new Section(Tr("최근 복사", "Recently copied"), Tr("Ctrl+Alt+V 전체", "Ctrl+Alt+V all"));
-                    foreach (var c in host.Clipboard.Items.OrderByDescending(c => c.Copied).Take(3)) clips.Items.Add(FromClip(c));
+                    foreach (var c in host.Clipboard.Items.OrderByDescending(c => c.Copied).Take(Home.Count(w))) clips.Items.Add(FromClip(c));
                     if (clips.Items.Count > 0) sections.Add(clips);
                     break;
                 case "threads":
                     var threads = new Section(Tr("최근 AI 채팅", "Recent AI chats"));
-                    foreach (var t in Threads("").SelectMany(x => x.Items).Where(i => i.Id != "thread:new").Take(3)) threads.Items.Add(t);
+                    foreach (var t in Threads("").SelectMany(x => x.Items).Where(i => i.Id != "thread:new").Take(Home.Count(w))) threads.Items.Add(t);
                     if (threads.Items.Count > 0) sections.Add(threads);
                     break;
                 case "commands":
@@ -104,34 +105,16 @@ internal sealed partial class Engine
                     if (cmds.Items.Count > 0) sections.Add(cmds);
                     break;
             }
-            if (sections.Count > before) sections[^1].HomeKey = w.Key;
-        }
-        if (host.Window.HomeEditing)
-        {
-            // 홈 편집: the hidden blocks, Enter puts one back (at its place in the order)
-            var hidden = new Section(Tr("숨긴 블록", "Hidden blocks"), Tr("Enter로 다시 켜기", "Enter shows it again"));
-            foreach (var w in Home.Order().Where(w => !w.On))
-            {
-                var kind = Home.Kinds.First(k => k.key == w.Key);
-                string key = w.Key;
-                hidden.Items.Add(new ResultItem
-                {
-                    Id = "home:" + key,
-                    Kind = ItemKind.Command,
-                    Title = kind.name,
-                    Subtitle = kind.about,
-                    Accessory = Tr("숨김", "Hidden"),
-                    Icon = IconSpec.Of(kind.glyph),
-                    PrimaryLabel = Tr("다시 켜기", "Show again"),
-                    StayOpen = true,
-                    Run = () =>
-                    {
-                        Home.Set(key, true);
-                        host.Window.Refresh(true);
-                    },
-                });
-            }
-            if (hidden.Items.Count > 0) sections.Add(hidden);
+            if (sections.Count == before) continue;
+            var block = sections[^1];
+            block.HomeKey = w.Key;
+            block.HomeRight = w.Right is true;
+            block.HomeCount = Home.Count(w);
+            if (!w.Collapsed) continue;
+            block.Collapsed = true;
+            block.Items.Clear();
+            block.Widget = null;
+            block.Strip = false;
         }
         return sections;
     }
