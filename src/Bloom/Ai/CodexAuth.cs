@@ -136,6 +136,7 @@ internal static class CodexAuth
             if (LoginMarker.Alive(home)) return;
             File.Move(pending, file, true);
             waiting.Remove(home);
+            _ = CodexAppHome.Changed(home); // app-servers on the file it replaced end before the new one is linked
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

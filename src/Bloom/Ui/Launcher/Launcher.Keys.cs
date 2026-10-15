@@ -135,13 +135,26 @@ internal sealed partial class Launcher
             }
             return;
         }
-        // Bloom Lens: 1–6 pick the action right away
-        if (Mode == Mode.Lens && box.Text.Length == 0 && !ctrl && key is >= Key.D1 and <= Key.D6 && rows.Count >= key - Key.D1 + 1)
+        // Bloom Lens: 1–7 pick the action right away
+        if (Mode == Mode.Lens && box.Text.Length == 0 && !ctrl && key is >= Key.D1 and <= Key.D7 && rows.Count >= key - Key.D1 + 1)
         {
             Select(key - Key.D1, false);
             RunSelected(null);
             e.Handled = true;
             return;
+        }
+        // 컬러 팔레트: ← → the swatch picked (its gradients below), − + one colour fewer or more
+        if (Mode == Mode.Palette && box.Text.Length == 0 && !ctrl && host.Palette is { } palette)
+        {
+            int pick = key switch { Key.Left => -1, Key.Right => 1, _ => 0 };
+            int more = key switch { Key.OemMinus or Key.Subtract => -1, Key.OemPlus or Key.Add => 1, _ => 0 };
+            if (pick != 0) host.PickSwatch(palette.Selected + pick, false);
+            else if (more != 0) _ = host.SetPaletteCount(palette.Count + more);
+            if (pick != 0 || more != 0)
+            {
+                e.Handled = true;
+                return;
+            }
         }
         if (Mode == Mode.Files && ctrl && key == Key.Tab)
         {

@@ -67,7 +67,7 @@ internal sealed partial class Host
 
         Apps = new AppIndex();
         Everything = new EverythingClient();
-        Chats = new Chats(ui);
+        Chats = new Chats(ui) { PreStartOn = Opt.CaptureDir is null && !Opt.Demo }; // QA pictures and the demo never start a CLI
         var tools = new App.Mcp.BloomTools(this, ui);
         Mcp = new App.Mcp.McpServer(tools);
         // Bloom's MCP server for the chats (설정 > PC 작업 · MCP): Claude Code asks the user itself; for Codex runs the
@@ -104,9 +104,15 @@ internal sealed partial class Host
             return; // synthetic sources only: no watchers, clipboard listeners, provider polling or global hooks
         }
         if (!Demo.On) _ = GptCatalog.RefreshAsync();
+        _ = CodexAppHome.Sweep(); // a sign-in link a crash left in Bloom's Codex folders
         if (Opt.ChatFile is not null)
         {
             _ = Captures.Chat(this, Opt.ChatFile, Opt.QaModel ?? "haiku", Opt.QaEffort, Opt.QaAsk?.Split('|'));
+            return;
+        }
+        if (Opt.WarmFile is not null)
+        {
+            _ = WarmBench.Run(this, Opt.WarmFile, Opt.QaModel, Opt.QaEffort);
             return;
         }
         if (Opt.SpaceDir is not null)

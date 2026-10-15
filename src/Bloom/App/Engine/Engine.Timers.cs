@@ -153,7 +153,9 @@ internal sealed partial class Engine
             var empty = new Section(Tr("컬러 피커", "Color picker"));
             empty.Items.Add(pickItem);
             empty.Items.Add(new ResultItem { Id = "color:help", Kind = ItemKind.Info, Title = Tr("색 코드 입력 가능", "You can type a colour code too"), Subtitle = "#ff5a8a · rgb(255, 90, 138) · hsl(342, 100%, 68%)", Icon = IconSpec.Of(G.Info), PrimaryLabel = "" });
-            return new List<Section> { empty };
+            var none = new List<Section> { empty };
+            if (SavedPalettes(null, 4) is { } palettes) none.Add(palettes);
+            return none;
         }
         var sections = new List<Section>();
         var now = new Section(typed is null ? Tr("찍은 색", "Picked colour") : Tr("적은 색", "Typed colour"), ColorBook.Name(c));
@@ -178,14 +180,7 @@ internal sealed partial class Engine
         }
         else now.Items.Add(pickItem);
         sections.Add(now);
-
-        var grads = new Section(Tr("그라데이션 추천", "Suggested gradients"), Tr("Enter CSS 복사", "Enter copies CSS"));
-        int n = 0;
-        foreach (var (name, about, stops) in ColorBook.Suggest(c)) grads.Items.Add(GradientItem($"grad:{key}:{n++}", name, about, stops));
-        sections.Add(grads);
-        var named = new Section(Tr("어울리는 프리셋", "Matching presets"));
-        foreach (var (name, a, b) in ColorBook.PresetsNear(c, 4)) named.Items.Add(GradientItem("preset:" + name, name, Tr("Bloom 프리셋", "Bloom preset"), new[] { a, b }));
-        if (named.Items.Count > 0) sections.Add(named);
+        sections.AddRange(Suggestions(c));
 
         var recent = new Section(Tr("최근 색", "Recent colours"), Tr("Enter HEX 복사", "Enter copies HEX"));
         foreach (string hex in ColorBook.Current.Recent.Skip(typed is null ? 1 : 0).Take(8))
@@ -195,6 +190,22 @@ internal sealed partial class Engine
                 recent.Items.Add(item);
             }
         if (recent.Items.Count > 0) sections.Add(recent);
+        if (SavedPalettes(null, 4) is { } kept) sections.Add(kept);
+        return sections;
+    }
+
+    /// The gradients made from a colour and Bloom's presets near it: the colour view's, and the palette view's for the
+    /// swatch picked.
+    private List<Section> Suggestions(Color c)
+    {
+        string key = ColorBook.Hex(c);
+        var grads = new Section(Tr("그라데이션 추천", "Suggested gradients"), Tr("Enter CSS 복사", "Enter copies CSS"));
+        int n = 0;
+        foreach (var (name, about, stops) in ColorBook.Suggest(c)) grads.Items.Add(GradientItem($"grad:{key}:{n++}", name, about, stops));
+        var sections = new List<Section> { grads };
+        var named = new Section(Tr("어울리는 프리셋", "Matching presets"));
+        foreach (var (name, a, b) in ColorBook.PresetsNear(c, 4)) named.Items.Add(GradientItem("preset:" + name, name, Tr("Bloom 프리셋", "Bloom preset"), new[] { a, b }));
+        if (named.Items.Count > 0) sections.Add(named);
         return sections;
     }
 

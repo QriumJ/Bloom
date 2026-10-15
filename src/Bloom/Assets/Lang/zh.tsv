@@ -7,6 +7,7 @@ No answer from Claude. Send again.	Claude 未返回回答。请重新发送。
 No answer from Codex. Send again.	Codex 未返回回答。请重新发送。
 Answer failed. Send the message again.	回答失败。请重新发送消息。
 No response for 90 s. Try again.	90 秒内无响应。请重试。
+The ChatGPT sign-in changed, so the answer stopped. Send it again.	ChatGPT 登录已更改，回答已停止。请重新发送。
 This API model is not available. Choose another model and send again.	找不到此 API 模型。请选择其他模型后重新发送。
 No {0} API key. Add one in Settings > AI accounts.	没有 {0} API 密钥。请在 设置 > AI 账户 中添加密钥。
 Could not connect to {0}. Check your connection and send again.	无法连接到 {0}。请检查网络连接后重新发送。
@@ -164,6 +165,7 @@ Drag over the area to translate	拖动选择要翻译的区域
 Drag over the area to read	拖动选择要识别文字的区域
 Drag over the area to pin	拖动选择要固定在屏幕上的区域
 Drag over the area to capture	拖动选择要截图的区域
+Drag over the area to make a palette of	拖动选择要生成调色板的区域
 Drag over an area — then pick what to do	拖动选择区域，再选择要做的事
 Text recognition failed	文字识别失败
 Check installed recognition languages	检查已安装的识别语言
@@ -194,9 +196,10 @@ File · Copied	文件 · 已复制
 File · Unchanged	文件 · 未更改
 Move failed or cancelled. Check the destination and permissions, then retry.	移动失败或已取消。请检查目标文件夹和权限后重试。
 Copy failed or cancelled. Check the destination and permissions, then retry.	复制失败或已取消。请检查目标文件夹和权限后重试。
+The picture is gone, so it can't be made again	原图已删除，无法重新生成
+Copied {0}	已复制 {0}
 No response. Try again.	无响应。请重试。
 I ran ‘{0}’ on the text below; this was the result. Let's continue.\n\n[Text]\n{1}\n\n[Result]\n{2}	我对下面的文字执行了“{0}”，结果如下。我们继续吧。\n\n[原文]\n{1}\n\n[结果]\n{2}
-Copied {0}	已复制 {0}
 Export Bloom settings	导出 Bloom 设置
 Bloom settings (*.zip)|*.zip	Bloom 设置 (*.zip)|*.zip
 Settings export failed	设置导出失败
@@ -525,7 +528,7 @@ Enter picks an area	按 Enter 选择区域
 Pick	选择
 Area	区域
 Picked at	选择时间
-1–6 right away	用 1–6 直接选
+1–7 right away	用 1–7 直接选
 1  Ask AI	1  问 AI
 Ask AI about the selected screen area · 1 use	将所选屏幕区域发送给 AI 提问 · 计入 1 次用量
 2  Translate	2  翻译
@@ -541,6 +544,9 @@ Pins the area as a picture · drag to move, scroll to resize	将区域图片置�
 Pin	固定
 6  Capture	6  截图
 Copies this area as a picture · paste it anywhere with Ctrl+V	把此区域复制为图片 · 用 Ctrl+V 随处粘贴
+7  Color palette	7  调色板
+Makes a palette of this area's colours · done on this PC · no AI usage	用此区域的颜色生成调色板 · 在本机处理 · 不消耗 AI 用量
+Make	生成
 Pick another area	选择其他区域
 Text read	识别的文字
 {0} lines · Windows OCR · read on this PC	{0} 行 · Windows OCR · 在本机识别
@@ -554,6 +560,23 @@ Screen text	屏幕文字
 Copy as one line	合并为一行复制
 Line breaks become spaces	换行变为空格
 Pick again	重新选择
+Color palette	调色板
+No palette yet	还没有调色板
+Extracting colours…	正在提取颜色…
+{0} colours · largest first	{0} 种颜色 · 按占比排序
+Copy all	全部复制
+HEX list · CSS variables · palette image (PNG)	HEX 列表 · CSS 变量 · 调色板图片 (PNG)
+Choose	选择
+Copy all · {0} colours	全部复制 · {0} 种颜色
+HEX list	HEX 列表
+Copied {0} HEX codes	已复制 {0} 个 HEX
+CSS variables (--color-1: …)	CSS 变量 (--color-1: …)
+Copied {0} CSS variables	已复制 {0} 个 CSS 变量
+Palette image (PNG with HEX labels)	调色板图片 (PNG · 带 HEX)
+Palette image copied · paste it with Ctrl+V	已复制调色板图片 · 按 Ctrl+V 粘贴
+Recent palettes	最近的调色板
+Enter opens it again	按 Enter 重新打开
+{0} colours · {1}	{0} 种颜色 · {1}
 Path	路径
 Network	网络
 Tab goes in	按 Tab 进入
@@ -722,12 +745,12 @@ Picked colour	取到的颜色
 Typed colour	输入的颜色
 Add to recent colours	添加到最近颜色
 Add	添加
+Recent colours	最近颜色
+Enter copies HEX	按 Enter 复制 HEX
 Suggested gradients	推荐的渐变
 Enter copies CSS	按 Enter 复制 CSS
 Matching presets	相配的预设
 Bloom preset	Bloom 预设
-Recent colours	最近颜色
-Enter copies HEX	按 Enter 复制 HEX
 Show colour	查看颜色
 Uninstall · Store app, for this user	卸载 · Store 应用，仅当前用户
 Uninstall · {0}	卸载 · {0}
@@ -1064,6 +1087,7 @@ Undo (Ctrl+Z)	撤销 (Ctrl+Z)
 Redo (Ctrl+Y)	重做 (Ctrl+Y)
 Pin to the screen	固定到屏幕
 Ask AI	问 AI
+Make a color palette · the drawing included	生成调色板 · 包括画的内容
 Save the picture…	保存图片…
 Cancel (Esc)	取消 (Esc)
 Bloom pinned picture	Bloom 固定图片
@@ -1438,6 +1462,11 @@ Open Bloom with the shortcut you chose. Settings and the tour are available from
 Open Bloom settings	打开 Bloom 设置
 Installed	已安装
 How to install  ↗	安装说明  ↗
+Click copies the HEX · ← → picks a colour	点击复制 HEX · ← → 选择颜色
+Colour count	颜色数
+Colours ({0}–{1}) · − + keys	颜色数 ({0}–{1}) · − + 键
+One colour fewer	减少一种颜色
+One colour more	增加一种颜色
 Details	详情
 Muted preview · click to pause	静音预览 · 点击暂停
 Bloom {0} · What's new	Bloom {0} · 新功能
@@ -1584,11 +1613,13 @@ Find a program · Enter quits it · Ctrl+Enter closes its windows	查找程序 �
 End apps · {0}	结束应用 · {0} 个
 Pick what to do with the text	选择要对文字做的事
 Screen text · {0} lines · {1}	屏幕文字 · {0} 行 · {1}
-What to do with this area · 1 ask 2 translate 3 text 4 live 5 pin 6 capture	对此区域要做的事 · 1 提问 2 翻译 3 文字 4 实时 5 固定 6 截图
+What to do with this area · 1 ask 2 translate 3 text 4 live 5 pin 6 capture 7 palette	对此区域要做的事 · 1 提问 2 翻译 3 文字 4 实时 5 固定 6 截图 7 调色板
 10 min · 1h 30m · 15:30 meeting · tomorrow 9am upload	10 min · 1h 30m · 15:30 meeting · tomorrow 9am upload
 Timers · reminders · {0} running	计时器 · 提醒 · {0} 个进行中
 Type a colour (#ff5a8a, rgb(…)) · or pick one from the screen	输入颜色 (#ff5a8a, rgb(…)) · 或从屏幕取色
 Color picker · {0} recent	取色器 · 最近 {0} 种颜色
+← → pick a colour · − + colour count · Enter copies	← → 选择颜色 · − + 颜色数 · 按 Enter 复制
+Color palette · {0} colours · made on this PC	调色板 · {0} 种颜色 · 在本机提取
 Find in this folder · Enter opens	在此文件夹中查找 · 按 Enter 打开
 Favorites folder · Ctrl+K remove · order	收藏夹 · Ctrl+K 移除 · 排序
 Windows	窗口
@@ -1882,7 +1913,8 @@ Color picker shortcut	取色器快捷键
 Pick a colour anywhere	随处取色
 Copy the colour at once	立即复制取到的颜色
 Copies it as HEX (#ff5a8a)	以 HEX (#ff5a8a) 复制
-Clear recent colours	清除最近颜色
+Clear recent colours and palettes	清除最近颜色和调色板
+{0} colours · {1} palettes	{0} 种颜色 · {1} 个调色板
 Shows Claude Code and Codex tasks and AI usage limits in a screen corner. Hidden during full-screen games and presentations.	在屏幕角落显示 Claude Code、Codex 的任务和 AI 用量上限。全屏游戏或演示期间隐藏通知。
 Work notifications	工作通知
 On · about +1 MB of memory · pick what to tell below	已开启 · 内存约 +1 MB · 在下方选择要通知的内容

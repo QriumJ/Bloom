@@ -503,10 +503,18 @@ internal sealed class ClaudeSession : IChatSession
 
     private static string Str(JsonElement e, string k) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
 
+    private readonly TaskCompletionSource closed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private bool disposed;
+
+    public Task Closed => closed.Task;
+
     public void Dispose()
     {
+        bool again;
         lock (gate)
         {
+            again = disposed;
+            disposed = true;
             ending = true;
             interruptWatch.Cancel();
             try
@@ -521,7 +529,11 @@ internal sealed class ClaudeSession : IChatSession
         }
         var p = proc;
         proc = null;
-        if (p is null) return;
+        if (p is null)
+        {
+            if (!again) closed.TrySetResult();
+            return;
+        }
         Task.Run(() =>
         {
             try
@@ -534,6 +546,7 @@ internal sealed class ClaudeSession : IChatSession
             }
             p.Dispose();
             if (mcpFile is { } f) TryDelete(f);
+            closed.TrySetResult();
         });
     }
 

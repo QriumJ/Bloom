@@ -45,6 +45,7 @@ internal sealed partial class Launcher
         if (!split) ShowPreview(null);
         if (mode != Mode.Form) form = null;
         chat.Visibility = mode == Mode.Chat ? Visibility.Visible : Visibility.Collapsed;
+        LeaveChat(host.Chats, thread, mode);
         if (mode != Mode.Chat)
         {
             chatTick.Stop();
@@ -57,9 +58,18 @@ internal sealed partial class Launcher
         UpdateChrome();
     }
 
+    /// Going to a view other than the chat (Esc to home, another list) ends the quick chat's unsent process, or the start
+    /// still waiting: the chat is no longer likely to send.
+    internal static void LeaveChat(Chats chats, ChatThread? quick, Mode now)
+    {
+        if (now != Mode.Chat && quick is not null) chats.CancelPreStart(quick);
+    }
+
     public void ShowChat(ChatThread t, string? draft = null, (string title, string url, string text)? page = null, string? image = null)
     {
+        if (thread is not null && !ReferenceEquals(thread, t)) host.Chats.CancelPreStart(thread);
         thread = t;
+        host.Chats.PreStart(t); // likely to send: its process starts now, unsent
         quickBusy = t.Busy;
         quickUnseen = false;
         attachment = page;

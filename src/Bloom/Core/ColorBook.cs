@@ -8,10 +8,14 @@ using System.Windows.Media;
 
 namespace Bloom.Core;
 
-/// The colours picked from the screen (or typed), newest first (colors.json, 24 kept).
+/// The colours picked from the screen (or typed), newest first (colors.json, 24 kept), and the palettes made from
+/// pictures (컬러 팔레트, PalettesKept kept).
 internal sealed partial class ColorBook
 {
     public List<string> Recent { get; set; } = new();
+    public List<SavedPalette> Palettes { get; set; } = new();
+
+    public const int PalettesKept = 12;
 
     [JsonIgnore] private static Saver? saver;
     [JsonIgnore] public static ColorBook Current { get; private set; } = new();
@@ -19,8 +23,17 @@ internal sealed partial class ColorBook
     public static void Load()
     {
         saver?.Dispose();
-        Current = Json.Load<ColorBook>(Paths.In("colors.json"));
+        Current = Json.Load<ColorBook>(Paths.In("colors.json")).Cleaned();
         saver = Saver.ForJson(Paths.In("colors.json"), () => Current);
+    }
+
+    /// What colors.json gave made safe to show: a list it gave as null is empty; a colour that doesn't read, and a
+    /// palette that is null or keeps no colour, are left out; each list stays within what is kept.
+    public ColorBook Cleaned()
+    {
+        Recent = (Recent ?? new()).Where(h => h is not null && Parse(h) is not null).Take(24).ToList();
+        Palettes = (Palettes ?? new()).Where(p => p is not null && p.Clean()).Take(PalettesKept).ToList();
+        return this;
     }
 
     /// The colour the colour view is about (the newest one).
@@ -35,9 +48,20 @@ internal sealed partial class ColorBook
         saver?.Touch();
     }
 
+    /// A palette made, or made again with another count: first in the list, in place of the one made before from the
+    /// same picture; the oldest past PalettesKept go.
+    public static void AddPalette(SavedPalette p)
+    {
+        Current.Palettes.RemoveAll(x => ReferenceEquals(x, p) || (p.Source is not null && string.Equals(x.Source, p.Source, StringComparison.OrdinalIgnoreCase)));
+        Current.Palettes.Insert(0, p);
+        if (Current.Palettes.Count > PalettesKept) Current.Palettes.RemoveRange(PalettesKept, Current.Palettes.Count - PalettesKept);
+        saver?.Touch();
+    }
+
     public static void Clear()
     {
         Current.Recent.Clear();
+        Current.Palettes.Clear();
         saver?.Touch();
     }
 
@@ -53,6 +77,11 @@ internal sealed partial class ColorBook
         var (h, s, l) = ToHsl(c);
         return $"hsl({Math.Round(h)}, {Math.Round(s * 100)}%, {Math.Round(l * 100)}%)";
     }
+
+    /// A palette's 전체 복사: the HEX codes one a line, or CSS custom properties numbered from 1 (--color-1: #RRGGBB;).
+    public static string HexList(IEnumerable<Color> colors) => string.Join("\n", colors.Select(Hex));
+
+    public static string CssVariables(IEnumerable<Color> colors) => string.Join("\n", colors.Select((c, i) => $"--color-{i + 1}: {Hex(c)};"));
 
     [GeneratedRegex(@"^#?([0-9a-f]{3}|[0-9a-f]{6})$", RegexOptions.IgnoreCase)]
     private static partial Regex HexForm();
@@ -178,6 +207,19 @@ internal sealed partial class ColorBook
         return b;
     }
 
+    /// A palette as even stripes, left to right, with hard edges (its row's swatch).
+    public static LinearGradientBrush Stripes(IReadOnlyList<Color> colors)
+    {
+        var b = new LinearGradientBrush { StartPoint = new System.Windows.Point(0, 0.5), EndPoint = new System.Windows.Point(1, 0.5) };
+        for (int i = 0; i < colors.Count; i++)
+        {
+            b.GradientStops.Add(new GradientStop(colors[i], (double)i / colors.Count));
+            b.GradientStops.Add(new GradientStop(colors[i], (double)(i + 1) / colors.Count));
+        }
+        b.Freeze();
+        return b;
+    }
+
     /// Gradients made from one colour: its neighbours, lighter and deeper, its opposite, toward sunset or sea, pastel.
     public static List<(string name, string about, Color[] stops)> Suggest(Color c)
     {
@@ -245,5 +287,44 @@ internal sealed partial class ColorBook
             return Math.Min(D(h, ha), D(h, hb));
         }
         return Presets.OrderBy(Dist).Take(count);
+    }
+}
+
+/// One palette kept in colors.json: its colours (HEX) and their shares, the largest first; the count asked for; when its
+/// picture was picked; and that picture (its Bloom Lens copy under Local\lens, while kept there), to make it again from.
+internal sealed class SavedPalette
+{
+    public List<string> Colors { get; set; } = new();
+    public List<double> Shares { get; set; } = new();
+    public int Count { get; set; } = PaletteExtract.DefaultCount;
+    public string? Source { get; set; }
+    public DateTime At { get; set; }
+
+    /// After colors.json: only the colours that read (as #RRGGBB), each with its share (0–1; 0 when there is none), the
+    /// count kept to 3–10; false when no colour is left.
+    public bool Clean()
+    {
+        var colors = new List<string>();
+        var shares = new List<double>();
+        if (Colors is { } given)
+            for (int i = 0; i < given.Count; i++)
+            {
+                if (given[i] is not { } text || ColorBook.Parse(text) is not { } c) continue;
+                colors.Add(ColorBook.Hex(c));
+                shares.Add(Shares is { } s && i < s.Count ? Math.Clamp(s[i], 0, 1) : 0);
+            }
+        Colors = colors;
+        Shares = shares;
+        Count = Math.Clamp(Count, PaletteExtract.MinCount, PaletteExtract.MaxCount);
+        return colors.Count > 0;
+    }
+
+    /// Its colours read back with their shares (a HEX that doesn't read is left out).
+    public List<PaletteColor> Read()
+    {
+        var list = new List<PaletteColor>();
+        for (int i = 0; i < Colors.Count; i++)
+            if (ColorBook.Parse(Colors[i]) is { } c) list.Add(new PaletteColor(c, i < Shares.Count ? Shares[i] : 0));
+        return list;
     }
 }

@@ -32,6 +32,7 @@ internal enum Mode
     Commands, // 내 명령: scripts, snippets, chains
     Layout, // 창 배치: where the window in front goes
     Winget, // 앱 설치: winget's catalogue
+    Palette, // 컬러 팔레트: the colours of a picture (Bloom Lens › 7), the one picked with its gradients
 }
 
 /// Builds the result sections for each view. Fast sources (apps, commands, settings, calculator,

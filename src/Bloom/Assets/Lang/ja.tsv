@@ -7,6 +7,7 @@ No answer from Claude. Send again.	Claude の回答がありません。再送�
 No answer from Codex. Send again.	Codex の回答がありません。再送してください。
 Answer failed. Send the message again.	回答に失敗しました。メッセージを再送してください。
 No response for 90 s. Try again.	90 秒間応答なし。再試行してください。
+The ChatGPT sign-in changed, so the answer stopped. Send it again.	ChatGPT のサインインが変わったため、回答を停止しました。再送してください。
 This API model is not available. Choose another model and send again.	この API モデルが見つかりません。別のモデルを選んで送り直してください。
 No {0} API key. Add one in Settings > AI accounts.	{0} の API キーがありません。設定 > AI アカウントでキーを追加してください。
 Could not connect to {0}. Check your connection and send again.	{0} に接続できませんでした。接続を確認して送り直してください。
@@ -164,6 +165,7 @@ Drag over the area to translate	翻訳する範囲をドラッグして選んで
 Drag over the area to read	文字を読み取る範囲をドラッグして選んでください
 Drag over the area to pin	画面に固定する範囲をドラッグして選んでください
 Drag over the area to capture	キャプチャする範囲をドラッグして選んでください
+Drag over the area to make a palette of	パレットを作る範囲をドラッグして選んでください
 Drag over an area — then pick what to do	範囲をドラッグして選び、それから操作を選んでください
 Text recognition failed	文字認識失敗
 Check installed recognition languages	インストール済みの認識言語を確認してください
@@ -194,9 +196,10 @@ File · Copied	ファイル · コピー済み
 File · Unchanged	ファイル · 変更なし
 Move failed or cancelled. Check the destination and permissions, then retry.	移動失敗またはキャンセル。移動先と権限を確認して再試行してください。
 Copy failed or cancelled. Check the destination and permissions, then retry.	コピー失敗またはキャンセル。コピー先と権限を確認して再試行してください。
+The picture is gone, so it can't be made again	元の画像が削除されたため、作り直せません
+Copied {0}	{0} のコピー完了
 No response. Try again.	応答なし。再試行してください。
 I ran ‘{0}’ on the text below; this was the result. Let's continue.\n\n[Text]\n{1}\n\n[Result]\n{2}	下の文章に「{0}」を実行し、結果はこうでした。続けましょう。\n\n[文章]\n{1}\n\n[結果]\n{2}
-Copied {0}	{0} のコピー完了
 Export Bloom settings	Bloom の設定をエクスポート
 Bloom settings (*.zip)|*.zip	Bloom の設定 (*.zip)|*.zip
 Settings export failed	設定のエクスポート失敗
@@ -525,7 +528,7 @@ Enter picks an area	Enter で範囲を選ぶ
 Pick	選ぶ
 Area	範囲
 Picked at	選んだ時刻
-1–6 right away	1–6 ですぐに
+1–7 right away	1–7 ですぐに
 1  Ask AI	1  AI に聞く
 Ask AI about the selected screen area · 1 use	選んだ画面の領域を AI に送って質問 · 利用 1 回
 2  Translate	2  翻訳
@@ -541,6 +544,9 @@ Pins the area as a picture · drag to move, scroll to resize	領域を画像と�
 Pin	固定
 6  Capture	6  キャプチャ
 Copies this area as a picture · paste it anywhere with Ctrl+V	この範囲を画像としてコピー · Ctrl+V でどこにでも貼り付け
+7  Color palette	7  カラーパレット
+Makes a palette of this area's colours · done on this PC · no AI usage	この範囲の色からパレットを作成 · この PC で処理 · AI 使用量なし
+Make	作成
 Pick another area	別の範囲を選ぶ
 Text read	読み取った文字
 {0} lines · Windows OCR · read on this PC	{0} 行 · Windows OCR · この PC で読み取り
@@ -554,6 +560,23 @@ Screen text	画面のテキスト
 Copy as one line	1 行にまとめてコピー
 Line breaks become spaces	改行をスペースに
 Pick again	選び直す
+Color palette	カラーパレット
+No palette yet	パレットなし
+Extracting colours…	色を抽出中…
+{0} colours · largest first	{0} 色 · 多い順
+Copy all	すべてコピー
+HEX list · CSS variables · palette image (PNG)	HEX リスト · CSS 変数 · パレット画像 (PNG)
+Choose	選ぶ
+Copy all · {0} colours	すべてコピー · {0} 色
+HEX list	HEX リスト
+Copied {0} HEX codes	HEX {0} 件のコピー完了
+CSS variables (--color-1: …)	CSS 変数 (--color-1: …)
+Copied {0} CSS variables	CSS 変数 {0} 件のコピー完了
+Palette image (PNG with HEX labels)	パレット画像 (PNG · HEX 付き)
+Palette image copied · paste it with Ctrl+V	パレット画像のコピー完了 · Ctrl+V で貼り付けてください
+Recent palettes	最近のパレット
+Enter opens it again	Enter でもう一度開く
+{0} colours · {1}	{0} 色 · {1}
 Path	パス
 Network	ネットワーク
 Tab goes in	Tab で中に入る
@@ -722,12 +745,12 @@ Picked colour	取った色
 Typed colour	入力した色
 Add to recent colours	最近の色に追加
 Add	追加
+Recent colours	最近の色
+Enter copies HEX	Enter で HEX をコピー
 Suggested gradients	おすすめのグラデーション
 Enter copies CSS	Enter で CSS をコピー
 Matching presets	合うプリセット
 Bloom preset	Bloom プリセット
-Recent colours	最近の色
-Enter copies HEX	Enter で HEX をコピー
 Show colour	色を表示
 Uninstall · Store app, for this user	アンインストール · Store アプリ、このユーザーから
 Uninstall · {0}	アンインストール · {0}
@@ -1064,6 +1087,7 @@ Undo (Ctrl+Z)	元に戻す (Ctrl+Z)
 Redo (Ctrl+Y)	やり直す (Ctrl+Y)
 Pin to the screen	画面に固定
 Ask AI	AI に聞く
+Make a color palette · the drawing included	カラーパレットを作成 · 描いた線も含む
 Save the picture…	画像を保存…
 Cancel (Esc)	キャンセル (Esc)
 Bloom pinned picture	Bloom 固定画像
@@ -1438,6 +1462,11 @@ Open Bloom with the shortcut you chose. Settings and the tour are available from
 Open Bloom settings	Bloom の設定を開く
 Installed	インストール済み
 How to install  ↗	インストール方法  ↗
+Click copies the HEX · ← → picks a colour	クリックで HEX をコピー · ← → で色を選ぶ
+Colour count	色の数
+Colours ({0}–{1}) · − + keys	色の数 ({0}–{1}) · − + キー
+One colour fewer	1 色減らす
+One colour more	1 色増やす
 Details	詳細
 Muted preview · click to pause	音声なしのプレビュー · クリックで一時停止
 Bloom {0} · What's new	Bloom {0} · 新機能
@@ -1584,11 +1613,13 @@ Find a program · Enter quits it · Ctrl+Enter closes its windows	プログラ�
 End apps · {0}	アプリを終了 · {0}件
 Pick what to do with the text	テキストでやることを選ぶ
 Screen text · {0} lines · {1}	画面のテキスト · {0} 行 · {1}
-What to do with this area · 1 ask 2 translate 3 text 4 live 5 pin 6 capture	この範囲でやること · 1 質問 2 翻訳 3 テキスト 4 リアルタイム 5 固定 6 キャプチャ
+What to do with this area · 1 ask 2 translate 3 text 4 live 5 pin 6 capture 7 palette	この範囲でやること · 1 質問 2 翻訳 3 テキスト 4 リアルタイム 5 固定 6 キャプチャ 7 パレット
 10 min · 1h 30m · 15:30 meeting · tomorrow 9am upload	10 min · 1h 30m · 15:30 meeting · tomorrow 9am upload
 Timers · reminders · {0} running	タイマー · リマインダー · {0} 件実行中
 Type a colour (#ff5a8a, rgb(…)) · or pick one from the screen	色を入力 (#ff5a8a, rgb(…)) · または画面から取る
 Color picker · {0} recent	カラーピッカー · 最近の色 {0} 件
+← → pick a colour · − + colour count · Enter copies	← → 色を選ぶ · − + 色の数 · Enter でコピー
+Color palette · {0} colours · made on this PC	カラーパレット · {0} 色 · この PC で抽出
 Find in this folder · Enter opens	このフォルダー内を探す · Enter で開く
 Favorites folder · Ctrl+K remove · order	お気に入りフォルダー · Ctrl+K で外す · 並べ替え
 Windows	ウィンドウ
@@ -1882,7 +1913,8 @@ Color picker shortcut	カラーピッカーのショートカット
 Pick a colour anywhere	どこでも色を取る
 Copy the colour at once	取った色をすぐにコピー
 Copies it as HEX (#ff5a8a)	HEX (#ff5a8a) でコピーします
-Clear recent colours	最近の色を消去
+Clear recent colours and palettes	最近の色とパレットを消去
+{0} colours · {1} palettes	色 {0} 件 · パレット {1} 件
 Shows Claude Code and Codex tasks and AI usage limits in a screen corner. Hidden during full-screen games and presentations.	Claude Code と Codex の作業や AI 利用上限を画面の隅に表示します。全画面のゲームやプレゼンテーション中は非表示です。
 Work notifications	作業の通知
 On · about +1 MB of memory · pick what to tell below	オン · メモリ約 +1 MB · 知らせる内容は下で選びます

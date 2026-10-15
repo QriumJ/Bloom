@@ -12,6 +12,7 @@ internal sealed class Options
     public string? CaptureDir;
     public string? GlassFile;
     public string? ChatFile;
+    public string? WarmFile; // --qa-warm: time to the first text of an answer, cold vs pre-started (WarmBench)
     public string? QaModel, QaEffort, QaAsk;
     public string? QaSet; // --capture: "new" = only the newest screens
     public string? PasteFile; // --qa-paste: paste into a test window of our own

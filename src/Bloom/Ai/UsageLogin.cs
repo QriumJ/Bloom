@@ -58,6 +58,10 @@ internal static class UsageLogin
         Process? p = null;
         try
         {
+            // `codex login` writes the account's auth.json: Bloom's app-servers on the old sign-in end first, and none starts
+            // until it is done (CodexAppHome.Hold; LoginMarker while the terminal stays open)
+            using var hold = claude ? null : await CodexAppHome.Hold(account.Home);
+            if (!claude && hold is null) return AiErrors.StartFailed;
             p = ChildProcess.Spawn(psi);
             if (p is null) return AiErrors.StartFailed;
             LoginMarker.Mark(account.Home, p);

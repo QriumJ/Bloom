@@ -19,7 +19,8 @@ namespace Bloom.Ai;
 /// input tokens). Codex reports whole messages, not text deltas. With 설정 > PC 작업 on, each run also gets Bloom's
 /// own MCP server (`-c mcp_servers.bloom…`, the relay named after this conversation); Codex in exec mode can't ask the
 /// user, so it is told to approve the tool itself and Bloom's server holds every action for the user's yes (Ask).
-internal sealed class CodexSession : IChatSession
+/// The chats run on CodexAppSession (one long-lived `codex app-server`); this is its fallback when that won't start.
+internal sealed class CodexSession : IChatSession, IAsksInChat
 {
     /// Bloom's MCP server for a run (Host: starts it on first use); null when ChatGPT chats don't get it.
     public static Func<(string command, string pipe, string hint)?>? PcTools;
@@ -393,9 +394,9 @@ internal sealed class CodexSession : IChatSession
     /// A TOML string for a -c value: a literal one (backslashes stay) unless it holds a quote.
     private static string Toml(string s) => s.Contains('\'') ? "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"" : "'" + s + "'";
 
-    /// The base instructions Codex reads instead of its own coding-agent ones; written before every
-    /// turn so the local time in them stays current.
-    private static string Instructions(string? pc, bool titles)
+    /// The base instructions Codex reads instead of its own coding-agent ones (CodexAppSession gives the same once, as
+    /// the thread's baseInstructions).
+    internal static string Instructions(string? pc, bool titles)
     {
         return ClaudeSession.SystemPrompt(null,
                 "You are ChatGPT, answering in a chat inside Bloom, a Windows launcher the user opens with the Win key. "
@@ -420,7 +421,7 @@ internal sealed class CodexSession : IChatSession
     /// that only ChatGPT's own apps turn into links; here they would show as stray text.
     private static readonly System.Text.RegularExpressions.Regex Citations = new("[^]*[ \t]*");
 
-    private static string Clean(string text) => Citations.Replace(text, "").TrimEnd();
+    internal static string Clean(string text) => Citations.Replace(text, "").TrimEnd();
 
     private static long Num(JsonElement e, string k) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(k, out var v) && v.TryGetInt64(out long n) ? n : 0;
 

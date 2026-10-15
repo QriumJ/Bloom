@@ -473,6 +473,7 @@ internal sealed partial class Launcher : Window, IChatHost
         actions.Close();
         SetPinned(false);
         Hide();
+        if (thread is not null) host.Chats.CancelPreStart(thread); // an unsent process goes with the view
         if (opening)
         {
             ++openings; // its reveal, still on its way, is no longer traced

@@ -28,7 +28,7 @@ internal readonly record struct ScreenRect(int X, int Y, int Width, int Height)
 internal static class ScreenGrab
 {
     /// The picked rectangle and its pixels (BGRA), or null when cancelled. With `draw`, the pixels have the ink in
-    /// them and `then` is what the drawing bar chose (capture · pin · ask · save); otherwise `then` is null.
+    /// them and `then` is what the drawing bar chose (capture · pin · ask · palette · save); otherwise `then` is null.
     public static Task<(ScreenRect rect, byte[] bgra, string? then)?> Pick(string hint, bool draw = false)
     {
         var owner = Dispatcher.CurrentDispatcher;

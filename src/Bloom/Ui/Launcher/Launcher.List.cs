@@ -32,6 +32,7 @@ internal sealed partial class Launcher
         if (suppressText) return;
         if (Mode is Mode.Chat)
         {
+            if (thread is not null && box.Text.Length > 0) host.Chats.PreStart(thread); // typing: the process starts before Enter
             UpdateChrome();
             return;
         }

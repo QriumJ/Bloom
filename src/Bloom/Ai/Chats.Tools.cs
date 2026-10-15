@@ -64,7 +64,7 @@ internal sealed partial class Chats
     /// UI thread; an action Bloom's MCP server holds for a ChatGPT conversation (Codex doesn't ask on its own): the same
     /// card as Claude's asks; false when that conversation has no Codex run going.
     public Task<bool> AskInConversation(string id, string tool, string input) =>
-        sessions.TryGetValue(id, out var s) && s is CodexSession codex && s.Busy ? codex.Ask(tool, input) : Task.FromResult(false);
+        sessions.TryGetValue(id, out var s) && s is IAsksInChat codex && s.Busy ? codex.Ask(tool, input) : Task.FromResult(false);
 
     /// The user's yes or no to a tool call; `always`: this conversation doesn't ask about that action again.
     public void Answer(ChatThread t, ToolAsk ask, bool allow, bool always = false)

@@ -160,7 +160,11 @@ internal sealed partial class ChatWindow : Window, IChatHost
         Content = root;
         Theme.Scaled(this, root); // 설정 > 일반 > 크기
 
-        input.TextChanged += (_, _) => inputHint.Visibility = input.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        input.TextChanged += (_, _) =>
+        {
+            inputHint.Visibility = input.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+            if (input.Text.Length > 0) host.Chats.PreStart(thread); // typing: the process starts before Enter
+        };
         input.PreviewKeyDown += OnInputKey;
         PreviewKeyDown += OnKey;
         AllowDrop = true;
@@ -184,6 +188,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
         Theme.Changed += OnTheme;
         Closed += (_, _) =>
         {
+            host.Chats.CancelPreStart(thread);
             host.Chats.Updated -= OnUpdated;
             host.Chats.SessionsChanged -= OnSessions;
             host.Chats.GroupsChanged -= OnSessions;
@@ -199,7 +204,9 @@ internal sealed partial class ChatWindow : Window, IChatHost
     /// Shows a conversation (from the side list, the launcher or a command) and puts the cursor in the composer.
     public void Open(ChatThread t)
     {
+        if (!ReferenceEquals(thread, t)) host.Chats.CancelPreStart(thread);
         thread = t;
+        host.Chats.PreStart(t); // likely to send: its process starts now, unsent
         chat.Show(t);
         Header();
         BuildList();
@@ -274,6 +281,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
         if (!AiModels.IsChatGpt(now)) Settings.Current.AiProvider = "chatgpt";
         Chats.SetModel(thread, AiModels.IsChatGpt(now) ? Settings.Current.AiModel : AiModels.DefaultModel());
         ShowToast(AiModels.Who(thread.Model));
+        host.Chats.PreStart(thread);
         Header();
     }
 
@@ -284,6 +292,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
         if (!AiModels.HasEffort(model)) return;
         Chats.SetEffort(thread, AiModels.Next(AiModels.Efforts(model), Chats.EffortOf(thread)));
         ShowToast(Tr($"생각 수준: {AiModels.EffortName(Chats.EffortOf(thread))}", $"Thinking level: {AiModels.EffortName(Chats.EffortOf(thread))}"));
+        host.Chats.PreStart(thread);
         Header();
     }
 
@@ -327,6 +336,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
         models.Picked += m =>
         {
             Chats.SetModel(thread, m);
+            host.Chats.PreStart(thread);
             Header();
         };
         tools.Children.Add(models);
@@ -336,6 +346,7 @@ internal sealed partial class ChatWindow : Window, IChatHost
             levels.Picked += e =>
             {
                 Chats.SetEffort(thread, e);
+                host.Chats.PreStart(thread);
                 Header();
             };
             tools.Children.Add(levels);

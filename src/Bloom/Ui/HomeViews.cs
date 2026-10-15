@@ -84,16 +84,17 @@ internal static class HomeViews
         return b;
     }
 
-    /// 홈 편집's − n + on a list block: how many rows it shows (`min`…`max`).
-    public static SmoothBorder Stepper(int value, int min, int max, Action<int> set)
+    /// 홈 편집's − n + on a list block: how many rows it shows (`min`…`max`). `words` (its tip, − and +) for another count
+    /// (컬러 팔레트's colours).
+    public static SmoothBorder Stepper(int value, int min, int max, Action<int> set, (string tip, string fewer, string more)? words = null)
     {
+        var (tip, fewer, more) = words ?? (Tr($"표시 개수 ({min}–{max})", $"Rows shown ({min}–{max})"), Tr("개수 줄이기", "Fewer rows"), Tr("개수 늘리기", "More rows"));
         var n = Theme.T(value.ToString(System.Globalization.CultureInfo.InvariantCulture), 11.5, Theme.P.Text, Theme.Medium, false);
         n.MinWidth = 16;
         n.TextAlignment = TextAlignment.Center;
         n.VerticalAlignment = VerticalAlignment.Center;
-        n.ToolTip = Tr($"표시 개수 ({min}–{max})", $"Rows shown ({min}–{max})");
-        return Pill(EditButton(G.Minus, Tr("개수 줄이기", "Fewer rows"), value > min, () => set(value - 1)), n,
-            EditButton(G.Add, Tr("개수 늘리기", "More rows"), value < max, () => set(value + 1)));
+        n.ToolTip = tip;
+        return Pill(EditButton(G.Minus, fewer, value > min, () => set(value - 1)), n, EditButton(G.Add, more, value < max, () => set(value + 1)));
     }
 
     /// A dashed rounded outline over the whole of what it is put in (홈 편집's "+ 블록 추가").

@@ -32,6 +32,9 @@ internal sealed partial class Launcher
     public void Confirm(string question, ActionItem yes) =>
         actions.Open(question, new List<ActionItem> { yes, new() { Title = Tr("취소", "Cancel"), Keys = "Esc", Glyph = G.Close, StayOpen = true, Run = () => { } } });
 
+    /// A few choices in the action panel, on the selected row (컬러 팔레트's 전체 복사): Enter runs one, Esc closes it.
+    public void Choose(string title, List<ActionItem> list) => actions.Open(title, list, 0, SelectedBox());
+
     public List<ActionItem> ActionsFor(ResultItem item)
     {
         var list = new List<ActionItem>();

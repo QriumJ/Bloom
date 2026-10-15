@@ -38,6 +38,7 @@ internal sealed partial class Host
                 "text" => Tr("글자를 읽을 영역을 끌어서 고르세요", "Drag over the area to read"),
                 "pin" => Tr("화면에 고정할 영역을 끌어서 고르세요", "Drag over the area to pin"),
                 "capture" => Tr("캡처할 영역을 끌어서 고르세요", "Drag over the area to capture"),
+                "palette" => Tr("팔레트를 만들 영역을 끌어서 고르세요", "Drag over the area to make a palette of"),
                 _ => Tr("영역을 끌어서 고르세요 — 고른 뒤 할 일을 선택하세요", "Drag over an area — then pick what to do"),
             };
             var pick = await Ocr.ScreenGrab.Pick(hint, kind == "capture"); // 화면 캡처 draws on the area before it goes anywhere
@@ -61,7 +62,7 @@ internal sealed partial class Host
         }
     }
 
-    /// One of the six things to do with the last area (and 저장, from the capture's drawing bar).
+    /// One of the seven things to do with the last area (and 저장, from the capture's drawing bar).
     public async Task LensDo(string kind)
     {
         if (LastLens is not { } l) return;
@@ -88,6 +89,9 @@ internal sealed partial class Host
                 case "save":
                     Window.Dismiss();
                     SavePicture(l, Picture(l), null);
+                    return;
+                case "palette":
+                    await MakePalette(l);
                     return;
             }
             var (px, w, h, _) = Ocr.ScreenGrab.ForOcr(l.Bgra, l.Rect.Width, l.Rect.Height);

@@ -113,7 +113,7 @@ internal sealed partial class Launcher
         [Mode.Lens] = new()
         {
             Chip = () => "Bloom Lens",
-            Placeholder = () => Tr("이 영역으로 할 일 · 1 묻기 2 번역 3 글자 4 실시간 5 고정 6 캡처", "What to do with this area · 1 ask 2 translate 3 text 4 live 5 pin 6 capture"),
+            Placeholder = () => Tr("이 영역으로 할 일 · 1 묻기 2 번역 3 글자 4 실시간 5 고정 6 캡처 7 팔레트", "What to do with this area · 1 ask 2 translate 3 text 4 live 5 pin 6 capture 7 palette"),
             Context = () => host.LastLens is { } ll ? $"Bloom Lens · {ll.Rect.Width}×{ll.Rect.Height}" : "Bloom Lens",
             Build = _ => Engine.LensView(),
             Split = true,
@@ -136,6 +136,14 @@ internal sealed partial class Launcher
             Context = () => Tr($"컬러 피커 · 최근 색 {ColorBook.Current.Recent.Count}개", $"Color picker · {ColorBook.Current.Recent.Count} recent"),
             Build = Engine.ColorView,
             Split = true,
+        },
+        [Mode.Palette] = new()
+        {
+            Chip = () => Tr("컬러 팔레트", "Color palette"),
+            Placeholder = () => Tr("← → 색 고르기 · − + 색 개수 · Enter 복사", "← → pick a colour · − + colour count · Enter copies"),
+            Context = () => host.Palette is { Colors.Count: > 0 } p ? Tr($"컬러 팔레트 · {p.Colors.Count}색 · PC 안에서 추출", $"Color palette · {p.Colors.Count} colours · made on this PC") : Tr("컬러 팔레트", "Color palette"),
+            Build = _ => Engine.PaletteView(),
+            KeepScroll = true, // a swatch picked draws the list again where it was
         },
         [Mode.Group] = new()
         {

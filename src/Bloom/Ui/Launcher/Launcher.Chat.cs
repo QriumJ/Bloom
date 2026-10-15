@@ -137,6 +137,7 @@ internal sealed partial class Launcher
     public void SetModel(string model)
     {
         Chats.SetModel(thread, model);
+        if (thread is not null && Mode == App.Mode.Chat) host.Chats.PreStart(thread);
         string level = Ai.AiModels.HasEffort(model) ? " · " + Ai.AiModels.EffortName(thread is null ? Ai.AiModels.DefaultEffort(model) : Chats.EffortOf(thread)) : "";
         ShowToast(Ai.AiModels.Who(model) + level);
         UpdateChrome();
@@ -158,6 +159,7 @@ internal sealed partial class Launcher
     private void SetEffort(string level)
     {
         Chats.SetEffort(thread, level);
+        if (thread is not null && Mode == App.Mode.Chat) host.Chats.PreStart(thread);
         ShowToast(Tr($"생각 수준: {Ai.AiModels.EffortName(level)}", $"Thinking level: {Ai.AiModels.EffortName(level)}"));
         UpdateChrome();
     }

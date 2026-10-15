@@ -19,6 +19,7 @@ internal static class AiErrors
     public static string CodexNoAnswer => Tr("Codex 답변이 없습니다. 다시 보내세요.", "No answer from Codex. Send again.");
     public static string Failed => Tr("답변 실패 · 다시 보내세요", "Answer failed. Send the message again.");
     public static string TimedOut => Tr("90초 동안 응답 없음 · 다시 시도하세요", "No response for 90 s. Try again.");
+    public static string SignInChanged => Tr("ChatGPT 로그인이 바뀌어 답변을 멈췄습니다. 다시 보내세요.", "The ChatGPT sign-in changed, so the answer stopped. Send it again.");
 
     // ── API providers: each failure worded where it happens (ApiClient), naming the provider ──
     public static string ApiModelGone => Tr("이 API 모델을 찾지 못했습니다. 다른 모델을 선택하고 다시 보내세요.", "This API model is not available. Choose another model and send again.");
@@ -59,7 +60,7 @@ internal static class AiErrors
     private static string Details(string message) => message.Length > 0 ? "\n\n" + Tr($"오류 내용: {message}", $"Details: {message}") : "";
 
     /// Bloom's own texts pass through Friendly unchanged.
-    private static bool Own(string e) => new[] { Stopped, ClaudeMissing, CodexMissing, ClaudeStartFailed, StartFailed, ClaudeNoAnswer, CodexNoAnswer, Failed, TimedOut }.Contains(e);
+    private static bool Own(string e) => new[] { Stopped, ClaudeMissing, CodexMissing, ClaudeStartFailed, StartFailed, ClaudeNoAnswer, CodexNoAnswer, Failed, TimedOut, SignInChanged }.Contains(e);
 
     /// `details`: an unknown error keeps its last line under the message (a chat answer; toasts stay one line).
     public static string Friendly(string e, bool chatgpt, bool details = false)

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -19,21 +20,34 @@ internal static class Program
             .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(m => m.GetParameters().Length == 0 && m.ReturnType == typeof(void)))
             .Where(m => filter is null || $"{m.DeclaringType!.Name}.{m.Name}".Contains(filter, StringComparison.OrdinalIgnoreCase))
             .ToList();
+        // Codex's default folder is an empty one of the run's, never the user's ~\.codex: what reads it (GptCatalog's catalog
+        // and config.toml, CodexAuth's default account, Bloom's Codex folders) sees nothing of theirs and writes nothing there
+        string codexHome = Path.Combine(Path.GetTempPath(), "bloom-tests-codex-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(codexHome);
+        Environment.SetEnvironmentVariable("CODEX_HOME", codexHome);
         int failed = 0;
-        foreach (var m in tests)
+        try
         {
-            string name = $"{m.DeclaringType!.Name}.{m.Name}";
-            Core.Lang.Force(false); // each test starts in Korean; English tests switch themselves
-            try
+            foreach (var m in tests)
             {
-                m.Invoke(null, null);
-                Console.WriteLine($"  ok    {name}");
+                string name = $"{m.DeclaringType!.Name}.{m.Name}";
+                Core.Lang.Force(false); // each test starts in Korean; English tests switch themselves
+                try
+                {
+                    m.Invoke(null, null);
+                    Console.WriteLine($"  ok    {name}");
+                }
+                catch (TargetInvocationException e) when (e.InnerException is { } inner)
+                {
+                    failed++;
+                    Console.WriteLine($"  FAIL  {name}: {inner.Message}");
+                }
             }
-            catch (TargetInvocationException e) when (e.InnerException is { } inner)
-            {
-                failed++;
-                Console.WriteLine($"  FAIL  {name}: {inner.Message}");
-            }
+        }
+        finally
+        {
+            try { Directory.Delete(codexHome, true); }
+            catch (IOException) { /* a reader still holds it: the temp folder keeps it */ }
         }
         Console.WriteLine(failed == 0 ? $"all {tests.Count} passed" : $"{failed} of {tests.Count} failed");
         return failed;

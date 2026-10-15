@@ -127,7 +127,7 @@ internal static class ChatGptLight
     }
 
     /// A JWT's claims (the middle part); only read, never checked — the server checks them.
-    private static JsonNode? Claims(string? jwt)
+    internal static JsonNode? Claims(string? jwt)
     {
         if (jwt?.Split('.') is not { Length: >= 2 } parts) return null;
         try

@@ -16,7 +16,7 @@ using Change = (System.Windows.Ink.StrokeCollection added, System.Windows.Ink.St
 
 /// 화면 캡처's pen and highlighter: ink over the picked area on the frozen screen, with a bar of tools beside it
 /// (펜 P · 형광펜 H · 지우개 E · colours 1–4 · three sizes · Ctrl+Z / Ctrl+Y) and where the picture goes next
-/// (고정 · AI · 저장 · 복사 Enter). The tool, colour and size last used are kept in the settings.
+/// (고정 · AI · 팔레트 · 저장 · 복사 Enter). The tool, colour and size last used are kept in the settings.
 internal sealed class DrawLayer
 {
     private static readonly Color[] Inks = { Color.FromRgb(0xFF, 0x4D, 0x4F), Color.FromRgb(0xFF, 0xD4, 0x3B), Color.FromRgb(0x3B, 0x82, 0xF6), Color.FromRgb(0x22, 0xC5, 0x5E) };
@@ -40,7 +40,7 @@ internal sealed class DrawLayer
     private bool replaying;
 
     /// Ink over `sel` (DIPs on `canvas`), the bar below it (above, or inside, when the screen ends). `done` gets
-    /// what to do with the picture: capture (copy) · pin · ask · save.
+    /// what to do with the picture: capture (copy) · pin · ask · palette · save.
     public DrawLayer(Canvas canvas, Rect sel, Size room, Action<string> done,
         DrawPreferences? preferences = null, DrawTheme? theme = null, Action<DrawPreferences>? persist = null)
     {
@@ -247,6 +247,7 @@ internal sealed class DrawLayer
         Separator(row);
         Button(row, G.Pin, null, Tr("화면에 고정", "Pin to the screen"), () => done("pin"));
         Hit(row, Theme.Sparkle(15, Dim), null, Tr("AI에게 묻기", "Ask AI"), () => done("ask")); // Bloom Lens' own words
+        Button(row, G.Palette, null, Tr("컬러 팔레트 만들기 · 그린 것까지", "Make a color palette · the drawing included"), () => done("palette"));
         Button(row, G.Save, null, Tr("그림 저장…", "Save the picture…") + " (Ctrl+S)", () => done("save"));
         var copy = new SmoothBorder
         {

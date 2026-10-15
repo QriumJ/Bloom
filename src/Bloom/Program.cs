@@ -71,6 +71,9 @@ internal static class Program
                 case "--qa-chat" when i + 1 < args.Length:
                     opt.ChatFile = args[++i];
                     break;
+                case "--qa-warm" when i + 1 < args.Length:
+                    opt.WarmFile = args[++i];
+                    break;
                 case "--qa-glass" when i + 1 < args.Length:
                     opt.GlassFile = args[++i];
                     break;
@@ -155,7 +158,7 @@ internal static class Program
             }
         }
         if (opt.ResponsiveRounds is not null && string.IsNullOrEmpty(opt.Data)) return 2;
-        if ((opt.CaptureDir is not null || opt.GlassFile is not null || opt.ChatFile is not null || opt.MeasureSeconds is not null || opt.SummonRounds is not null || opt.ResponsiveRounds is not null || opt.Demo) && opt.Data is null) return 2; // QA and recording never touch the real data
+        if ((opt.CaptureDir is not null || opt.GlassFile is not null || opt.ChatFile is not null || opt.WarmFile is not null || opt.MeasureSeconds is not null || opt.SummonRounds is not null || opt.ResponsiveRounds is not null || opt.Demo) && opt.Data is null) return 2; // QA and recording never touch the real data
         Paths.Init(opt.Data);
         if (uninstallFrom >= 0) return Uninstall(uninstallFrom, wipe);
         // the setup's Start-menu shortcut starts Bloom without arguments: that opens the launcher (the Run entry has --autostart)
@@ -194,6 +197,7 @@ internal static class Program
         // aside (an app left running from there kept every update from going in). Relative dev/QA paths stay valid.
         static string? Full(string? path) => path is null ? null : Path.GetFullPath(path);
         (opt.CaptureDir, opt.GlassFile, opt.ChatFile, opt.PasteFile) = (Full(opt.CaptureDir), Full(opt.GlassFile), Full(opt.ChatFile), Full(opt.PasteFile));
+        opt.WarmFile = Full(opt.WarmFile);
         (opt.OcrFile, opt.SpaceDir, opt.SpacePath) = (Full(opt.OcrFile), Full(opt.SpaceDir), Full(opt.SpacePath));
         Directory.SetCurrentDirectory(Paths.Home);
 

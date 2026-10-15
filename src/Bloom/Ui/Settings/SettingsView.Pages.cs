@@ -475,7 +475,7 @@ internal sealed partial class SettingsView
         Shortcut("color", Tr("컬러 피커 단축키", "Color picker shortcut"), Tr("어디서든 화면 색 찍기", "Pick a colour anywhere"), G.Eyedrop, s.ColorHotkey, v => s.ColorHotkey = v, filter);
         var cCopy = Toggle(s.ColorCopy, v => s.ColorCopy = v, out var cCopyT);
         Add(Tr("찍은 색 바로 복사", "Copy the colour at once"), Tr("HEX(#ff5a8a)로 복사합니다", "Copies it as HEX (#ff5a8a)"), cCopy, G.Copy, cCopyT, null, filter);
-        Add(Tr("최근 색 지우기", "Clear recent colours"), Tr($"{ColorBook.Current.Recent.Count}개", $"{ColorBook.Current.Recent.Count}"), null, G.Delete, () =>
+        Add(Tr("최근 색 · 팔레트 지우기", "Clear recent colours and palettes"), Tr($"색 {ColorBook.Current.Recent.Count}개 · 팔레트 {ColorBook.Current.Palettes.Count}개", $"{ColorBook.Current.Recent.Count} colours · {ColorBook.Current.Palettes.Count} palettes"), null, G.Delete, () =>
         {
             ColorBook.Clear();
             Build(lastFilter);

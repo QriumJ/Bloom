@@ -2,6 +2,20 @@
 
 Each release on GitHub shows its section from this file (the workflow looks for `## <version>`).
 
+## 0.14.1
+
+- Color palette from a capture: Bloom Lens › 7 (or the palette button on the capture drawing bar) picks the main colors of the area, 5 by default (− + for 3–10). Each swatch shows HEX, RGB and its share; click to copy the HEX. "Copy all" gives a HEX list, CSS variables or a palette image, and a picked color shows gradient suggestions. Worked out on this PC, no AI usage; palettes are kept with the recent colors.
+- AI chat answers start sooner: when a chat is open or you start typing, Bloom starts the AI for the model that chat uses (Claude or ChatGPT, never both) so your first message doesn't wait for it. It ends after a few minutes unused or when the chat closes.
+- ChatGPT chats (the chat window and the launcher's quick chat) now show the answer as it is written instead of all at once at the end, and keep one Codex process per chat instead of one per message. Bloom's Codex runs with its own settings, so your own Codex config.toml doesn't change Bloom's chats; your Codex sign-in and earlier chats carry over. The first ChatGPT chat after updating can take longer to start while Codex indexes your history once.
+- Fixed: a big capture could pause the launcher while making a palette; copies that fail (another app holding the clipboard) now say so.
+
+### 한국어
+
+- 캡처로 컬러 팔레트 만들기: Bloom Lens › 7(또는 캡처 그리기 도구줄의 팔레트 버튼)을 누르면 영역의 대표 색을 뽑습니다. 기본 5색이고 − +로 3~10색까지 바꿀 수 있습니다. 색마다 HEX, RGB, 차지 비율이 표시되고, 누르면 HEX가 복사됩니다. '전체 복사'는 HEX 목록 · CSS 변수 · 팔레트 이미지 중에서 고르고, 고른 색의 그라데이션 추천도 나옵니다. 이 PC 안에서 계산하며 AI 사용량은 없고, 팔레트는 최근 색과 함께 기록됩니다.
+- AI 채팅 첫 답이 더 빨라졌습니다: 채팅을 열거나 입력을 시작하면 그 대화가 쓰는 모델(Claude 또는 ChatGPT, 둘 중 하나만)을 미리 켜 둡니다. 몇 분 동안 쓰지 않거나 대화를 닫으면 꺼집니다.
+- ChatGPT 채팅(채팅 창, 런처 빠른 채팅)은 답이 다 만들어진 뒤 한꺼번에 뜨지 않고 쓰이는 대로 바로 표시됩니다. 메시지마다 Codex를 새로 켜지 않고 대화마다 하나를 계속 씁니다. Bloom의 Codex는 Bloom 전용 설정으로 실행되어 내 Codex config.toml이 Bloom 채팅에 영향을 주지 않으며, Codex 로그인과 이전 대화는 그대로 이어집니다. 업데이트 후 첫 ChatGPT 채팅은 Codex가 기록을 한 번 정리하느라 시작이 조금 오래 걸릴 수 있습니다.
+- 수정: 큰 화면을 팔레트로 만들 때 런처가 잠깐 멈추던 문제, 다른 앱이 클립보드를 쓰고 있어 복사에 실패해도 완료로 표시되던 문제를 고쳤습니다.
+
 ## 0.14.0
 
 - The launcher resizes from its edges and corners. A bigger launcher shows more, not bigger: text and icons keep their size. The size is kept, fitted to the screen on open, and Settings › General resets it.

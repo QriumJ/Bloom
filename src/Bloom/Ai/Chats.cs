@@ -103,11 +103,14 @@ internal sealed partial class Chats
     /// Every open CLI session ends (a switch that changes how sessions start); the conversations stay.
     public void EndAll()
     {
+        CancelPending();
+        foreach (string id in warm.Keys.ToList()) DropWarm(id);
         foreach (var t in Threads.Where(t => IsLive(t) || preparing.ContainsKey(t.Id) || finishing.ContainsKey(t.Id)).ToList()) EndSession(t);
     }
 
-    /// The conversation has a running CLI session (it answers at once; 세션 종료 gives its memory back).
-    public bool IsLive(ChatThread t) => sessions.TryGetValue(t.Id, out var s) && s.Alive || liveForQa.Contains(t.Id);
+    /// The conversation has a running CLI session (it answers at once; 세션 종료 gives its memory back). A pre-started
+    /// process nobody has sent to isn't one yet.
+    public bool IsLive(ChatThread t) => sessions.TryGetValue(t.Id, out var s) && s.Alive && !warm.ContainsKey(t.Id) || liveForQa.Contains(t.Id);
 
     private readonly HashSet<string> liveForQa = new();
 
@@ -123,6 +126,7 @@ internal sealed partial class Chats
     public void EndSession(ChatThread t)
     {
         bool collectFiles = !preparing.TryGetValue(t.Id, out var preparation) || preparation.Sending;
+        CancelPreStart(t);
         bool completing = CancelFinish(t);
         if (completing) collectFiles = false;
         bool pending = CancelPreparation(t);
@@ -264,11 +268,12 @@ internal sealed partial class Chats
                 if (!Current()) return Task.FromResult(new SessionStart(false));
                 session = SessionFor(t, out string? resume, out bool fresh, out bool start);
                 if (!Current()) return Task.FromResult(new SessionStart(false));
+                var preStarted = TakeWarm(t, session);
                 if (fresh) prompt = Earlier(t) + prompt;
                 turnStarted[t.Id] = DateTime.UtcNow.AddSeconds(-1);
                 if (Settings.Current.AiTitles) leads[t.Id] = new ChatTitles.Lead();
                 else leads.Remove(t.Id);
-                return start ? session.StartAsync(resume, token) : Task.FromResult(new SessionStart(true));
+                return start ? session.StartAsync(resume, token) : preStarted is not null ? preStarted.Start.WaitAsync(token) : Task.FromResult(new SessionStart(true));
             }).ConfigureAwait(false);
             bool sent = false;
             if (started.Success)
@@ -424,28 +429,52 @@ internal sealed partial class Chats
         return first.Length > 42 ? first[..42] + "…" : first.Length == 0 ? Tr("새 대화", "New chat") : first;
     }
 
-    private IChatSession SessionFor(ChatThread t, out string? resume, out bool fresh, out bool start)
+    /// Off: ChatGPT chats run one `codex exec` per turn as before (WarmBench compares the two).
+    internal bool CodexAppServer = true;
+
+    /// A ChatGPT conversation's session: a long-lived `codex app-server`, on `codex exec` when that won't start.
+    private IChatSession ChatGptSession(ChatThread t, string effort, string? home)
+    {
+        CodexSession Exec() => new(t.Model, effort, FilesRel(t), t.Id) { AccountHome = home };
+        return CodexAppServer ? new CodexAppSession(t.Model, effort, t.Id, Exec) { AccountHome = home } : Exec();
+    }
+
+    /// `warming`: the pre-start (Chats.PreStart) makes the conversation's process ahead of its message; it is listed as
+    /// warm and not as a live session until the message takes it over.
+    private IChatSession SessionFor(ChatThread t, out string? resume, out bool fresh, out bool start, bool warming = false)
     {
         resume = null;
         fresh = false;
         start = false;
         string effort = EffortOf(t), provider = AiModels.Provider(t.Model);
         var account = AiAccounts.Chat(provider);
-        if (sessions.TryGetValue(t.Id, out var s) && s.Alive && s.Model == t.Model && s.Effort == effort) return s; // 설정's account change ends them (EndAll)
+        sessions.TryGetValue(t.Id, out var s);
+        if (s is not null && warm.TryGetValue(t.Id, out var preStarted) && ReferenceEquals(preStarted.Session, s))
+        {
+            if (s.Model == t.Model && s.Effort == effort && Usable(preStarted) && preStarted.Print == PrintOf(t))
+            {
+                resume = preStarted.Resume; // started with it already; the earlier conversation is still owed when it had no session to resume
+                fresh = resume is null && t.Messages.Count > 2;
+                return s;
+            }
+            DropWarm(t.Id); // it has died, or was launched for other inputs than this send's: a new one starts
+            s = null;
+        }
+        if (s is { Alive: true } && s.Model == t.Model && s.Effort == effort) return s; // 설정's account change ends them (EndAll)
         if (s is not null)
         {
-            s.Dispose();
+            if (!DropWarm(t.Id)) s.Dispose();
             sessions.Remove(t.Id);
         }
         s = sessionFactory is not null ? sessionFactory(t, effort)
             : Demo.On ? new DemoSession(t.Model, effort)
             : provider == "api" ? new ApiSession(t.Model, effort, t.Id, ApiSession.Past(t.Messages), UnavailableNote(), ThreadFiles(t))
-            : provider == "chatgpt" ? new CodexSession(t.Model, effort, FilesRel(t), t.Id) { AccountHome = account.Home }
+            : provider == "chatgpt" ? ChatGptSession(t, effort, account.Home)
             : new ClaudeSession(t.Model, effort, FilesRel(t), "Bloom · " + (t.Messages.Count > 0 ? (t.Title.Length > 40 ? t.Title[..40] + "…" : t.Title) : Tr("새 대화", "New chat"))) { AccountHome = account.Home };
         // a session lives in its account's folder: under another account it starts fresh, with the chat so far given to it;
         // an API session always starts from the saved chat itself (ApiSession.Past), so it is neither resumed nor told it
         bool api = provider == "api";
-        resume = !api && (t.SessionProvider ?? "claude") == provider && (t.SessionAccount ?? provider) == account.Id ? t.SessionId : null;
+        resume = ResumeFor(t, provider, account.Id);
         fresh = !api && resume is null && t.Messages.Count > 2;
         bool IsCurrent() => sessions.TryGetValue(t.Id, out var current) && ReferenceEquals(current, s);
         ChatMessage? Current() => IsCurrent() && !finishing.ContainsKey(t.Id) && t.Messages.Count > 0 && t.Messages[^1].Role == "assistant" && t.Messages[^1].Streaming ? t.Messages[^1] : null;
@@ -454,6 +483,11 @@ internal sealed partial class Chats
         s.SessionStarted += id => events.Post(() =>
         {
             if (!IsCurrent()) return;
+            if (warm.TryGetValue(t.Id, out var waiting) && ReferenceEquals(waiting.Session, s))
+            {
+                waiting.InitId = id; // nothing has been sent: the conversation keeps its own id until a turn happens
+                return;
+            }
             t.SessionId = id;
             t.SessionProvider = provider;
             t.SessionAccount = account.Id;
@@ -517,11 +551,18 @@ internal sealed partial class Chats
         }
         s.Exited += _ => events.Post(() =>
         {
+            // a pre-started process that ended on its own (its sign-in changed) is dropped as any: it counts until it is gone
+            if (warm.TryGetValue(t.Id, out var idleOne) && ReferenceEquals(idleOne.Session, s))
+            {
+                DropWarm(t.Id);
+                return;
+            }
             if (sessions.TryGetValue(t.Id, out var cur) && ReferenceEquals(cur, s) && sessions.Remove(t.Id)) SessionsChanged?.Invoke();
         });
         start = true;
+        if (warming) warm[t.Id] = new WarmSession(s, resume, provider, account.Id, PrintOf(t));
         sessions[t.Id] = s;
-        SessionsChanged?.Invoke();
+        if (!warming) SessionsChanged?.Invoke();
         return s;
     }
 
@@ -712,6 +753,7 @@ internal sealed partial class Chats
             try { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Log.Error("delete chat files", e); }
         });
+        CancelPreStart(t);
         bool removed = sessions.Remove(t.Id, out var s);
         Threads.Remove(t);
         leads.Remove(t.Id);
@@ -749,7 +791,7 @@ internal sealed partial class Chats
     {
         int before = sessions.Count, idleMinutes = Settings.Current.AiIdleMinutes;
         foreach (var (id, s) in sessions.ToList())
-            if (idleMinutes > 0 && !preparing.ContainsKey(id) && !s.Busy && DateTime.UtcNow - s.LastUsed > TimeSpan.FromMinutes(idleMinutes))
+            if (idleMinutes > 0 && !preparing.ContainsKey(id) && !warm.ContainsKey(id) && !s.Busy && DateTime.UtcNow - s.LastUsed > TimeSpan.FromMinutes(idleMinutes))
             {
                 s.Dispose();
                 sessions.Remove(id);
@@ -763,6 +805,7 @@ internal sealed partial class Chats
         if (shutdown) return;
         shutdown = true;
         idle.Stop();
+        StopPreStart();
         foreach (var pending in preparing.Values) _ = pending.Cancellation.CancelAsync();
         preparing.Clear();
         foreach (var pending in finishing.Values) _ = pending.Cancellation.CancelAsync();

@@ -83,16 +83,30 @@ internal sealed class CommandJob : IDisposable
     /// output pipe.
     public void Kill()
     {
-        _ = TerminateJobObject(job, 1); // false: the job is empty already
-        var deadline = Environment.TickCount64 + (long)KillWait.TotalMilliseconds;
-        while (Active() > 0 && Environment.TickCount64 < deadline) Thread.Sleep(10);
+        Terminate();
+        _ = WaitEmpty((int)KillWait.TotalMilliseconds);
     }
 
     private static readonly TimeSpan KillWait = TimeSpan.FromSeconds(5);
 
-    /// Processes still in the job (0 when it can't be told).
-    private uint Active() =>
-        QueryInformationJobObject(job, BasicAccountingInformation, out var info, (uint)Marshal.SizeOf<Accounting>(), IntPtr.Zero) ? info.ActiveProcesses : 0;
+    /// Ends every process in the job without waiting for them (WaitEmpty does).
+    public void Terminate() => _ = TerminateJobObject(job, 1); // false: the job is empty already
+
+    /// True once no process is left in the job, within `milliseconds`; false while one is, or it can't be told.
+    public bool WaitEmpty(int milliseconds)
+    {
+        var deadline = Environment.TickCount64 + milliseconds;
+        while (Active() is not 0)
+        {
+            if (Environment.TickCount64 >= deadline) return false;
+            Thread.Sleep(10);
+        }
+        return true;
+    }
+
+    /// Processes still in the job (null when it can't be told).
+    private uint? Active() =>
+        QueryInformationJobObject(job, BasicAccountingInformation, out var info, (uint)Marshal.SizeOf<Accounting>(), IntPtr.Zero) ? info.ActiveProcesses : null;
 
     public void Dispose() => job.Dispose();
 

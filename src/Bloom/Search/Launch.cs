@@ -87,14 +87,34 @@ internal static class Launch
         if (dir is not null) Open(dir);
     }
 
-    public static void Copy(string text) => Put(text, "clipboard");
+    /// Text on the clipboard; false when it couldn't be put there (another app kept holding it).
+    public static bool Copy(string text) => Put(text, "clipboard");
+
+    /// The toast after a copy: `done`, or that the clipboard couldn't be had.
+    public static string Copied(bool ok, string done) => ok ? done : Tr("클립보드에 복사하지 못했습니다. 다시 시도하세요.", "Could not copy to the clipboard. Try again.");
+
+    /// What puts data on the clipboard (to stay after Bloom quits); a test puts in one that fails.
+    internal static Action<object> SetClipboard { get; set; } = data => Clipboard.SetDataObject(data, true);
 
     /// A picture to paste anywhere: the bitmap for every app, plus "PNG" (transparency, browsers, Office) when its file is given.
-    public static bool CopyImage(BitmapSource picture, string? png = null)
+    public static bool CopyImage(BitmapSource picture, string? png = null) =>
+        PutImage(picture, png is not null && File.Exists(png) ? File.ReadAllBytes(png) : null);
+
+    /// A picture drawn here (컬러 팔레트's): the bitmap plus its "PNG", encoded in memory.
+    public static bool CopyDrawn(BitmapSource picture)
+    {
+        var enc = new PngBitmapEncoder();
+        enc.Frames.Add(BitmapFrame.Create(picture));
+        using var png = new MemoryStream();
+        enc.Save(png);
+        return PutImage(picture, png.ToArray());
+    }
+
+    private static bool PutImage(BitmapSource picture, byte[]? png)
     {
         var obj = new DataObject();
         obj.SetImage(picture);
-        if (png is not null && File.Exists(png)) obj.SetData("PNG", new MemoryStream(File.ReadAllBytes(png)));
+        if (png is not null) obj.SetData("PNG", new MemoryStream(png));
         return Put(obj, "clipboard image");
     }
 
@@ -105,7 +125,7 @@ internal static class Launch
         {
             try
             {
-                Clipboard.SetDataObject(data, true);
+                SetClipboard(data);
                 return true;
             }
             catch (COMException)

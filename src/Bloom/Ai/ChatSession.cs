@@ -9,8 +9,8 @@ namespace Bloom.Ai;
 
 internal readonly record struct SessionStart(bool Success, string? Error = null);
 
-/// One conversation's link to a model: Claude Code (a long-lived `claude -p` stream), Codex for ChatGPT (one
-/// `codex exec` per turn), or an API provider (ApiSession, one HTTP stream per turn). All events are raised on a worker
+/// One conversation's link to a model: Claude Code (a long-lived `claude -p` stream), Codex for ChatGPT (a long-lived
+/// `codex app-server`, or one `codex exec` per turn as its fallback), or an API provider (ApiSession, one HTTP stream per turn). All events are raised on a worker
 /// thread.
 internal interface IChatSession : IDisposable
 {
@@ -48,6 +48,9 @@ internal interface IChatSession : IDisposable
         return Task.FromResult(Send(text, images));
     }
     void Interrupt();
+    /// Completes once a disposed session's process is gone (Dispose only starts the ending). A session with no process of
+    /// its own is closed at once; the pre-start counts a process still ending against its cap (Chats.PreStart).
+    Task Closed => Task.CompletedTask;
 }
 
 /// Models and thinking levels as the launcher names them. A model id is a Claude model ("sonnet",
